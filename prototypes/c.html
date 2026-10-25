@@ -1732,10 +1732,12 @@ function runSelfTests(){
   for (const c of CATEGORIES){
     for (const w of c.words){
       const k = letterCount(w.answer);
-      if (k < 3 || k > 14 || w.answer !== w.answer.toUpperCase() || !w.hint) bad.push(c.id + ":" + w.answer);
+      /* Song titles run long by design (tools/inline-words.py exempts the music
+         category from the 3-14 letter rule); eligibleEntries keeps rounds playable. */
+      if ((c.id !== "uk-number-ones" && (k < 3 || k > 14)) || w.answer !== w.answer.toUpperCase() || !w.hint) bad.push(c.id + ":" + w.answer);
     }
   }
-  t("all entries playable (3-14 letters, upper case, hinted)", bad, []);
+  t("all entries playable (3-14 letters except music, upper case, hinted)", bad, []);
   t("category ids unique", new Set(CATEGORIES.map(function(c){ return c.id; })).size, CATEGORIES.length);
   /* data adapter: absent and empty categories are dropped */
   t("no data -> no categories", parseWordData(null), []);
