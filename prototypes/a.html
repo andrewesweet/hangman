@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fdf3ec">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cellipse cx='16' cy='13' rx='10' ry='12' fill='%23f4a8c0' stroke='%236d1f3c' stroke-width='2'/%3E%3Cpath d='M16 25 L16 30' stroke='%236d1f3c' stroke-width='2'/%3E%3C/svg%3E">
+<title>Hangman · Classic calm</title>
+<style>
+  :root{
+    --paper:#fdf3ec;
+    --paper-deep:#f9e8db;
+    --rule:rgba(190,120,150,.16);
+    --margin-line:rgba(230,120,150,.35);
+    --ink:#6d1f3c;
+    --ink-soft:#96506e;
+    --ink-faint:#b98ba0;
+    --accent:#d6457b;
+    --accent-deep:#a92c5c;
+    --good:#2e7d4f;
+    --bad:#b03a48;
+    --card:#fffaf6;
+    --ease-out:cubic-bezier(.23,1,.32,1);
+    --ease-in-out:cubic-bezier(.77,0,.175,1);
+    --key-h:52px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    color:var(--ink);
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(90deg,transparent 0 34px,var(--margin-line) 34px 36px,transparent 36px),
+      repeating-linear-gradient(180deg,transparent 0 31px,var(--rule) 31px 32px);
+    min-height:100dvh;
+    display:flex;justify-content:center;
+    touch-action:manipulation;
+  }
+  .page{
+    width:100%;max-width:480px;min-height:100dvh;
+    display:flex;flex-direction:column;
+    padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);
+  }
+  /* ---------- header ---------- */
+  header{display:flex;align-items:center;gap:10px;padding:2px 2px 0}
+  .brand{flex:1;min-width:0}
+  .brand h1{font-size:21px;margin:0;letter-spacing:.3px;font-weight:800}
+  .brand h1 .thin{font-weight:500;color:var(--ink-soft);font-size:14px}
+  .squiggle{display:block;width:148px;height:8px;margin-top:2px}
+  .squiggle path{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round;
+    stroke-dasharray:1;stroke-dashoffset:0}
+  .load .squiggle path{animation:draw 900ms var(--ease-out) .1s backwards}
+  @keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+  .pill{
+    font-size:12.5px;font-weight:700;color:var(--ink);
+    background:var(--card);border:1.5px solid var(--ink-faint);border-radius:999px;
+    padding:5px 11px;white-space:nowrap;
+  }
+  .iconbtn{
+    width:42px;height:42px;flex:0 0 auto;border-radius:50%;
+    border:1.5px solid var(--ink-faint);background:var(--card);color:var(--ink);
+    font-size:19px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform 150ms var(--ease-out),opacity 150ms var(--ease-out),background-color 150ms ease;
+  }
+  @media (hover:hover) and (pointer:fine){.iconbtn:hover{background:#fff}}
+  .iconbtn:active{transform:scale(.93)}
+  .iconbtn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  /* ---------- scene ---------- */
+  .scene-card{
+    margin-top:10px;background:var(--card);
+    border:1.5px solid var(--ink-faint);border-radius:18px;
+    box-shadow:0 2px 0 rgba(109,31,60,.08);
+    overflow:hidden;
+  }
+  svg.scene{display:block;width:100%;height:auto}
+  .balloon{transition:transform 950ms var(--ease-in-out),opacity 950ms ease;transform-box:fill-box;transform-origin:center}
+  .balloon.away{transform:translate(46px,-190px) rotate(16deg);opacity:0}
+  .bob{animation:bob 2.6s ease-in-out infinite alternate}
+  @keyframes bob{from{transform:translateY(0)}to{transform:translateY(-9px)}}
+  .basket{transition:transform 1100ms var(--ease-in-out)}
+  .basket.landed{transform:translateY(26px) rotate(-3deg)}
+  .landshadow{opacity:0;transition:opacity 800ms ease}
+  .landshadow.show{opacity:.25}
+  .star{opacity:0;transform:scale(.4);transform-box:fill-box;transform-origin:center;
+    transition:transform 320ms var(--ease-out),opacity 320ms var(--ease-out)}
+  .star.show{opacity:1;transform:scale(1)}
+  .drawline{stroke-dasharray:1;stroke-dashoffset:0}
+  .load .drawline{animation:draw 1.4s var(--ease-out) backwards}
+  /* ---------- word ---------- */
+  .meta{display:flex;gap:8px;align-items:center;margin:12px 2px 0;flex-wrap:wrap}
+  .tag{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;border:1.5px solid var(--ink-faint);color:var(--ink-soft);background:transparent}
+  .tag.diff-easy{border-color:var(--good);color:var(--good)}
+  .tag.diff-medium{border-color:#b07d1e;color:#8a5f10}
+  .tag.diff-hard{border-color:var(--bad);color:var(--bad)}
+  .lives{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--ink-soft)}
+  .tiles{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:12px 0 4px;min-height:64px;align-content:center}
+  .word{display:flex;gap:6px}
+  .tile{
+    width:34px;height:48px;display:flex;align-items:center;justify-content:center;
+    font-size:24px;font-weight:800;color:var(--ink);
+    border-bottom:3px solid var(--ink-soft);border-radius:6px 6px 0 0;
+    background:rgba(255,255,255,.45);
+  }
+  .tile.fixed{border-bottom-color:transparent;color:var(--ink-faint);font-size:22px;background:transparent;width:auto;min-width:18px}
+  .tile.gap{border:none;background:transparent;width:14px}
+  .tile.reveal{animation:pop 260ms var(--ease-out)}
+  @keyframes pop{0%{transform:scale(.55);opacity:0}100%{transform:scale(1);opacity:1}}
+  .wordmiss{font-size:14px;color:var(--ink-soft);text-align:center;min-height:20px;margin:2px}
+  /* ---------- clue ---------- */
+  .cluebox{text-align:center;margin:2px 0 0;min-height:44px}
+  .cluebtn{
+    font:inherit;font-size:14px;font-weight:700;color:var(--accent-deep);
+    background:transparent;border:1.5px dashed var(--ink-faint);border-radius:999px;
+    padding:8px 16px;cursor:pointer;min-height:44px;
+    transition:transform 150ms var(--ease-out),opacity 200ms ease;
+  }
+  .cluebtn:active{transform:scale(.95)}
+  .cluetext{font-size:14.5px;color:var(--ink-soft);font-style:italic;margin:0;padding:10px 8px;
+    opacity:0;transition:opacity 250ms ease}
+  .cluetext.show{opacity:1}
+  /* ---------- keyboard ---------- */
+  .keys{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:8px}
+  .key{
+    font:inherit;font-weight:800;font-size:18px;color:var(--ink);
+    min-height:var(--key-h);border-radius:14px;cursor:pointer;
+    background:var(--card);border:1.5px solid var(--ink-faint);
+    box-shadow:0 2px 0 rgba(109,31,60,.12);
+    display:flex;align-items:center;justify-content:center;
+    transition:transform 130ms var(--ease-out),opacity 200ms ease,background-color 200ms ease,color 200ms ease;
+    user-select:none;-webkit-user-select:none;
+  }
+  @media (hover:hover) and (pointer:fine){.key:not(:disabled):hover{background:#fff}}
+  .key:not(:disabled):active{transform:scale(.9)}
+  .key.good{background:#dcefe2;border-color:var(--good);color:var(--good)}
+  .key.bad{background:#f7dee1;border-color:var(--bad);color:var(--bad);opacity:.75}
+  .key:disabled{cursor:default}
+  /* ---------- sheets & panels ---------- */
+  .scrim{
+    position:fixed;inset:0;background:rgba(109,31,60,.32);
+    opacity:0;pointer-events:none;transition:opacity 250ms ease;z-index:20;
+  }
+  .scrim.open{opacity:1;pointer-events:auto}
+  .sheet{
+    position:fixed;left:50%;bottom:0;z-index:21;
+    width:100%;max-width:480px;max-height:86dvh;overflow:auto;
+    background:var(--paper);border-radius:22px 22px 0 0;
+    border:1.5px solid var(--ink-faint);border-bottom:none;
+    padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 22px);
+    transform:translate(-50%,102%);opacity:.4;
+    transition:transform 320ms var(--ease-out),opacity 250ms ease;
+  }
+  .sheet.open{transform:translate(-50%,0);opacity:1}
+  .grab{width:44px;height:5px;border-radius:99px;background:var(--ink-faint);margin:6px auto 12px;opacity:.7}
+  .sheet h2{font-size:18px;margin:0 0 4px}
+  .sheet p.sub{font-size:13px;color:var(--ink-soft);margin:0 0 12px}
+  .row{margin:14px 0}
+  .row label.lbl{display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:8px}
+  .row label.lbl output{color:var(--accent-deep)}
+  input[type=range]{width:100%;accent-color:var(--accent);height:44px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font:inherit;font-size:13.5px;font-weight:700;padding:10px 14px;min-height:44px;border-radius:999px;
+    border:1.5px solid var(--ink-faint);background:var(--card);color:var(--ink-soft);cursor:pointer;
+    transition:transform 130ms var(--ease-out),background-color 180ms ease,color 180ms ease}
+  .chip:active{transform:scale(.94)}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+  .stepper{display:flex;align-items:center;gap:14px}
+  .stepper button{width:48px;height:48px;border-radius:50%;font-size:22px;font-weight:800;
+    border:1.5px solid var(--ink-faint);background:var(--card);color:var(--ink);cursor:pointer}
+  .stepper button:active{transform:scale(.9)}
+  .stepper output{font-size:20px;font-weight:800;min-width:2ch;text-align:center}
+  .switchrow{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;min-height:48px}
+  .switch{width:56px;height:34px;border-radius:99px;border:1.5px solid var(--ink-faint);background:#e9d5de;
+    position:relative;cursor:pointer;transition:background-color 200ms ease}
+  .switch::after{content:"";position:absolute;top:3px;left:4px;width:25px;height:25px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform 220ms var(--ease-out)}
+  .switch[aria-checked="true"]{background:var(--accent)}
+  .switch[aria-checked="true"]::after{transform:translateX(21px)}
+  .btnrow{display:flex;gap:10px;margin-top:16px}
+  .btn{flex:1;font:inherit;font-size:16px;font-weight:800;min-height:52px;border-radius:16px;cursor:pointer;
+    border:1.5px solid var(--ink);transition:transform 140ms var(--ease-out)}
+  .btn:active{transform:scale(.96)}
+  .btn.primary{background:var(--ink);color:var(--paper)}
+  .btn.ghost{background:transparent;color:var(--ink)}
+  /* stats */
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+  .stat{background:var(--card);border:1.5px solid var(--ink-faint);border-radius:14px;padding:10px;text-align:center}
+  .stat b{display:block;font-size:22px}
+  .stat span{font-size:12px;color:var(--ink-soft);font-weight:700}
+  .catwins{font-size:13px;color:var(--ink-soft);margin:6px 0}
+  .catwins b{color:var(--ink)}
+  .badges{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .badge{background:var(--card);border:1.5px solid var(--ink-faint);border-radius:14px;padding:10px;font-size:12px}
+  .badge b{display:block;font-size:13px;margin-bottom:2px}
+  .badge.locked{opacity:.45}
+  .badge.won{border-color:var(--accent)}
+  /* result card */
+  .result{
+    position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:22;
+    width:min(440px,calc(100% - 32px));
+    background:var(--card);border:2px solid var(--ink);border-radius:20px;
+    padding:18px;box-shadow:0 12px 40px rgba(109,31,60,.25);
+    transform:translate(-50%,24px) scale(.96);opacity:0;pointer-events:none;
+    transition:transform 300ms var(--ease-out),opacity 250ms ease;
+  }
+  .result.open{transform:translate(-50%,0) scale(1);opacity:1;pointer-events:auto}
+  .result h2{margin:0 0 4px;font-size:20px}
+  .result p{margin:6px 0;font-size:14px;color:var(--ink-soft)}
+  .result .answer{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:1px}
+  /* toast */
+  .toast{
+    position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:30;
+    transform:translate(-50%,16px);opacity:0;pointer-events:none;
+    background:var(--ink);color:var(--paper);font-size:14px;font-weight:700;
+    padding:12px 18px;border-radius:999px;max-width:calc(100% - 40px);text-align:center;
+    transition:transform 280ms var(--ease-out),opacity 250ms ease;
+  }
+  .toast.open{transform:translate(-50%,0);opacity:1}
+  .empty{margin:26px 6px;padding:18px;background:var(--card);border:1.5px dashed var(--ink-faint);
+    border-radius:16px;font-size:14px;color:var(--ink-soft);text-align:center}
+  .empty button{margin-top:10px}
+  footer{margin-top:auto;padding:14px 4px 0;text-align:center;font-size:12px;color:var(--ink-faint)}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+      transition-duration:200ms !important}
+    .balloon.away{transform:none}
+    .bob{animation:none}
+    .load .squiggle path,.load .drawline{animation:none}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="brand">
+      <h1>Hangman <span class="thin">· classic calm</span></h1>
+      <svg class="squiggle" viewBox="0 0 148 8" aria-hidden="true"><path pathLength="1" d="M2 5 C 30 1, 60 7, 90 4 S 130 3, 146 5"/></svg>
+    </div>
+    <span class="pill" id="streakPill" title="Current win streak">★ 0</span>
+    <button class="iconbtn" id="soundBtn" aria-label="Toggle sound" aria-pressed="false">♪</button>
+    <button class="iconbtn" id="statsBtn" aria-label="Stats and badges">☰</button>
+    <button class="iconbtn" id="settingsBtn" aria-label="Open settings">⚙</button>
+  </header>
+
+  <div class="scene-card" aria-hidden="true">
+    <svg class="scene" id="scene" viewBox="0 0 360 250" role="img" aria-label="A cat in a basket held up by balloons"></svg>
+  </div>
+
+  <div class="meta">
+    <span class="tag" id="catTag">animals</span>
+    <span class="tag diff-easy" id="diffTag">easy</span>
+    <span class="lives" id="livesLabel"></span>
+  </div>
+
+  <div class="tiles" id="tiles" aria-live="polite"></div>
+  <div class="wordmiss" id="missLabel"></div>
+
+  <div class="cluebox">
+    <button class="cluebtn" id="clueBtn" hidden>Need a nudge? Show the clue</button>
+    <p class="cluetext" id="clueText"></p>
+  </div>
+
+  <div class="empty" id="emptyBox" hidden>
+    No words match those filters — try widening the word-length range or picking more categories.
+    <br><button class="cluebtn" id="emptySettings">Open settings</button>
+  </div>
+
+  <div class="keys" id="keys" role="group" aria-label="Letter keyboard"></div>
+
+  <footer>All progress stays on this phone · works offline</footer>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<section class="sheet" id="settingsSheet" aria-label="Settings" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h2>Settings</h2>
+  <p class="sub">Everything is saved on this phone.</p>
+  <div class="row">
+    <label class="lbl" for="minLen">Shortest word <output id="minOut">3</output></label>
+    <input type="range" id="minLen" min="3" max="14" step="1" value="3">
+  </div>
+  <div class="row">
+    <label class="lbl" for="maxLen">Longest word <output id="maxOut">12</output></label>
+    <input type="range" id="maxLen" min="3" max="14" step="1" value="12">
+  </div>
+  <div class="row">
+    <div class="switchrow"><span>Multi-word phrases</span>
+      <div class="switch" id="phrasesSw" role="switch" aria-checked="true" tabindex="0" aria-label="Multi-word phrases"></div>
+    </div>
+  </div>
+  <div class="row">
+    <label class="lbl">Categories</label>
+    <div class="chips" id="catChips"></div>
+  </div>
+  <div class="row">
+    <label class="lbl">Balloons (lives) <output id="livesOut">6</output></label>
+    <div class="stepper">
+      <button id="livesDown" aria-label="Fewer lives">−</button>
+      <output id="livesNum">6</output>
+      <button id="livesUp" aria-label="More lives">+</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="switchrow"><span>Sound</span>
+      <div class="switch" id="soundSw" role="switch" aria-checked="true" tabindex="0" aria-label="Sound"></div>
+    </div>
+  </div>
+  <div class="btnrow">
+    <button class="btn ghost" id="settingsClose">Close</button>
+    <button class="btn primary" id="newWordBtn">New word</button>
+  </div>
+</section>
+
+<section class="sheet" id="statsSheet" aria-label="Stats and badges" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h2>Progress</h2>
+  <p class="sub">Stored only on this phone.</p>
+  <div class="statgrid">
+    <div class="stat"><b id="stStreak">0</b><span>streak</span></div>
+    <div class="stat"><b id="stBest">0</b><span>best streak</span></div>
+    <div class="stat"><b id="stPlayed">0</b><span>games played</span></div>
+    <div class="stat"><b id="stWon">0</b><span>games won</span></div>
+  </div>
+  <p class="catwins" id="catWins"></p>
+  <h2 style="font-size:15px;margin-top:14px">Badges</h2>
+  <div class="badges" id="badgeGrid"></div>
+  <div class="btnrow"><button class="btn primary" id="statsClose">Done</button></div>
+</section>
+
+<div class="result" id="result" role="status">
+  <h2 id="resTitle"></h2>
+  <div class="answer" id="resWord"></div>
+  <p id="resClue"></p>
+  <p id="resStats"></p>
+  <div class="btnrow">
+    <button class="btn ghost" id="resSettings">Settings</button>
+    <button class="btn primary" id="resNext">New word</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   Pure game logic (no DOM). Covered by the ?selftest check.
+   An entry: { w: "WORD OR PHRASE", c: "category id", clue: "...", d: "easy|medium|hard" }
+   ============================================================ */
+const CATS = [
+  ["animals","Animals"],["mythology","Mythology"],["plants","Plants"],
+  ["gemstones","Gemstones"],["birds","Birds"],["food","Food & drink"],
+  ["geography","Geography"],["music","UK no. 1s"]
+];
+
+/* word, clue, difficulty — British spelling throughout */
+const RAW = {
+animals:[
+["FOX","A cunning russet mammal","easy"],["BAT","A night flier that echolocates","easy"],
+["HARE","Long-eared field runner","easy"],["DEER","Grows antlers each autumn","easy"],
+["MOLE","A blind tunnel digger","easy"],["PONY","A small horse","easy"],
+["OTTER","A playful river swimmer","easy"],["RABBIT","A burrowing long-eared grazer","easy"],
+["BADGER","A stripe-faced sett dweller","easy"],["ZEBRA","Striped African grazer","easy"],
+["LLAMA","An Andean woolly grazer","easy"],["GIRAFFE","The tallest land animal","easy"],
+["SQUIRREL","A nut-burying climber","easy"],["HEDGEHOG","A spiny garden visitor","easy"],
+["NEWT","A small pond amphibian","medium"],["VOLE","A field-dwelling rodent","medium"],
+["SHREW","A tiny insect-eating mammal","medium"],["STOAT","Turns white in winter","medium"],
+["WEASEL","Britain's smallest carnivore","medium"],["DORMOUSE","A sleepy hazelnut nibbler","medium"],
+["RED SQUIRREL","A russet native rarer than its grey cousin","medium"],
+["GREY SEAL","A large blubbery beach hauled-out","medium"],
+["PINE MARTEN","A tree-climbing forest hunter","hard"],
+["HORSESHOE BAT","Named for its nose leaf shape","hard"],
+["COMMON DOLPHIN","An acrobatic sea mammal","hard"],
+["EDIBLE DORMOUSE","A fattened Roman delicacy, still wild in the Chilterns","hard"]],
+mythology:[
+["ZEUS","King of the Greek gods","easy"],["HERA","Queen of the Greek gods","easy"],
+["ARES","Greek god of war","easy"],["ODIN","The one-eyed Norse Allfather","easy"],
+["THOR","Norse god with a hammer","easy"],["LOKI","The Norse trickster god","easy"],
+["ATLAS","The Titan doomed to hold up the sky","easy"],["HYDRA","The many-headed serpent slain by Heracles","easy"],
+["MEDUSA","The snake-haired Gorgon","easy"],["MERLIN","The wizard of Camelot","easy"],
+["PHOENIX","The bird reborn from its ashes","easy"],["KRAKEN","A giant sea monster of legend","easy"],
+["PEGASUS","The winged horse of myth","easy"],["MINOTAUR","The bull-headed labyrinth dweller","easy"],
+["SIREN","A singer who lured sailors to wreck","medium"],["DRYAD","A tree nymph","medium"],
+["SPHINX","The riddling lion of Thebes","medium"],["CYCLOPS","A one-eyed giant","medium"],
+["SELKIE","Seal-folk of Scottish tales","medium"],["BANSHEE","A wailing Irish spirit","medium"],
+["CERBERUS","The three-headed hound of Hades","medium"],["VALHALLA","The Norse hall of fallen warriors","medium"],
+["EXCALIBUR","The sword in the stone","medium"],["LEPRECHAUN","A shoemaking Irish fairy","medium"],
+["GOLDEN FLEECE","The prize sought by Jason and the Argonauts","hard"]],
+plants:[
+["OAK","A mighty acorn-bearing tree","easy"],["ELM","A once-common hedgerow tree","easy"],
+["IVY","A climbing evergreen","easy"],["FERN","A shady frondy plant with no flowers","easy"],
+["MOSS","A soft green carpet on stones","easy"],["THYME","A tiny aromatic herb","easy"],
+["DAISY","A lawn flower with white petals","easy"],["TULIP","A spring bulb from Amsterdam fields","easy"],
+["POPPY","A red remembrance flower","easy"],["NETTLE","It stings — brew it or dodge it","easy"],
+["BRAMBLE","Blackberry tangles","easy"],["HEATHER","Purple moorland bloom","easy"],
+["ORCHID","An exotic showy flower","medium"],["FOXGLOVE","Tall spires, a heart medicine source","medium"],
+["PRIMROSE","A pale early-spring flower","medium"],["SNOWDROP","The first bulb of the year","easy"],
+["DAFFODIL","Wales's spring trumpet","easy"],["BLUEBELL","Carpets the woods in May","easy"],
+["LAVENDER","A calming purple herb","easy"],["ROSEMARY","A piney roast-potato herb","easy"],
+["SUNFLOWER","It turns its face to follow the sun","easy"],["DANDELION","A clock you can blow away","easy"],
+["HONEYSUCKLE","A sweet-scented climber","medium"],["SWEET PEA","A fragrant cottage-garden climber","medium"],
+["FORGET ME NOT","A tiny blue remembrance flower","hard"]],
+gemstones:[
+["JET","Black Victorian mourning jewellery stone","easy"],["ONYX","A banded black gemstone","easy"],
+["OPAL","It flashes rainbow fire","easy"],["JADE","A treasured green carving stone","easy"],
+["RUBY","A red precious stone","easy"],["PEARL","An oyster's treasure","easy"],
+["CORAL","A sea-garden gem","easy"],["AMBER","Fossilised tree resin, sometimes with insects","easy"],
+["TOPAZ","A golden November birthstone","medium"],["AGATE","A stripy chalcedony","medium"],
+["QUARTZ","The commonest crystal","medium"],["GARNET","A deep red January birthstone","medium"],
+["PERIDOT","A light green August stone","medium"],["CITRINE","A lemon-yellow quartz","medium"],
+["EMERALD","A green precious stone","medium"],["DIAMOND","The hardest gemstone","easy"],
+["SAPPHIRE","A blue precious stone","easy"],["AMETHYST","A purple quartz","medium"],
+["TURQUOISE","A blue-green December stone","medium"],["MOONSTONE","It glows like moonlight","medium"],
+["TIGERS EYE","A golden-brown chatoyant stone","hard"],["ROSE QUARTZ","A soft pink love stone","medium"],
+["AQUAMARINE","A pale sea-blue beryl","hard"],["BLOODSTONE","Green jasper flecked with red","hard"],
+["LAPIS LAZULI","The ultramarine blue rock of pharaohs","hard"]],
+birds:[
+["OWL","A wise nocturnal hooter","easy"],["JAY","A pinkish screeching woodland bird","easy"],
+["WREN","A tiny loud songster","easy"],["CROW","A clever black scavenger","easy"],
+["DOVE","A symbol of peace","easy"],["SWAN","A graceful necked river bird","easy"],
+["DUCK","It quacks","easy"],["SKYLARK","It sings high over the meadows","medium"],
+["ROBIN","The gardener's red-breasted friend","easy"],["RAVEN","A great croaking black bird","easy"],
+["HERON","A patient grey fisher","easy"],["GOOSE","It honks in a skein","easy"],
+["MAGPIE","One for sorrow, chattering and pied","easy"],["PUFFIN","A clown-faced seabird","easy"],
+["GANNET","A spectacular plunge-diver","medium"],["THRUSH","It repeats each phrase twice or thrice","medium"],
+["KESTREL","It hovers over motorway verges","medium"],["BUZZARD","A broad-winged soaring hawk","medium"],
+["SPARROW","A chirpy brown town bird","easy"],["STARLING","A murmur-forming mimic","medium"],
+["BLACKBIRD","An orange-beaked dawn singer","easy"],["CHAFFINCH","A pink-breasted finch","hard"],
+["GOLDFINCH","A red-faced thistle-seed eater","hard"],["KINGFISHER","A darting flash of orange and blue","medium"],
+["BLUE TIT","A coconut-feeder acrobat","medium"]],
+food:[
+["TEA","The national brew","easy"],["PIE","Pastry with a filling","easy"],
+["EGG","Fried, poached or scrambled","easy"],["HAM","Cured pork for sandwiches","easy"],
+["JAM","Spread for scones","easy"],["BREAD","Baked daily staple","easy"],
+["HONEY","Bees make it","easy"],["SCONE","Best with jam and clotted cream","easy"],
+["BUTTER","Churned and spreadable","easy"],["CHEESE","Matured in a truckle","easy"],
+["CIDER","Pressed apple drink","easy"],["TRIFLE","Layered sponge, custard and jelly","medium"],
+["CRUMPET","Full of holes for butter","medium"],["PUDDING","Suet, steam and custard","medium"],
+["CUSTARD","Poured over everything","easy"],["SAUSAGE","A banger with mash","easy"],
+["MARMITE","You either love it or hate it","medium"],["CHEDDAR","A firm Somerset cheese","easy"],
+["STILTON","A veiny blue Christmas cheese","medium"],["ETON MESS","Strawberries, meringue and cream","medium"],
+["BAKED BEANS","On toast, a student staple","easy"],["FISH AND CHIPS","The seaside supper","medium"],
+["MASHED POTATO","Buttery cloud beside the bangers","easy"],["SHEPHERDS PIE","Minced lamb under a potato lid","medium"],
+["TOAD IN THE HOLE","Sausages baked in batter","hard"]],
+geography:[
+["NILE","The world's longest river","easy"],["ALPS","Ski peaks of Europe","easy"],
+["SKYE","A misty Scottish isle","easy"],["YORK","A walled Roman city","easy"],
+["BATH","A Georgian spa city","easy"],["DOVER","White cliffs port","easy"],
+["DEVON","Cream teas and coastline","easy"],["FJORD","A steep-sided sea inlet","medium"],
+["THAMES","London's river","easy"],["SEVERN","Britain's longest river","medium"],
+["ORKNEY","Neolithic northern isles","medium"],["SAHARA","The great desert","easy"],
+["AMAZON","A mighty rainforest river","easy"],["EVEREST","The world's highest peak","easy"],
+["VOLCANO","It erupts","easy"],["CORNISH COAST","Rugged south-western cliffs","medium"],
+["SNOWDON","The highest peak in Wales","medium"],["STONEHENGE","A stone circle on Salisbury Plain","medium"],
+["PENINSULA","Nearly an island","medium"],["ISTHMUS","A narrow strip joining two land masses","hard"],
+["BEN NEVIS","Britain's highest mountain","medium"],["LOCH NESS","Home of a famous monster","easy"],
+["HADRIANS WALL","The Roman northern frontier","hard"],["LAKE DISTRICT","Wainwright walking country","medium"],
+["PEAK DISTRICT","Britain's first national park","hard"]],
+music:[
+["WANNABE","Spice Girls · 1996","easy"],["BELIEVE","Cher · 1998","easy"],
+["STAY","Shakespears Sister · 1992","easy"],["TRAGEDY","Steps · 1999","easy"],
+["MAMBO NO 5","Lou Bega · 1999","easy"],["NEVER EVER","All Saints · 1998","easy"],
+["UMBRELLA","Rihanna · 2007","easy"],["POKER FACE","Lady Gaga · 2009","easy"],
+["CRAZY","Gnarls Barkley · 2006","easy"],["MERCY","Duffy · 2008","easy"],
+["HUNG UP","Madonna · 2005","easy"],["PATIENCE","Take That · 2006","easy"],
+["SEXYBACK","Justin Timberlake · 2006","easy"],["GRACE KELLY","Mika · 2007","easy"],
+["GOODBYE","Spice Girls · 1998","easy"],["MILLENNIUM","Robbie Williams · 1998","medium"],
+["CRAZY IN LOVE","Beyoncé · 2003","medium"],["BLEEDING LOVE","Leona Lewis · 2007","medium"],
+["BACK FOR GOOD","Take That · 1995","medium"],["NO MATTER WHAT","Boyzone · 1998","medium"],
+["2 BECOME 1","Spice Girls · 1996","medium"],["IT WASN'T ME","Shaggy · 2001","medium"],
+["SATURDAY NIGHT","Whigfield · 1994","hard"],["EARTH SONG","Michael Jackson · 1995","medium"],
+["GREATEST DAY","Take That · 2008","medium"],
+["AGAINST ALL ODDS","Mariah Carey & Westlife · 2000","hard"]]
+};
+
+const ENTRIES = [];
+for (const [cid] of CATS) for (const [w, clue, d] of RAW[cid]) ENTRIES.push({w, c: cid, clue, d});
+
+/* letter count ignores spaces; digits/punctuation are pre-filled so not counted */
+function letterCount(w){ return (w.match(/[A-Z]/g) || []).length; }
+function isGuessable(ch){ return ch >= "A" && ch <= "Z"; }
+
+function filterEntries(entries, f){
+  return entries.filter(e => {
+    if (!f.cats.includes(e.c)) return false;
+    const n = letterCount(e.w);
+    if (n < f.min || n > f.max) return false;
+    if (!f.phrases && e.w.includes(" ")) return false;
+    return true;
+  });
+}
+/* rand: () => [0,1). avoidIdx skipped when alternatives exist. */
+function pickEntry(list, rand, avoidIdx){
+  if (!list.length) return null;
+  if (list.length === 1) return {entry: list[0], index: 0};
+  let i = Math.floor(rand() * list.length);
+  if (i === avoidIdx) i = (i + 1) % list.length;
+  return {entry: list[i], index: i};
+}
+/* reveal model for tests: returns per-char display info */
+function revealWord(w, guessed){
+  return [...w].map(ch => {
+    if (ch === " ") return {ch, kind: "gap"};
+    if (!isGuessable(ch)) return {ch, kind: "fixed"};
+    return {ch, kind: "letter", shown: guessed.includes(ch)};
+  });
+}
+function hasWon(w, guessed){ return [...w].every(ch => !isGuessable(ch) || ch === " " || guessed.includes(ch)); }
+
+/* ---------- tiny assert selftest (?selftest) ---------- */
+function selftest(){
+  let pass = 0, fail = 0;
+  const ok = (name, cond) => { cond ? pass++ : (fail++, console.error("SELFTEST FAIL:", name)); };
+  ok("letterCount ignores spaces", letterCount("SWEET PEA") === 8);
+  ok("letterCount ignores digits", letterCount("MAMBO NO 5") === 7);
+  ok("letterCount apostrophe", letterCount("IT WASN'T ME") === 9);
+  const f = {min: 3, max: 5, phrases: false, cats: ["animals"]};
+  const got = filterEntries(ENTRIES, f);
+  ok("filter respects length + cats", got.length > 0 && got.every(e => e.c === "animals" && letterCount(e.w) >= 3 && letterCount(e.w) <= 5 && !e.w.includes(" ")));
+  const f2 = {min: 3, max: 14, phrases: false, cats: ["food"]};
+  ok("phrases toggle excludes phrases", filterEntries(ENTRIES, f2).every(e => !e.w.includes(" ")));
+  const f3 = {min: 14, max: 14, phrases: true, cats: CATS.map(c => c[0])};
+  ok("14-letter edge reachable", filterEntries(ENTRIES, f3).some(e => letterCount(e.w) === 14));
+  const p = pickEntry([{w:"A"},{w:"B"}], () => 0, 0);
+  ok("pickEntry avoids repeat", p.entry.w === "B");
+  ok("pickEntry empty -> null", pickEntry([], Math.random, -1) === null);
+  const r = revealWord("IT WASN'T ME", ["I","T"]);
+  ok("reveal shows guessed", r[0].shown === true && r[3].shown === false);
+  ok("reveal prefills punctuation", r.some(x => x.kind === "fixed" && x.ch === "'"));
+  ok("reveal gap for space", r.some(x => x.kind === "gap"));
+  ok("win detection", hasWon("FOX", ["F","O","X"]) === true);
+  ok("no false win", hasWon("FOX", ["F","O"]) === false);
+  ok("win ignores prefilled", hasWon("MAMBO NO 5", ["M","A","B","O","N"]) === true);
+  console.log(`SELFTEST ${fail === 0 ? "PASS" : "FAIL"} (${pass} passed, ${fail} failed)`);
+  return fail === 0;
+}
+
+/* ============================================================
+   App state, storage, sound, rendering
+   ============================================================ */
+const LS_SET = "hangman-a:settings", LS_STATS = "hangman-a:stats";
+const ALL_CATS = CATS.map(c => c[0]);
+const DEF_SET = {min: 3, max: 12, phrases: true, cats: [...ALL_CATS], lives: 6, muted: false};
+const DEF_STATS = {streak: 0, best: 0, played: 0, won: 0, winsPerCat: {}, badges: []};
+
+function loadJSON(key, fallback){
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return JSON.parse(JSON.stringify(fallback));
+    const v = JSON.parse(raw);
+    if (!v || typeof v !== "object") throw 0;
+    return v;
+  } catch { return JSON.parse(JSON.stringify(fallback)); }
+}
+function sanitizeSettings(s){
+  const o = {...DEF_SET, ...s};
+  o.min = Math.min(14, Math.max(3, o.min | 0 || 3));
+  o.max = Math.min(14, Math.max(3, o.max | 0 || 12));
+  if (o.min > o.max) [o.min, o.max] = [o.max, o.min];
+  o.lives = Math.min(10, Math.max(4, o.lives | 0 || 6));
+  o.phrases = !!o.phrases; o.muted = !!o.muted;
+  o.cats = Array.isArray(o.cats) ? o.cats.filter(c => ALL_CATS.includes(c)) : [...ALL_CATS];
+  if (!o.cats.length) o.cats = [...ALL_CATS];
+  return o;
+}
+function sanitizeStats(s){
+  const o = {...DEF_STATS, ...s};
+  o.streak |= 0; o.best |= 0; o.played |= 0; o.won |= 0;
+  if (!o.winsPerCat || typeof o.winsPerCat !== "object") o.winsPerCat = {};
+  if (!Array.isArray(o.badges)) o.badges = [];
+  return o;
+}
+
+let settings = sanitizeSettings(loadJSON(LS_SET, DEF_SET));
+let stats = sanitizeStats(loadJSON(LS_STATS, DEF_STATS));
+const saveSettings = () => { try { localStorage.setItem(LS_SET, JSON.stringify(settings)); } catch {} };
+const saveStats = () => { try { localStorage.setItem(LS_STATS, JSON.stringify(stats)); } catch {} };
+
+/* ---------- sound: quiet Web Audio blips, created on first gesture ---------- */
+let actx = null;
+function tone(freq, dur, type, vol, when){
+  if (settings.muted) return;
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === "suspended") actx.resume();
+    const t = actx.currentTime + (when || 0);
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.06, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(actx.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  } catch {}
+}
+const sfx = {
+  tap(){ tone(520, .09, "sine", .05); },
+  good(){ tone(660, .12, "sine", .06); tone(880, .14, "sine", .05, .07); },
+  bad(){ tone(220, .22, "triangle", .06); },
+  win(){ [523,659,784,1047].forEach((f,i) => tone(f, .18, "sine", .06, i * .09)); },
+  lose(){ [392,330,262].forEach((f,i) => tone(f, .25, "sine", .05, i * .12)); }
+};
+window.addEventListener("pointerdown", function once(){
+  if (!settings.muted) { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} }
+}, {once: true});
+
+/* ---------- badges ---------- */
+const BADGES = [
+  ["first-win","First bloom","Win your first round", s => s.won >= 1],
+  ["flawless","Perfect picnic","Win without a single miss", s => s._flawless],
+  ["close-call","Last balloon","Win with one balloon left", s => s._closeCall],
+  ["streak-3","Three in a row","Reach a streak of 3", s => s.best >= 3],
+  ["streak-5","On a roll","Reach a streak of 5", s => s.best >= 5],
+  ["streak-10","Unstoppable","Reach a streak of 10", s => s.best >= 10],
+  ["explorer","Explorer","Win in 3 different categories", s => Object.keys(s.winsPerCat).length >= 3],
+  ["collector","Collector","Win in all 8 categories", s => Object.keys(s.winsPerCat).length >= 8],
+  ["regular","Regular","Play 10 games", s => s.played >= 10],
+  ["veteran","Veteran","Play 50 games", s => s.played >= 50]
+];
+function checkBadges(){
+  const fresh = [];
+  for (const [id, name, , test] of BADGES) {
+    if (!stats.badges.includes(id)) { try { if (test(stats)) { stats.badges.push(id); fresh.push(name); } } catch {} }
+  }
+  if (fresh.length) saveStats();
+  return fresh;
+}
+
+/* ---------- DOM ---------- */
+const $ = id => document.getElementById(id);
+const scene = $("scene"), tilesEl = $("tiles"), keysEl = $("keys"),
+      catTag = $("catTag"), diffTag = $("diffTag"), livesLabel = $("livesLabel"),
+      missLabel = $("missLabel"), clueBtn = $("clueBtn"), clueText = $("clueText"),
+      emptyBox = $("emptyBox"), result = $("result"), toast = $("toast"),
+      streakPill = $("streakPill");
+
+const INK = "#6d1f3c", INKSOFT = "#96506e";
+const BALLOON_FILL = ["#f7c9d9","#f4a8c0","#efa0b8","#f9d3c2","#e8b4d6","#f6b8a0","#f2c6de","#f0a3b2","#fadadd","#eec3e0"];
+const BALLOON_INK = ["#c2457a","#a92c5c","#8f2b56","#b65a3f","#96506e","#a95a44","#b0527d","#9c3a5e","#c9838f","#8f5a80"];
+
+const G = {entry: null, guessed: [], misses: 0, over: false, lastIndex: -1, list: []};
+
+function balloonXs(n){
+  if (n === 1) return [180];
+  const xs = [];
+  for (let i = 0; i < n; i++) xs.push(46 + (268 * i) / (n - 1));
+  return xs;
+}
+
+function renderScene(){
+  const n = settings.lives;
+  const xs = balloonXs(n);
+  let s = `<ellipse class="landshadow" id="landshadow" cx="180" cy="240" rx="70" ry="8" fill="${INK}"/>`;
+  s += `<path class="drawline" pathLength="1" d="M18 240 H342" stroke="${INKSOFT}" stroke-width="2" stroke-linecap="round" fill="none" opacity=".55"/>`;
+  // strings first (behind balloons + basket)
+  xs.forEach((x, i) => {
+    s += `<path id="str${i}" d="M${x} 96 Q ${(x + 180) / 2} 165, 180 208" stroke="${INKSOFT}" stroke-width="1.6" fill="none" opacity=".8"/>`;
+  });
+  // balloons
+  xs.forEach((x, i) => {
+    const f = BALLOON_FILL[i % BALLOON_FILL.length], k = BALLOON_INK[i % BALLOON_INK.length];
+    s += `<g class="balloon" id="bal${i}">`
+      + `<ellipse cx="${x}" cy="62" rx="23" ry="29" fill="${f}" stroke="${k}" stroke-width="2.2"/>`
+      + `<ellipse cx="${x - 8}" cy="52" rx="6" ry="9" fill="#ffffff" opacity=".5"/>`
+      + `<path d="M${x - 5} 90 L${x + 5} 90 L${x} 97 Z" fill="${k}"/></g>`;
+  });
+  // basket + cat
+  s += `<g class="basket" id="basket">`
+    + `<path d="M148 208 L212 208 L203 236 L157 236 Z" fill="#f3d9c8" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>`
+    + `<path d="M152 218 H208 M155 227 H205" stroke="${INKSOFT}" stroke-width="1.4"/>`
+    + `<circle cx="180" cy="196" r="17" fill="#f9e8db" stroke="${INK}" stroke-width="2.4"/>`
+    + `<path d="M166 186 L162 172 L174 180 Z M194 186 L198 172 L186 180 Z" fill="#f9e8db" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>`
+    + `<circle cx="173" cy="194" r="2.2" fill="${INK}"/><circle cx="187" cy="194" r="2.2" fill="${INK}"/>`
+    + `<path d="M176 200 Q180 203 184 200" stroke="${INK}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`
+    + `<path d="M160 193 L148 190 M160 198 L149 199 M200 193 L212 190 M200 198 L211 199" stroke="${INKSOFT}" stroke-width="1.3" stroke-linecap="round"/>`
+    + `</g>`;
+  // celebration stars (hidden until win)
+  const stars = [[128,150],[232,146],[180,118]];
+  stars.forEach(([x, y], i) => {
+    s += `<path class="star" id="star${i}" d="M${x} ${y-11} L${x+3.4} ${y-3.6} L${x+11} ${y-3.4} L${x+5} ${y+1.6} L${x+7} ${y+9} L${x} ${y+4.6} L${x-7} ${y+9} L${x-5} ${y+1.6} L${x-11} ${y-3.4} L${x-3.4} ${y-3.6} Z" fill="#e8a13c" stroke="${INK}" stroke-width="1.4"/>`;
+  });
+  scene.innerHTML = s;
+}
+
+function renderTiles(fresh){
+  tilesEl.innerHTML = "";
+  const words = G.entry.w.split(" ");
+  words.forEach((word, wi) => {
+    const wspan = document.createElement("span");
+    wspan.className = "word";
+    [...word].forEach(ch => {
+      const t = document.createElement("span");
+      if (ch === " " || !isGuessable(ch)) { t.className = "tile fixed"; t.textContent = ch; }
+      else if (G.guessed.includes(ch)) {
+        t.className = "tile" + (fresh === ch ? " reveal" : "");
+        t.textContent = ch;
+      } else { t.className = "tile"; t.textContent = ""; }
+      wspan.appendChild(t);
+    });
+    tilesEl.appendChild(wspan);
+  });
+}
+
+function renderKeys(){
+  keysEl.innerHTML = "";
+  for (let c = 65; c <= 90; c++) {
+    const ch = String.fromCharCode(c);
+    const b = document.createElement("button");
+    b.className = "key"; b.textContent = ch; b.dataset.ch = ch;
+    b.setAttribute("aria-label", "Guess " + ch);
+    if (G.guessed.includes(ch)) {
+      b.disabled = true;
+      b.classList.add(G.entry.w.includes(ch) ? "good" : "bad");
+    } else if (G.over) b.disabled = true;
+    b.addEventListener("click", () => guess(ch));
+    keysEl.appendChild(b);
+  }
+}
+
+function renderMeta(){
+  const cname = (CATS.find(c => c[0] === G.entry.c) || ["?", "?"])[1];
+  catTag.textContent = cname;
+  diffTag.textContent = G.entry.d;
+  diffTag.className = "tag diff-" + G.entry.d;
+  const left = settings.lives - G.misses;
+  livesLabel.textContent = left + (left === 1 ? " balloon" : " balloons");
+  missLabel.textContent = G.misses ? "Missed: " + G.guessed.filter(ch => !G.entry.w.includes(ch)).join(" · ") : "";
+  streakPill.textContent = "★ " + stats.streak;
+}
+
+function loseBalloon(i){
+  const b = document.getElementById("bal" + i), st = document.getElementById("str" + i);
+  if (b) b.classList.add("away");
+  if (st) { st.style.transition = "opacity 700ms ease"; st.style.opacity = "0"; }
+}
+
+function newRound(){
+  G.list = filterEntries(ENTRIES, settings);
+  emptyBox.hidden = G.list.length > 0;
+  keysEl.style.display = G.list.length ? "" : "none";
+  if (!G.list.length) { G.entry = null; tilesEl.innerHTML = ""; missLabel.textContent = ""; livesLabel.textContent = ""; catTag.textContent = "—"; return; }
+  const r = pickEntry(G.list, Math.random, -1);
+  G.entry = r.entry; G.lastIndex = r.index;
+  G.guessed = []; G.misses = 0; G.over = false;
+  clueText.classList.remove("show"); clueText.textContent = "";
+  clueBtn.hidden = false; clueBtn.textContent = "Need a nudge? Show the clue";
+  result.classList.remove("open");
+  renderScene(); renderTiles(); renderKeys(); renderMeta();
+  requestAnimationFrame(() => document.body.classList.add("load"));
+}
+
+function guess(ch){
+  if (G.over || !G.entry || G.guessed.includes(ch)) return;
+  G.guessed.push(ch);
+  if (G.entry.w.includes(ch)) {
+    sfx.good();
+    renderTiles(ch); renderKeys(); renderMeta();
+    if (hasWon(G.entry.w, G.guessed)) endRound(true);
+  } else {
+    sfx.bad();
+    loseBalloon(G.misses);
+    G.misses++;
+    renderKeys(); renderMeta();
+    if (G.misses >= settings.lives) endRound(false);
+  }
+}
+
+function endRound(won){
+  G.over = true;
+  renderKeys();
+  const left = settings.lives - G.misses;
+  stats.played++;
+  if (won) {
+    stats.won++; stats.streak++;
+    stats.best = Math.max(stats.best, stats.streak);
+    stats.winsPerCat[G.entry.c] = (stats.winsPerCat[G.entry.c] || 0) + 1;
+    if (G.misses === 0) stats._flawless = true;
+    if (left === 1) stats._closeCall = true;
+    sfx.win();
+    document.querySelectorAll("#scene .balloon:not(.away)").forEach((b, i) => {
+      b.style.animationDelay = (i * 0.25) + "s"; b.classList.add("bob");
+    });
+    document.querySelectorAll("#scene .star").forEach((s, i) => {
+      s.style.transitionDelay = (0.15 + i * 0.12) + "s";
+      requestAnimationFrame(() => s.classList.add("show"));
+    });
+  } else {
+    stats.streak = 0;
+    sfx.lose();
+    const bk = document.getElementById("basket");
+    if (bk) bk.classList.add("landed");
+    const sh = document.getElementById("landshadow");
+    if (sh) sh.classList.add("show");
+  }
+  saveStats();
+  const fresh = checkBadges();
+  $("resTitle").textContent = won ? "Lovely — you got it!" : "The basket has landed";
+  $("resWord").textContent = G.entry.w;
+  $("resClue").textContent = (CATS.find(c => c[0] === G.entry.c) || ["?","?"])[1] + " · " + G.entry.clue;
+  $("resStats").textContent = `Streak ${stats.streak} · best ${stats.best} · ${left}/${settings.lives} balloons left`;
+  result.classList.add("open");
+  renderMeta();
+  fresh.forEach((n, i) => setTimeout(() => showToast("Badge unlocked: " + n), 600 + i * 2200));
+}
+
+/* ---------- toast ---------- */
+let toastT = null;
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add("open");
+  clearTimeout(toastT);
+  toastT = setTimeout(() => toast.classList.remove("open"), 2000);
+}
+
+/* ---------- sheets ---------- */
+const scrim = $("scrim"), setSheet = $("settingsSheet"), statsSheet = $("statsSheet");
+function openSheet(el){ closeSheets(); scrim.classList.add("open"); el.classList.add("open"); }
+function closeSheets(){ scrim.classList.remove("open"); setSheet.classList.remove("open"); statsSheet.classList.remove("open"); }
+scrim.addEventListener("click", closeSheets);
+$("settingsClose").addEventListener("click", closeSheets);
+$("statsClose").addEventListener("click", closeSheets);
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { closeSheets(); return; }
+  if (/^[a-zA-Z]$/.test(e.key) && !setSheet.classList.contains("open") && !statsSheet.classList.contains("open") && !result.classList.contains("open")) {
+    guess(e.key.toUpperCase());
+  } else if (e.key === "Enter" && result.classList.contains("open")) newRound();
+});
+
+/* ---------- settings UI ---------- */
+function syncSettingsUI(){
+  $("minLen").value = settings.min; $("minOut").textContent = settings.min;
+  $("maxLen").value = settings.max; $("maxOut").textContent = settings.max;
+  $("phrasesSw").setAttribute("aria-checked", String(settings.phrases));
+  $("soundSw").setAttribute("aria-checked", String(!settings.muted));
+  $("soundBtn").setAttribute("aria-pressed", String(!settings.muted));
+  $("livesNum").textContent = settings.lives; $("livesOut").textContent = settings.lives;
+  const box = $("catChips"); box.innerHTML = "";
+  CATS.forEach(([id, name]) => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = name;
+    b.setAttribute("aria-pressed", String(settings.cats.includes(id)));
+    b.addEventListener("click", () => {
+      const i = settings.cats.indexOf(id);
+      if (i >= 0) { if (settings.cats.length > 1) settings.cats.splice(i, 1); }
+      else settings.cats.push(id);
+      saveSettings(); syncSettingsUI();
+    });
+    box.appendChild(b);
+  });
+}
+$("minLen").addEventListener("input", e => {
+  settings.min = Math.min(+e.target.value, settings.max);
+  $("minOut").textContent = settings.min; e.target.value = settings.min;
+  saveSettings();
+});
+$("minLen").addEventListener("change", newRound);
+$("maxLen").addEventListener("input", e => {
+  settings.max = Math.max(+e.target.value, settings.min);
+  $("maxOut").textContent = settings.max; e.target.value = settings.max;
+  saveSettings();
+});
+$("maxLen").addEventListener("change", newRound);
+function bindSwitch(el, get, set){
+  const flip = () => { set(!get()); saveSettings(); syncSettingsUI(); };
+  el.addEventListener("click", flip);
+  el.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); } });
+}
+bindSwitch($("phrasesSw"), () => settings.phrases, v => { settings.phrases = v; newRound(); });
+bindSwitch($("soundSw"), () => !settings.muted, v => { settings.muted = !v; });
+$("livesDown").addEventListener("click", () => {
+  if (settings.lives > 4) { settings.lives--; saveSettings(); syncSettingsUI(); newRound(); }
+});
+$("livesUp").addEventListener("click", () => {
+  if (settings.lives < 10) { settings.lives++; saveSettings(); syncSettingsUI(); newRound(); }
+});
+$("settingsBtn").addEventListener("click", () => { syncSettingsUI(); openSheet(setSheet); });
+$("newWordBtn").addEventListener("click", () => { closeSheets(); newRound(); showToast("New word"); });
+$("emptySettings").addEventListener("click", () => { syncSettingsUI(); openSheet(setSheet); });
+$("soundBtn").addEventListener("click", () => {
+  settings.muted = !settings.muted; saveSettings(); syncSettingsUI();
+  showToast(settings.muted ? "Sound off" : "Sound on");
+  if (!settings.muted) sfx.tap();
+});
+$("resSettings").addEventListener("click", () => { result.classList.remove("open"); syncSettingsUI(); openSheet(setSheet); });
+$("resNext").addEventListener("click", newRound);
+clueBtn.addEventListener("click", () => {
+  sfx.tap();
+  clueText.textContent = G.entry ? G.entry.clue : "";
+  clueText.classList.add("show");
+  clueBtn.hidden = true;
+});
+
+/* ---------- stats UI ---------- */
+function syncStatsUI(){
+  $("stStreak").textContent = stats.streak;
+  $("stBest").textContent = stats.best;
+  $("stPlayed").textContent = stats.played;
+  $("stWon").textContent = stats.won;
+  $("catWins").innerHTML = "Wins per category: " + CATS.map(([id, n]) =>
+    `<b>${n}</b> ${stats.winsPerCat[id] || 0}`).join(" · ");
+  const g = $("badgeGrid"); g.innerHTML = "";
+  BADGES.forEach(([id, name, desc]) => {
+    const d = document.createElement("div");
+    d.className = "badge " + (stats.badges.includes(id) ? "won" : "locked");
+    d.innerHTML = `<b>${stats.badges.includes(id) ? "★ " : "☆ "}${name}</b>${desc}`;
+    g.appendChild(d);
+  });
+}
+$("statsBtn").addEventListener("click", () => { syncStatsUI(); openSheet(statsSheet); });
+
+/* ---------- boot ---------- */
+document.body.classList.add("load");
+syncSettingsUI();
+syncStatsUI();
+newRound();
+if (new URLSearchParams(location.search).has("selftest")) selftest();
+</script>
+</body>
+</html>

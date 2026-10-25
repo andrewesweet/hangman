@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fdf3ec">
+<title>Hangman · Prototypes</title>
+<style>
+  :root{
+    --paper:#fdf3ec; --rule:rgba(190,120,150,.16); --margin-line:rgba(230,120,150,.35);
+    --ink:#6d1f3c; --ink-soft:#96506e; --ink-faint:#b98ba0;
+    --accent:#d6457b; --card:#fffaf6;
+    --ease-out:cubic-bezier(.23,1,.32,1);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    color:var(--ink);background-color:var(--paper);
+    background-image:
+      linear-gradient(90deg,transparent 0 34px,var(--margin-line) 34px 36px,transparent 36px),
+      repeating-linear-gradient(180deg,transparent 0 31px,var(--rule) 31px 32px);
+    min-height:100dvh;display:flex;justify-content:center;touch-action:manipulation;
+  }
+  .page{width:100%;max-width:480px;min-height:100dvh;display:flex;flex-direction:column;
+    padding:calc(env(safe-area-inset-top,0px) + 28px) 20px calc(env(safe-area-inset-bottom,0px) + 20px)}
+  h1{font-size:26px;margin:0;letter-spacing:.3px}
+  h1 .thin{font-weight:500;color:var(--ink-soft);font-size:15px}
+  .squiggle{display:block;width:170px;height:8px;margin-top:4px}
+  .squiggle path{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round;
+    stroke-dasharray:1;stroke-dashoffset:0;animation:draw 1s var(--ease-out) .1s backwards}
+  @keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+  p.lede{font-size:14.5px;color:var(--ink-soft);margin:10px 0 18px}
+  .cards{display:flex;flex-direction:column;gap:12px}
+  a.card{
+    display:block;text-decoration:none;color:inherit;background:var(--card);
+    border:1.5px solid var(--ink-faint);border-radius:18px;padding:16px 18px;
+    box-shadow:0 2px 0 rgba(109,31,60,.08);
+    opacity:0;transform:translateY(10px);animation:rise 450ms var(--ease-out) forwards;
+    transition:transform 150ms var(--ease-out);
+  }
+  a.card:nth-child(2){animation-delay:.08s}
+  a.card:nth-child(3){animation-delay:.16s}
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  a.card:active{transform:scale(.97)}
+  .card .k{font-size:12px;font-weight:800;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase}
+  .card h2{margin:4px 0;font-size:19px}
+  .card p{margin:0;font-size:14px;color:var(--ink-soft)}
+  .card .go{display:inline-block;margin-top:8px;font-size:13.5px;font-weight:800;color:var(--ink)}
+  footer{margin-top:auto;padding-top:18px;text-align:center;font-size:12px;color:var(--ink-faint)}
+  @media (prefers-reduced-motion:reduce){
+    a.card,.squiggle path{animation:none;opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Hangman <span class="thin">· prototypes</span></h1>
+  <svg class="squiggle" viewBox="0 0 170 8" aria-hidden="true"><path pathLength="1" d="M2 5 C 35 1, 70 7, 105 4 S 150 3, 168 5"/></svg>
+  <p class="lede">Three design sketches of the same offline hangman game. Pick one to play — your progress in each is kept separately on this phone.</p>
+  <div class="cards">
+    <a class="card" href="prototypes/a.html">
+      <span class="k">Prototype A</span>
+      <h2>Classic calm</h2>
+      <p>A pink ink sketchbook where each miss lets go of one balloon holding up a little cat in a basket.</p>
+      <span class="go">Play →</span>
+    </a>
+    <a class="card" href="prototypes/b.html">
+      <span class="k">Prototype B</span>
+      <h2>Piggy Paradise</h2>
+      <p>A second take on the same game with its own look and loop. Not yet merged — this link may 404.</p>
+      <span class="go">Play →</span>
+    </a>
+    <a class="card" href="prototypes/c.html">
+      <span class="k">Prototype C</span>
+      <h2>Arcade run</h2>
+      <p>A third take on the same game with its own look and loop. Not yet merged — this link may 404.</p>
+      <span class="go">Play →</span>
+    </a>
+  </div>
+  <footer>Single self-contained files · no network requests · works offline</footer>
+</div>
+</body>
+</html>
