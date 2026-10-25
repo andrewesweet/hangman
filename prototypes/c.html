@@ -3,50 +3,51 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0018">
+<meta name="theme-color" content="#0a0016">
 <link rel="icon" href="data:,">
 <title>Arcade Run — Hangman Prototype C</title>
 <style>
   :root{
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-    --bg0:#0b0018;
-    --bg1:#1c0633;
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+    --bg0:#0a0016;
+    --bg1:#1a0530;
     --pink:#ff2e88;
     --pink-soft:#ff7ab8;
     --pink-dim:#a31355;
+    --pink-ink:#2b0a1e;
     --city:#7fd4ff;
     --city-dim:#2b7fae;
     --arsenal:#ff4d5e;
-    --arsenal-white:#fff5f7;
-    --pitch:#0e5c3f;
-    --pitch-dark:#093d2a;
     --ink:#ffe9f4;
     --ink-dim:#c9a4bd;
-    --card:#200a3d;
+    --card:#1d0836;
+    --card-hi:#2c0e4c;
     --card-line:#4d1a63;
     --good:#4ade80;
     --bad:#ff6b6b;
     --gold:#ffd166;
-    --radius:14px;
+    --radius:16px;
     color-scheme: dark;
   }
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
   html{ -webkit-text-size-adjust:100%; }
+  [hidden]{ display:none !important; }
   body{
     margin:0;
     min-height:100dvh;
     background:
-      radial-gradient(120% 60% at 50% -10%, #3b0a54 0%, var(--bg1) 45%, var(--bg0) 100%);
+      radial-gradient(90% 40% at 50% 0%, rgba(255,46,136,.22), transparent 70%),
+      radial-gradient(120% 70% at 50% 110%, rgba(127,212,255,.10), transparent 60%),
+      linear-gradient(180deg, var(--bg1), var(--bg0) 60%);
+    background-attachment: fixed;
     color:var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     display:flex;
     justify-content:center;
-    padding:
-      env(safe-area-inset-top, 0)
-      env(safe-area-inset-right, 0)
-      env(safe-area-inset-bottom, 0)
-      env(safe-area-inset-left, 0);
+    touch-action:manipulation;
+    padding:0 env(safe-area-inset-right, 0) 0 env(safe-area-inset-left, 0);
   }
   .app{
     width:100%;
@@ -55,224 +56,257 @@
     display:flex;
     flex-direction:column;
     gap:10px;
-    padding:12px 14px 20px;
+    padding:calc(env(safe-area-inset-top, 0px) + 10px) 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
   }
+  /* one-time entrance, staggered */
+  .app > *{ animation:rise 460ms var(--ease-out) both; }
+  .app > *:nth-child(2){ animation-delay:50ms; }
+  .app > *:nth-child(3){ animation-delay:100ms; }
+  .app > *:nth-child(4){ animation-delay:150ms; }
+  .app > *:nth-child(5){ animation-delay:200ms; }
+  @keyframes rise{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:none; } }
   /* ---------- top bar ---------- */
-  .topbar{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-  }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .brand h1{
     margin:0;
-    font-size:1.35rem;
-    letter-spacing:-0.02em;
-    line-height:1.05;
+    font-size:1.55rem;
+    font-weight:900;
+    font-style:italic;
+    letter-spacing:-0.03em;
+    line-height:1;
     color:#fff;
-    text-shadow:0 0 12px rgba(255,46,136,.85), 0 0 42px rgba(255,46,136,.45);
+    text-shadow:0 0 10px rgba(255,46,136,.6);
   }
-  .brand p{ margin:2px 0 0; font-size:.78rem; color:var(--ink-dim); letter-spacing:.04em; }
+  .brand h1 span{ color:var(--pink); text-shadow:0 0 12px rgba(255,46,136,.9), 0 0 32px rgba(255,46,136,.45); }
+  .brand p{ margin:4px 0 0; font-size:.66rem; font-weight:700; color:var(--ink-dim); letter-spacing:.14em; text-transform:uppercase; }
+  .brand p b{ color:var(--city); font-weight:800; }
+  .brand p i{ color:var(--arsenal); font-style:normal; font-weight:800; }
   .icon-btns{ display:flex; gap:8px; }
   button{ font:inherit; color:inherit; touch-action:manipulation; }
   .icon-btn{
-    min-width:48px; min-height:48px;
-    border-radius:12px;
+    width:46px; height:46px;
+    display:inline-flex; align-items:center; justify-content:center;
+    border-radius:14px;
     border:1px solid var(--card-line);
-    background:rgba(32,10,61,.85);
-    font-size:1.25rem;
+    background:linear-gradient(180deg, rgba(52,16,79,.95), rgba(29,8,54,.95));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 4px 12px -6px rgba(0,0,0,.8);
+    color:var(--ink);
     cursor:pointer;
-    transition:transform 140ms var(--ease-out), opacity 140ms var(--ease-out);
+    transition:transform 120ms var(--ease-out);
   }
+  .icon-btn svg{ width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
   .icon-btn:active{ transform:scale(.94); }
-  .icon-btn[aria-pressed="true"]{ border-color:var(--pink); }
-  /* ---------- score bar ---------- */
-  .scorebar{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:8px;
-  }
-  .stat{
-    background:linear-gradient(180deg, rgba(46,14,74,.9), rgba(24,7,43,.9));
-    border:1px solid var(--card-line);
-    border-radius:var(--radius);
-    padding:8px 4px;
-    text-align:center;
-  }
-  .stat .k{ font-size:.62rem; letter-spacing:.12em; color:var(--ink-dim); }
-  .stat .v{
-    font-size:1.15rem; font-weight:800; color:#fff;
-    font-variant-numeric:tabular-nums;
-    transition:transform 160ms var(--ease-out);
-    display:inline-block;
-  }
-  .stat .v.bump{ transform:scale(1.25); }
-  #comboVal.hot{ color:var(--gold); text-shadow:0 0 10px rgba(255,209,102,.8); }
+  .icon-btn[aria-pressed="true"]{ border-color:var(--pink); color:var(--pink-soft); }
   /* ---------- stadium ---------- */
   .stadium{
     position:relative;
-    border-radius:18px;
+    aspect-ratio:400 / 266;
+    border-radius:20px;
     overflow:hidden;
-    border:1px solid #5b2368;
-    box-shadow:0 0 0 1px rgba(255,46,136,.25), 0 0 26px rgba(255,46,136,.35);
     background:#05010d;
+    box-shadow:0 0 0 1px rgba(255,46,136,.4), 0 14px 34px -12px rgba(255,46,136,.55), 0 2px 0 rgba(255,255,255,.04) inset;
   }
-  .stadium svg{ display:block; width:100%; height:auto; }
-  .floodlights{
-    position:absolute; inset:0 0 auto 0; height:34px; pointer-events:none;
-    background:radial-gradient(40% 100% at 12% 0, rgba(255,255,255,.28), transparent 70%),
-               radial-gradient(40% 100% at 50% 0, rgba(255,255,255,.22), transparent 70%),
-               radial-gradient(40% 100% at 88% 0, rgba(255,255,255,.28), transparent 70%);
-  }
-  .mover{ transition:transform 480ms var(--ease-in-out); }
-  .flash{
-    position:absolute; inset:0; pointer-events:none; opacity:0;
-    background:radial-gradient(60% 60% at 88% 50%, rgba(255,255,255,.9), rgba(255,46,136,.55) 55%, transparent 75%);
-    transition:opacity 220ms var(--ease-out);
-  }
-  .flash.on{ opacity:1; }
-  .banner{
-    position:absolute; left:50%; top:44%;
-    transform:translate(-50%,-50%) scale(.9);
-    opacity:0;
-    background:rgba(11,0,24,.88);
-    border:1px solid var(--pink);
-    box-shadow:0 0 18px rgba(255,46,136,.7);
-    border-radius:12px;
-    padding:10px 22px;
-    font-size:1.5rem; font-weight:900; letter-spacing:.02em; color:#fff;
-    white-space:nowrap;
-    transition:opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
+  .stadium svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  /* own layer: moving players never repaint the static pitch underneath */
+  #pitchFg{ will-change:transform; }
+  .hud{
+    position:absolute; top:6px; left:8px; right:8px;
+    display:grid; grid-template-columns:repeat(4,1fr); gap:6px;
     pointer-events:none;
   }
+  .stat{
+    background:rgba(12,2,26,.74);
+    border:1px solid rgba(255,122,184,.22);
+    border-radius:10px;
+    padding:3px 2px 2px;
+    text-align:center;
+    line-height:1.1;
+  }
+  .stat .k{ font-size:.54rem; font-weight:700; letter-spacing:.16em; color:var(--ink-dim); }
+  .stat .v{
+    display:inline-block;
+    font-size:.98rem; font-weight:850; color:#fff;
+    font-variant-numeric:tabular-nums;
+    transition:transform 180ms var(--ease-out);
+  }
+  .stat .v.bump{ transform:scale(1.22); }
+  #comboVal.hot{ color:var(--gold); text-shadow:0 0 10px rgba(255,209,102,.8); }
+  .edge{
+    position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0;
+    box-shadow:inset 0 0 0 2px var(--bad), inset 0 0 30px rgba(255,107,107,.55);
+  }
+  .flash{
+    position:absolute; inset:0; pointer-events:none; opacity:0;
+    background:radial-gradient(45% 60% at 93% 50%, rgba(255,255,255,.85), rgba(255,46,136,.5) 45%, transparent 72%);
+  }
+  .banner{
+    position:absolute; left:50%; top:52%;
+    transform:translate(-50%,-50%) scale(.9);
+    opacity:0;
+    display:flex; flex-direction:column; align-items:center;
+    background:rgba(11,0,24,.86);
+    border:1px solid var(--pink);
+    box-shadow:0 0 22px rgba(255,46,136,.6);
+    border-radius:14px;
+    padding:8px 22px 9px;
+    white-space:nowrap;
+    pointer-events:none;
+    transition:opacity 200ms var(--ease-out), transform 280ms var(--ease-out);
+  }
+  .banner b{ font-size:1.6rem; font-weight:900; font-style:italic; letter-spacing:-.01em; color:#fff; }
+  .banner small{ font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--pink-soft); }
   .banner.show{ opacity:1; transform:translate(-50%,-50%) scale(1); }
-  .banner.city-tint{ border-color:var(--city); box-shadow:0 0 18px rgba(127,212,255,.7); }
-  /* ---------- pass meter ---------- */
-  .meter{
-    background:rgba(32,10,61,.85);
-    border:1px solid var(--card-line);
-    border-radius:var(--radius);
-    padding:8px 12px;
-  }
-  .meter .row{ display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:.72rem; }
-  .team-city{ color:var(--city); font-weight:800; letter-spacing:.08em; }
-  .team-ars{ color:var(--arsenal); font-weight:800; letter-spacing:.08em; }
-  .dots{ display:flex; gap:6px; margin-top:8px; }
-  .dot{
-    width:14px; height:14px; border-radius:50%;
-    border:1px solid var(--city-dim);
-    background:transparent;
-    transition:transform 200ms var(--ease-out), opacity 200ms var(--ease-out);
-  }
-  .dot.used{ background:var(--city); box-shadow:0 0 8px rgba(127,212,255,.9); transform:scale(1.12); }
+  .banner.city{ border-color:var(--city); box-shadow:0 0 22px rgba(127,212,255,.6); }
+  .banner.city small{ color:var(--city); }
   /* ---------- word panel ---------- */
   .panel{
-    background:linear-gradient(180deg, rgba(46,14,74,.92), rgba(20,5,38,.92));
+    background:linear-gradient(180deg, rgba(48,14,78,.94), rgba(22,5,40,.94));
     border:1px solid var(--card-line);
-    border-radius:var(--radius);
-    padding:12px;
+    border-radius:18px;
+    padding:10px 12px 10px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 12px 24px -16px rgba(0,0,0,.9);
   }
-  .catline{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
+  .catline{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
   .cat{
-    font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
-    color:#2b0a1e; background:var(--pink-soft);
-    border-radius:999px; padding:3px 10px;
+    font-size:.66rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--pink-ink); background:var(--pink-soft);
+    border-radius:999px; padding:4px 10px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:52%;
   }
-  .lives{ font-size:.78rem; color:var(--ink-dim); font-variant-numeric:tabular-nums; }
+  .life{ display:flex; align-items:center; gap:8px; }
+  .dots{ display:flex; gap:4px; }
+  .dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--pink);
+    box-shadow:0 0 6px rgba(255,46,136,.85);
+    transition:transform 240ms var(--ease-out);
+  }
+  .dot.used{ background:transparent; box-shadow:inset 0 0 0 1.5px var(--city-dim); transform:scale(.8); }
+  .lives{ font-size:.74rem; color:var(--ink-dim); font-variant-numeric:tabular-nums; white-space:nowrap; }
   .lives strong{ color:var(--ink); }
-  .tiles{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:4px 0 6px; min-height:52px; }
+  .tiles{
+    --tw:34px;
+    display:flex; flex-wrap:wrap; justify-content:center; gap:8px 16px;
+    min-height:50px; margin:10px 0 8px;
+  }
+  .word{ display:flex; gap:5px; }
   .tile{
-    min-width:34px; height:48px;
+    position:relative;
+    width:var(--tw); height:calc(var(--tw) * 1.3); max-height:48px;
     display:inline-flex; align-items:center; justify-content:center;
-    font-size:1.35rem; font-weight:800;
+    font-size:calc(var(--tw) * .62); font-weight:850;
     border-radius:9px;
-    border:1px solid var(--card-line);
-    background:rgba(11,0,24,.7);
+    background:linear-gradient(180deg, rgba(10,0,22,.85), rgba(26,6,46,.85));
+    box-shadow:inset 0 -2px 0 var(--pink-dim), inset 0 0 0 1px rgba(255,122,184,.16);
     color:#fff;
-    opacity:0; transform:translateY(8px);
-    animation:tilein 240ms var(--ease-out) forwards;
   }
-  .tile.fixed{ border-style:dashed; color:var(--gold); font-size:1.1rem; }
-  .tile.gap{ border:none; background:none; min-width:14px; height:48px; animation:none; opacity:1; transform:none; }
-  .tile.reveal{ border-color:var(--good); color:var(--good); }
-  .tile.miss-dim{ color:var(--ink-dim); }
-  @keyframes tilein{ to{ opacity:1; transform:translateY(0); } }
-  .clue-row{ display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; }
+  .tile.enter{ animation:tilein 300ms var(--ease-out) both; animation-delay:calc(var(--i) * 22ms); }
+  @keyframes tilein{ from{ opacity:0; transform:translateY(8px) scale(.96); } to{ opacity:1; transform:none; } }
+  .tile .ch{ display:block; }
+  .tile.fixed{ color:var(--gold); box-shadow:inset 0 0 0 1px rgba(255,209,102,.3); }
+  .tile.pop{ box-shadow:inset 0 -2px 0 var(--good), inset 0 0 0 1px rgba(74,222,128,.35); }
+  .tile.pop .ch{ animation:pop 380ms var(--ease-out) both; animation-delay:var(--d, 0ms); }
+  @keyframes pop{
+    0%{ opacity:0; transform:translateY(45%) scale(.6); }
+    60%{ opacity:1; transform:translateY(-6%) scale(1.14); }
+    100%{ opacity:1; transform:none; }
+  }
+  .tile.win{
+    box-shadow:inset 0 -2px 0 var(--gold), inset 0 0 0 1px rgba(255,209,102,.45), 0 0 14px rgba(255,209,102,.25);
+    animation:wave 560ms var(--ease-in-out) both; animation-delay:calc(var(--i) * 40ms);
+  }
+  @keyframes wave{ 0%,100%{ transform:none; } 40%{ transform:translateY(-9px); } }
+  .tile.missed{ color:var(--pink-soft); box-shadow:inset 0 -2px 0 var(--bad), inset 0 0 0 1px rgba(255,107,107,.3); }
+  .tile.missed .ch{ animation:fadein 420ms ease both; animation-delay:calc(var(--i) * 30ms); }
+  @keyframes fadein{ from{ opacity:0; } to{ opacity:1; } }
+  .clue-row{ display:flex; gap:10px; align-items:center; justify-content:center; min-height:40px; }
   .clue-text{
-    font-size:.92rem; color:var(--gold); text-align:center;
-    opacity:0; transform:translateY(6px);
-    transition:opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+    font-size:.88rem; color:var(--gold); text-align:center;
+    opacity:0; transform:translateY(4px);
+    transition:opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
   }
-  .clue-text.show{ opacity:1; transform:translateY(0); }
-  .fine{ font-size:.72rem; color:var(--ink-dim); text-align:center; margin:6px 0 0; }
+  .clue-text.show{ opacity:1; transform:none; }
+  .clue-text:empty{ display:none; }
+  .fine{ font-size:.68rem; color:var(--ink-dim); margin:0; max-width:46%; line-height:1.25; }
+  .empty{ text-align:center; padding:12px 8px; }
+  .empty p{ color:var(--ink-dim); margin:0 0 10px; }
   /* ---------- buttons ---------- */
   .btn{
     border:1px solid var(--pink-dim);
     background:linear-gradient(180deg, #4a1140, #2b0a33);
-    border-radius:12px;
-    padding:12px 16px;
-    min-height:48px;
-    font-weight:700;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    border-radius:13px;
+    padding:10px 16px;
+    min-height:46px;
+    font-weight:750;
     cursor:pointer;
-    transition:transform 140ms var(--ease-out), opacity 140ms var(--ease-out);
+    transition:transform 120ms var(--ease-out), opacity 160ms ease;
   }
   .btn:active{ transform:scale(.96); }
   .btn.primary{
-    background:linear-gradient(180deg, var(--pink), #c21469);
+    background:linear-gradient(180deg, #ff4f9d, #d01672);
     border-color:#ff8fc0;
     color:#fff;
-    box-shadow:0 0 14px rgba(255,46,136,.55);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 6px 18px -6px rgba(255,46,136,.8);
   }
-  .btn.ghost{ background:rgba(32,10,61,.6); }
+  .btn.ghost{ background:rgba(32,10,61,.7); }
+  .btn.small{ min-height:40px; padding:8px 14px; font-size:.9rem; }
   .btn:disabled{ opacity:.45; cursor:default; }
   .controls{ display:flex; gap:8px; }
   .controls .btn{ flex:1; }
   /* ---------- keyboard ---------- */
-  .keys{ display:grid; grid-template-columns:repeat(7, 1fr); gap:7px; }
+  .keys{ display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; }
   .key{
-    min-height:52px;
+    min-height:54px;
     font-size:1.2rem; font-weight:800;
-    border-radius:11px;
+    border-radius:12px;
     border:1px solid var(--card-line);
-    background:rgba(46,14,74,.9);
+    background:linear-gradient(180deg, #3a1259, #250a3d);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 2px 0 #12041f;
     color:var(--ink);
     cursor:pointer;
-    transition:transform 120ms var(--ease-out), opacity 150ms var(--ease-out);
+    transition:transform 90ms var(--ease-out), opacity 220ms ease;
   }
-  .key:active{ transform:scale(.9); }
-  .key.right{ background:#123f2a; border-color:var(--good); color:var(--good); }
-  .key.wrong{ background:#3d0f1e; border-color:var(--bad); color:var(--bad); opacity:.55; }
+  .key:active{ transform:translateY(1px) scale(.93); }
+  .key.right{ background:#12402a; border-color:var(--good); color:var(--good); animation:keyhit 260ms var(--ease-out); }
+  .key.wrong{ background:#3a0d1e; border-color:#7a2236; color:var(--bad); opacity:.5; animation:shake 300ms var(--ease-out); }
   .key:disabled{ cursor:default; }
+  @keyframes keyhit{ 50%{ transform:scale(1.08); } }
+  @keyframes shake{ 20%{ transform:translateX(-4px); } 45%{ transform:translateX(3px); } 70%{ transform:translateX(-2px); } }
   /* ---------- sheets (settings / stats) ---------- */
   .sheet{
-    position:fixed; inset:auto 0 0 0;
-    display:flex; justify-content:center;
-    pointer-events:none; z-index:30;
-    padding:0 10px calc(10px + env(safe-area-inset-bottom, 0));
+    position:fixed; inset:0; z-index:30;
+    display:flex; flex-direction:column; justify-content:flex-end; align-items:center;
+    padding:0 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    pointer-events:none;
   }
-  .sheet-card{
-    width:100%; max-width:460px; max-height:82dvh; overflow:auto;
-    background:#1d0836;
-    border:1px solid var(--pink-dim);
-    border-radius:18px;
-    box-shadow:0 0 30px rgba(255,46,136,.35);
-    padding:16px;
-    opacity:0; transform:translateY(24px);
-    transition:opacity 240ms var(--ease-out), transform 240ms var(--ease-out);
-  }
-  .sheet.open{ pointer-events:auto; }
-  .sheet.open .sheet-card{ opacity:1; transform:translateY(0); }
   .sheet[hidden]{ display:none; }
-  .sheet h2{ margin:0 0 4px; font-size:1.1rem; letter-spacing:-0.01em; }
+  .scrim{ position:absolute; inset:0; background:rgba(5,0,12,.62); opacity:0; transition:opacity 220ms ease; }
+  .sheet.open{ pointer-events:auto; }
+  .sheet.open .scrim{ opacity:1; }
+  .sheet-card{
+    position:relative;
+    width:100%; max-width:460px; max-height:84dvh; overflow:auto;
+    background:linear-gradient(180deg, #250a44, #1a0731);
+    border:1px solid var(--pink-dim);
+    border-radius:22px;
+    box-shadow:0 -10px 40px -10px rgba(255,46,136,.45), inset 0 1px 0 rgba(255,255,255,.08);
+    padding:10px 16px 16px;
+    transform:translateY(calc(100% + 24px));
+    transition:transform 240ms var(--ease-out);
+  }
+  .sheet.open .sheet-card{ transform:none; transition:transform 420ms var(--ease-drawer); }
+  .grabber{ width:38px; height:5px; border-radius:3px; background:rgba(255,233,244,.25); margin:0 auto 10px; }
+  .sheet h2{ margin:0 0 4px; font-size:1.15rem; letter-spacing:-0.01em; }
   .sheet h2 + p{ margin:0 0 12px; font-size:.8rem; color:var(--ink-dim); }
   .frow{ margin:12px 0; }
-  .frow > label, .flabel{ display:block; font-size:.78rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:6px; }
+  .frow > label, .flabel{ display:block; font-size:.74rem; font-weight:750; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:6px; }
   .lenrow{ display:flex; gap:10px; align-items:center; }
   .lenrow select{
-    flex:1; min-height:48px; font-size:1rem; border-radius:10px;
+    flex:1; min-height:48px; font-size:1rem; border-radius:12px; padding:0 10px;
     background:#12041f; color:var(--ink); border:1px solid var(--card-line);
   }
-  .switchrow{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; }
+  .switchrow{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; }
   .switchrow span{ font-size:.95rem; }
   .switch{
     position:relative; width:60px; height:34px; flex:none;
@@ -282,16 +316,17 @@
   .switch::after{
     content:""; position:absolute; top:3px; left:3px; width:26px; height:26px; border-radius:50%;
     background:#8d6b96;
-    transition:transform 180ms var(--ease-out);
+    box-shadow:0 2px 6px rgba(0,0,0,.4);
+    transition:transform 220ms var(--ease-out);
   }
   .switch[aria-checked="true"]{ background:var(--pink-dim); border-color:var(--pink); }
   .switch[aria-checked="true"]::after{ transform:translateX(26px); background:#fff; }
   input[type="range"]{ width:100%; accent-color:var(--pink); min-height:44px; }
   .catgrid{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
   .catchip{
-    border:1px solid var(--card-line); border-radius:10px;
+    border:1px solid var(--card-line); border-radius:12px;
     background:#12041f; padding:10px 8px; min-height:48px;
-    font-size:.82rem; cursor:pointer;
+    font-size:.84rem; cursor:pointer;
     transition:transform 120ms var(--ease-out);
   }
   .catchip:active{ transform:scale(.96); }
@@ -300,46 +335,47 @@
   .sheet-btns .btn{ flex:1; }
   /* ---------- stats ---------- */
   .statgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; }
-  .statgrid .cell{ background:#12041f; border:1px solid var(--card-line); border-radius:10px; padding:8px; font-size:.8rem; }
-  .statgrid .cell b{ display:block; font-size:1.05rem; color:#fff; }
+  .statgrid .cell{ background:#12041f; border:1px solid var(--card-line); border-radius:12px; padding:8px 10px; font-size:.8rem; color:var(--ink-dim); }
+  .statgrid .cell b{ display:block; font-size:1.1rem; color:#fff; font-variant-numeric:tabular-nums; }
   .badges{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
   .badge{
-    border:1px solid var(--card-line); border-radius:10px; padding:8px;
-    font-size:.74rem; background:#12041f; opacity:.5;
-    transition:opacity 200ms var(--ease-out);
+    border:1px solid var(--card-line); border-radius:12px; padding:8px 10px;
+    font-size:.74rem; color:var(--ink-dim); background:#12041f; opacity:.55;
   }
-  .badge b{ display:block; font-size:.8rem; }
+  .badge b{ display:block; font-size:.82rem; color:var(--ink); }
   .badge.won{ opacity:1; border-color:var(--gold); }
   .badge.won b{ color:var(--gold); }
-  /* ---------- toast / empty ---------- */
+  /* ---------- toast / confetti ---------- */
   .toast{
-    position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom, 0));
-    transform:translate(-50%, 12px);
+    position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom, 0px));
+    transform:translate(-50%, 14px);
     opacity:0;
-    background:rgba(11,0,24,.94);
+    background:rgba(16,2,32,.95);
     border:1px solid var(--gold); color:#fff;
-    border-radius:12px; padding:10px 18px; font-size:.9rem; font-weight:700;
-    transition:opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
+    border-radius:14px; padding:10px 18px; font-size:.9rem; font-weight:700;
+    box-shadow:0 10px 30px -10px rgba(0,0,0,.9);
+    transition:opacity 220ms var(--ease-out), transform 260ms var(--ease-out);
     pointer-events:none; z-index:40; max-width:92vw; text-align:center;
   }
   .toast.show{ opacity:1; transform:translate(-50%, 0); }
-  .empty{ text-align:center; padding:18px 8px; }
-  .empty p{ color:var(--ink-dim); }
-  footer{ text-align:center; font-size:.7rem; color:var(--ink-dim); padding:6px 0 2px; }
-  /* ---------- reduced motion ---------- */
+  .confetti{ position:fixed; inset:0; pointer-events:none; z-index:35; overflow:hidden; }
+  .confetti i{ position:absolute; width:7px; height:11px; border-radius:2px; }
+  /* ---------- reduced motion: calm fades, no travel ---------- */
   @media (prefers-reduced-motion: reduce){
-    *, *::before, *::after{
-      animation-duration:.01ms !important;
-      animation-iteration-count:1 !important;
-      transition-duration:.01ms !important;
-    }
-    .tile{ opacity:1; transform:none; }
-    .clue-text{ opacity:1; transform:none; }
-    .clue-text:not(.show){ opacity:0; }
+    .app > *{ animation:fadein 300ms ease both; }
+    .tile.enter, .tile.pop .ch, .tile.missed .ch{ animation:fadein 220ms ease both; }
+    .tile.win, .key.right, .key.wrong{ animation:none; }
+    .btn:active, .key:active, .icon-btn:active, .catchip:active{ transform:none; }
+    .stat .v.bump{ transform:none; }
+    .banner, .banner.show{ transform:translate(-50%,-50%); }
+    .toast, .toast.show{ transform:translate(-50%, 0); }
+    .clue-text{ transform:none; }
+    .sheet-card, .sheet.open .sheet-card{ transform:none; opacity:0; transition:opacity 220ms ease; }
+    .sheet.open .sheet-card{ opacity:1; }
   }
   @media (hover:hover) and (pointer:fine){
-    .key:hover{ border-color:var(--pink-soft); }
-    .btn:hover{ border-color:var(--pink-soft); }
+    .key:hover:not(:disabled){ border-color:var(--pink-soft); }
+    .btn:hover:not(:disabled), .icon-btn:hover{ border-color:var(--pink-soft); }
   }
 </style>
 </head>
@@ -347,96 +383,44 @@
 <div class="app">
   <header class="topbar">
     <div class="brand">
-      <h1>ARCADE RUN</h1>
-      <p>Prototype C · neon stadium · Man City attack Arsenal</p>
+      <h1><span>ARCADE</span> RUN</h1>
+      <p><b>Man City</b> v <i>Arsenal</i> · Prototype C</p>
     </div>
     <div class="icon-btns">
-      <button class="icon-btn" id="soundBtn" aria-pressed="false" aria-label="Toggle sound" title="Sound">🔊</button>
-      <button class="icon-btn" id="statsBtn" aria-label="Open stats" title="Stats">🏆</button>
-      <button class="icon-btn" id="settingsBtn" aria-label="Open settings" title="Settings">⚙️</button>
+      <button class="icon-btn" id="soundBtn" aria-pressed="false" aria-label="Toggle sound" title="Sound"></button>
+      <button class="icon-btn" id="statsBtn" aria-label="Open stats" title="Stats"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6"/></svg></button>
+      <button class="icon-btn" id="settingsBtn" aria-label="Open settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/></svg></button>
     </div>
   </header>
 
-  <section class="scorebar" aria-label="Run score">
-    <div class="stat"><div class="k">SCORE</div><div class="v" id="scoreVal">0</div></div>
-    <div class="stat"><div class="k">COMBO</div><div class="v" id="comboVal">×0</div></div>
-    <div class="stat"><div class="k">BEST</div><div class="v" id="bestVal">0</div></div>
-    <div class="stat"><div class="k">STREAK</div><div class="v" id="streakVal">0</div></div>
-  </section>
-
   <section class="stadium" aria-label="Stadium: each miss moves Man City closer to the Arsenal goal">
-    <svg id="pitch" viewBox="0 0 400 210" role="img" aria-label="Football pitch showing the attack progress">
-      <defs>
-        <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#150826"/><stop offset="1" stop-color="#05010d"/>
-        </linearGradient>
-        <linearGradient id="grass" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stop-color="#0e5c3f"/><stop offset="0.5" stop-color="#12724e"/><stop offset="1" stop-color="#0e5c3f"/>
-        </linearGradient>
-        <filter id="neonPink" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="3.2" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-      <rect x="0" y="0" width="400" height="210" fill="url(#night)"/>
-      <rect x="14" y="34" width="372" height="160" rx="6" fill="url(#grass)" stroke="#ff2e88" stroke-width="1.6" filter="url(#neonPink)"/>
-      <line x1="200" y1="34" x2="200" y2="194" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.4"/>
-      <circle cx="200" cy="114" r="22" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.4"/>
-      <rect x="14" y="74" width="52" height="80" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.4"/>
-      <rect x="334" y="74" width="52" height="80" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.4"/>
-      <rect x="14" y="96" width="18" height="36" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.4"/>
-      <rect x="368" y="96" width="18" height="36" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.4"/>
-      <!-- Arsenal goal (right end) -->
-      <rect x="386" y="92" width="6" height="44" fill="#fff5f7" stroke="#ff2e88" stroke-width="1.4"/>
-      <!-- keeper: red shirt -->
-      <g id="keeper" class="mover">
-        <circle r="9" fill="#ff4d5e" stroke="#fff5f7" stroke-width="2"/>
-        <circle r="9" fill="none" stroke="#ff2e88" stroke-width="1" opacity="0.7"/>
-      </g>
-      <!-- defenders: red shirts -->
-      <g id="def1" class="mover">
-        <circle r="9" fill="#ff4d5e" stroke="#fff5f7" stroke-width="2"/>
-      </g>
-      <g id="def2" class="mover">
-        <circle r="9" fill="#ff4d5e" stroke="#fff5f7" stroke-width="2"/>
-      </g>
-      <!-- attacker: sky-blue shirt -->
-      <g id="attacker" class="mover">
-        <circle r="10" fill="#7fd4ff" stroke="#0b2c40" stroke-width="2"/>
-        <circle r="10" fill="none" stroke="#7fd4ff" stroke-width="1" opacity="0.8"/>
-      </g>
-      <!-- ball -->
-      <g id="ball" class="mover">
-        <circle r="5.5" fill="#ffffff" stroke="#ff2e88" stroke-width="1.6"/>
-        <circle cx="-1.6" cy="-1" r="1.3" fill="#0b0018"/>
-      </g>
-      <text x="30" y="204" font-size="10" fill="#7fd4ff" font-weight="700" letter-spacing="2">MAN CITY</text>
-      <text x="370" y="204" font-size="10" fill="#ff4d5e" font-weight="700" letter-spacing="2" text-anchor="end">ARSENAL</text>
-    </svg>
-    <div class="floodlights"></div>
-    <div class="flash" id="flash"></div>
-    <div class="banner" id="banner" role="status"></div>
-  </section>
-
-  <section class="meter" aria-label="Attack progress">
-    <div class="row">
-      <span class="team-city">MAN CITY ATTACK</span>
-      <span class="team-ars">ARSENAL HOLD ON</span>
+    <svg id="pitchBg" viewBox="0 0 400 266" aria-hidden="true"></svg>
+    <svg id="pitchFg" viewBox="0 0 400 266" role="img" aria-label="Man City in a 4-3-3 attacking Arsenal's 4-4-2"></svg>
+    <div class="hud" aria-label="Run score">
+      <div class="stat"><div class="k">SCORE</div><div class="v" id="scoreVal">0</div></div>
+      <div class="stat"><div class="k">COMBO</div><div class="v" id="comboVal">×0</div></div>
+      <div class="stat"><div class="k">BEST</div><div class="v" id="bestVal">0</div></div>
+      <div class="stat"><div class="k">STREAK</div><div class="v" id="streakVal">0</div></div>
     </div>
-    <div class="dots" id="dots"></div>
+    <div class="edge" id="edge"></div>
+    <div class="flash" id="flash"></div>
+    <div class="banner" id="banner" role="status"><b id="bannerMain"></b><small id="bannerSub"></small></div>
   </section>
 
   <section class="panel" aria-label="Current word">
     <div class="catline">
       <span class="cat" id="catTag">—</span>
-      <span class="lives" id="livesLine"><strong>6</strong> chances left</span>
+      <div class="life">
+        <div class="dots" id="dots" aria-hidden="true"></div>
+        <span class="lives" id="livesLine"><strong>6</strong> left</span>
+      </div>
     </div>
     <div class="tiles" id="tiles"></div>
-    <div class="clue-row">
-      <button class="btn ghost" id="clueBtn">Show clue</button>
+    <div class="clue-row" id="clueRow">
+      <button class="btn ghost small" id="clueBtn">Show clue</button>
+      <p class="fine" id="hintCost">Using the clue voids the flawless bonus for this word.</p>
       <div class="clue-text" id="clueText"></div>
     </div>
-    <p class="fine" id="hintCost">Using the clue voids the flawless bonus for this word.</p>
     <div class="empty" id="emptyState" hidden>
       <p>No words match these filters. Try widening the word length or enabling more categories.</p>
       <button class="btn" id="widenBtn">Reset filters</button>
@@ -451,13 +435,13 @@
     <button class="btn primary" id="nextBtn">Next word →</button>
     <button class="btn ghost" id="runBtn">↻ New run</button>
   </div>
-
-  <footer>Prototype C “Arcade run” · all data offline in this file · no network requests</footer>
 </div>
 
 <!-- settings sheet -->
 <div class="sheet" id="settingsSheet" hidden role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="scrim" data-close></div>
   <div class="sheet-card">
+    <div class="grabber" aria-hidden="true"></div>
     <h2 id="setTitle">Settings</h2>
     <p>Saved on this phone only.</p>
     <div class="frow">
@@ -497,7 +481,9 @@
 
 <!-- stats sheet -->
 <div class="sheet" id="statsSheet" hidden role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+  <div class="scrim" data-close></div>
   <div class="sheet-card">
+    <div class="grabber" aria-hidden="true"></div>
     <h2 id="statsTitle">Club honours</h2>
     <p>Stored on this phone only. No backups, no accounts.</p>
     <div class="statgrid">
@@ -516,240 +502,240 @@
 </div>
 
 <div class="toast" id="toast" role="status"></div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<!-- words:begin --><script id="hangman-words" type="application/json">
+{"version": 1, "categories": [
+  {"id": "animals", "name": "Animals", "words": [
+    {"answer": "ELEPHANT", "hint": "Largest land animal, with a trunk", "difficulty": "medium"},
+    {"answer": "GIRAFFE", "hint": "Tallest animal, with a long neck", "difficulty": "easy"},
+    {"answer": "PENGUIN", "hint": "Flightless bird that swims", "difficulty": "easy"},
+    {"answer": "KANGAROO", "hint": "Hops across Australia", "difficulty": "easy"},
+    {"answer": "CROCODILE", "hint": "Armoured river reptile", "difficulty": "medium"},
+    {"answer": "FLAMINGO", "hint": "Pink wading bird", "difficulty": "easy"},
+    {"answer": "HEDGEHOG", "hint": "Spiny garden visitor", "difficulty": "easy"},
+    {"answer": "SQUIRREL", "hint": "Nut-burying climber", "difficulty": "easy"},
+    {"answer": "BADGER", "hint": "Nocturnal sett-dweller", "difficulty": "medium"},
+    {"answer": "OTTER", "hint": "Playful river swimmer", "difficulty": "easy"},
+    {"answer": "FOX", "hint": "Cunning russet hunter", "difficulty": "easy"},
+    {"answer": "TORTOISE", "hint": "Slow reptile with a shell", "difficulty": "easy"},
+    {"answer": "CHAMELEON", "hint": "Colour-changing lizard", "difficulty": "medium"},
+    {"answer": "ARMADILLO", "hint": "Armoured mammal that rolls up", "difficulty": "hard"},
+    {"answer": "PLATYPUS", "hint": "Egg-laying swimmer with a bill", "difficulty": "hard"},
+    {"answer": "MEERKAT", "hint": "Upright burrowing lookout", "difficulty": "medium"},
+    {"answer": "WALRUS", "hint": "Tusked Arctic giant", "difficulty": "medium"},
+    {"answer": "PORCUPINE", "hint": "Quill-covered rodent", "difficulty": "medium"},
+    {"answer": "CHEETAH", "hint": "Fastest land sprinter", "difficulty": "easy"},
+    {"answer": "LEOPARD", "hint": "Spotted big cat", "difficulty": "easy"},
+    {"answer": "GORILLA", "hint": "Gentle forest giant", "difficulty": "easy"},
+    {"answer": "JELLYFISH", "hint": "Stinging sea drifter", "difficulty": "medium"},
+    {"answer": "STARFISH", "hint": "Five-armed shore dweller", "difficulty": "easy"},
+    {"answer": "SEAHORSE", "hint": "Tiny upright swimmer", "difficulty": "medium"},
+    {"answer": "DORMOUSE", "hint": "Sleepy hazel-nut nibbler", "difficulty": "hard"}
+  ]},
+  {"id": "mythology", "name": "Mythology", "words": [
+    {"answer": "ZEUS", "hint": "King of the Greek gods", "difficulty": "easy"},
+    {"answer": "HERA", "hint": "Queen of the Greek gods", "difficulty": "medium"},
+    {"answer": "APOLLO", "hint": "God of sun and music", "difficulty": "medium"},
+    {"answer": "ATHENA", "hint": "Goddess of wisdom", "difficulty": "medium"},
+    {"answer": "THOR", "hint": "Hammer-wielding thunder god", "difficulty": "easy"},
+    {"answer": "ODIN", "hint": "One-eyed Norse Allfather", "difficulty": "medium"},
+    {"answer": "LOKI", "hint": "Norse trickster god", "difficulty": "medium"},
+    {"answer": "MEDUSA", "hint": "Snake-haired Gorgon", "difficulty": "medium"},
+    {"answer": "MINOTAUR", "hint": "Bull-headed labyrinth beast", "difficulty": "medium"},
+    {"answer": "PHOENIX", "hint": "Bird reborn from ashes", "difficulty": "easy"},
+    {"answer": "KRAKEN", "hint": "Giant sea monster", "difficulty": "medium"},
+    {"answer": "HYDRA", "hint": "Many-headed serpent", "difficulty": "medium"},
+    {"answer": "PEGASUS", "hint": "Winged horse", "difficulty": "easy"},
+    {"answer": "CYCLOPS", "hint": "One-eyed giant", "difficulty": "medium"},
+    {"answer": "SPHINX", "hint": "Riddling desert guardian", "difficulty": "medium"},
+    {"answer": "VALHALLA", "hint": "Hall of slain heroes", "difficulty": "hard"},
+    {"answer": "EXCALIBUR", "hint": "Arthur's legendary sword", "difficulty": "medium"},
+    {"answer": "MERLIN", "hint": "Arthur's wizard", "difficulty": "easy"},
+    {"answer": "CERBERUS", "hint": "Three-headed underworld hound", "difficulty": "hard"},
+    {"answer": "PERSEUS", "hint": "Slayer of Medusa", "difficulty": "hard"},
+    {"answer": "THESEUS", "hint": "Slayer of the Minotaur", "difficulty": "hard"},
+    {"answer": "ICARUS", "hint": "Flew too close to the sun", "difficulty": "medium"},
+    {"answer": "ARES", "hint": "Greek god of war", "difficulty": "medium"},
+    {"answer": "FREYA", "hint": "Norse goddess of love", "difficulty": "hard"},
+    {"answer": "ANUBIS", "hint": "Jackal-headed Egyptian god", "difficulty": "hard"}
+  ]},
+  {"id": "plants", "name": "Plants", "words": [
+    {"answer": "SUNFLOWER", "hint": "Tall yellow summer bloom", "difficulty": "easy"},
+    {"answer": "DAFFODIL", "hint": "Spring trumpet flower", "difficulty": "easy"},
+    {"answer": "BLUEBELL", "hint": "Carpeting woodland flower", "difficulty": "medium"},
+    {"answer": "ROSE", "hint": "Classic thorny bloom", "difficulty": "easy"},
+    {"answer": "TULIP", "hint": "Dutch bulb favourite", "difficulty": "easy"},
+    {"answer": "ORCHID", "hint": "Exotic long-lasting bloom", "difficulty": "medium"},
+    {"answer": "CACTUS", "hint": "Spiny desert survivor", "difficulty": "easy"},
+    {"answer": "IVY", "hint": "Climbing evergreen", "difficulty": "easy"},
+    {"answer": "OAK", "hint": "Mighty acorn tree", "difficulty": "easy"},
+    {"answer": "WILLOW", "hint": "Drooping riverside tree", "difficulty": "easy"},
+    {"answer": "CHESTNUT", "hint": "Conker tree", "difficulty": "medium"},
+    {"answer": "BLACKBERRY", "hint": "Bramble autumn fruit", "difficulty": "easy"},
+    {"answer": "DANDELION", "hint": "Clock-blowing weed", "difficulty": "easy"},
+    {"answer": "THISTLE", "hint": "Scotland's prickly emblem", "difficulty": "medium"},
+    {"answer": "HEATHER", "hint": "Purple moorland shrub", "difficulty": "medium"},
+    {"answer": "MISTLETOE", "hint": "Christmas kissing sprig", "difficulty": "medium"},
+    {"answer": "FERN", "hint": "Frondy shade-lover", "difficulty": "easy"},
+    {"answer": "LAVENDER", "hint": "Scented purple herb", "difficulty": "easy"},
+    {"answer": "ROSEMARY", "hint": "Herb for remembrance", "difficulty": "medium"},
+    {"answer": "BASIL", "hint": "Pesto's leafy base", "difficulty": "easy"},
+    {"answer": "HONEYSUCKLE", "hint": "Sweet-scented climber", "difficulty": "medium"},
+    {"answer": "SNOWDROP", "hint": "First bulb of the year", "difficulty": "medium"},
+    {"answer": "FOXGLOVE", "hint": "Tall spotted bell flower", "difficulty": "medium"},
+    {"answer": "POINSETTIA", "hint": "Crimson Christmas star", "difficulty": "hard"},
+    {"answer": "HAWTHORN", "hint": "May-blossom hedge tree", "difficulty": "hard"}
+  ]},
+  {"id": "gemstones", "name": "Gemstones", "words": [
+    {"answer": "DIAMOND", "hint": "Hardest sparkling gem", "difficulty": "easy"},
+    {"answer": "RUBY", "hint": "Red precious stone", "difficulty": "easy"},
+    {"answer": "EMERALD", "hint": "Green precious stone", "difficulty": "easy"},
+    {"answer": "SAPPHIRE", "hint": "Blue precious stone", "difficulty": "easy"},
+    {"answer": "OPAL", "hint": "Shifting rainbow flashes", "difficulty": "medium"},
+    {"answer": "AMETHYST", "hint": "Purple quartz", "difficulty": "medium"},
+    {"answer": "TOPAZ", "hint": "Golden November birthstone", "difficulty": "medium"},
+    {"answer": "GARNET", "hint": "Deep-red January birthstone", "difficulty": "medium"},
+    {"answer": "PEARL", "hint": "Oyster's lustrous gift", "difficulty": "easy"},
+    {"answer": "JADE", "hint": "Carved green stone", "difficulty": "easy"},
+    {"answer": "QUARTZ", "hint": "Common crystal", "difficulty": "medium"},
+    {"answer": "ONYX", "hint": "Banded black stone", "difficulty": "medium"},
+    {"answer": "TURQUOISE", "hint": "Blue-green December stone", "difficulty": "medium"},
+    {"answer": "MOONSTONE", "hint": "Glowing June birthstone", "difficulty": "hard"},
+    {"answer": "PERIDOT", "hint": "Olive-green August gem", "difficulty": "hard"},
+    {"answer": "ZIRCON", "hint": "Brilliant December stone", "difficulty": "hard"},
+    {"answer": "AQUAMARINE", "hint": "Sea-blue March gem", "difficulty": "hard"},
+    {"answer": "CITRINE", "hint": "Lemon-yellow quartz", "difficulty": "hard"},
+    {"answer": "MALACHITE", "hint": "Swirled green copper stone", "difficulty": "hard"},
+    {"answer": "BERYL", "hint": "The family behind emerald", "difficulty": "hard"},
+    {"answer": "JASPER", "hint": "Speckled opaque quartz", "difficulty": "hard"},
+    {"answer": "BLOODSTONE", "hint": "Green stone with red flecks", "difficulty": "hard"},
+    {"answer": "ROSE QUARTZ", "hint": "Pink stone of love", "difficulty": "medium"},
+    {"answer": "LAPIS LAZULI", "hint": "Deep-blue stone of pharaohs", "difficulty": "hard"},
+    {"answer": "AGATE", "hint": "Banded chalcedony stone", "difficulty": "medium"}
+  ]},
+  {"id": "birds", "name": "Birds", "words": [
+    {"answer": "ROBIN", "hint": "Red-breasted garden friend", "difficulty": "easy"},
+    {"answer": "SPARROW", "hint": "Cheerful brown hop-about", "difficulty": "easy"},
+    {"answer": "BLACKBIRD", "hint": "Golden-beaked songster", "difficulty": "easy"},
+    {"answer": "KINGFISHER", "hint": "Diving jewel of rivers", "difficulty": "medium"},
+    {"answer": "PUFFIN", "hint": "Clown-faced sea parrot", "difficulty": "medium"},
+    {"answer": "OWL", "hint": "Night-time hooter", "difficulty": "easy"},
+    {"answer": "EAGLE", "hint": "Soaring hunter", "difficulty": "easy"},
+    {"answer": "FALCON", "hint": "Speedy sky hunter", "difficulty": "medium"},
+    {"answer": "KESTREL", "hint": "Hovering motorway hunter", "difficulty": "medium"},
+    {"answer": "HERON", "hint": "Patient grey fisher", "difficulty": "medium"},
+    {"answer": "SWAN", "hint": "Graceful river glide", "difficulty": "easy"},
+    {"answer": "MAGPIE", "hint": "Chattering black-and-white thief", "difficulty": "easy"},
+    {"answer": "JAY", "hint": "Pinkish screeching woodland bird", "difficulty": "hard"},
+    {"answer": "WREN", "hint": "Tiny loud songster", "difficulty": "medium"},
+    {"answer": "CHAFFINCH", "hint": "Shy woodland finch", "difficulty": "hard"},
+    {"answer": "GOLDFINCH", "hint": "Red-faced thistle feeder", "difficulty": "hard"},
+    {"answer": "WOODPECKER", "hint": "Tree-drumming borer", "difficulty": "medium"},
+    {"answer": "NIGHTINGALE", "hint": "Famed night singer", "difficulty": "medium"},
+    {"answer": "SWALLOW", "hint": "Summer fork-tailed visitor", "difficulty": "easy"},
+    {"answer": "SWIFT", "hint": "Screaming summer sickle", "difficulty": "medium"},
+    {"answer": "CORMORANT", "hint": "Diving black fisher", "difficulty": "hard"},
+    {"answer": "PELICAN", "hint": "Pouch-billed giant", "difficulty": "medium"},
+    {"answer": "ALBATROSS", "hint": "Ocean's widest wings", "difficulty": "hard"},
+    {"answer": "STARLING", "hint": "Murmuration maker", "difficulty": "medium"},
+    {"answer": "DOVE", "hint": "Symbol of peace", "difficulty": "easy"}
+  ]},
+  {"id": "food-and-drink", "name": "Food and drink", "words": [
+    {"answer": "FISH AND CHIPS", "hint": "Chippy classic", "difficulty": "easy"},
+    {"answer": "COTTAGE PIE", "hint": "Mince topped with mash", "difficulty": "medium"},
+    {"answer": "PORK PIE", "hint": "Picnic pastry", "difficulty": "medium"},
+    {"answer": "CRUMPET", "hint": "Holey toasted tea-time treat", "difficulty": "medium"},
+    {"answer": "SCONE", "hint": "Cream-tea classic", "difficulty": "easy"},
+    {"answer": "TEA", "hint": "The nation's favourite brew", "difficulty": "easy"},
+    {"answer": "LEMONADE", "hint": "Fizzy picnic cooler", "difficulty": "easy"},
+    {"answer": "GINGER BEER", "hint": "Fiery bottled brew", "difficulty": "medium"},
+    {"answer": "MARMITE", "hint": "Love-it-or-hate-it spread", "difficulty": "medium"},
+    {"answer": "CHEDDAR", "hint": "The nation's favourite cheese", "difficulty": "easy"},
+    {"answer": "STILTON", "hint": "Blue-veined Christmas cheese", "difficulty": "medium"},
+    {"answer": "SAUSAGE ROLL", "hint": "Bakery favourite", "difficulty": "easy"},
+    {"answer": "BLACK PUDDING", "hint": "Full-English blood sausage", "difficulty": "hard"},
+    {"answer": "TRIFLE", "hint": "Layered party pudding", "difficulty": "medium"},
+    {"answer": "ETON MESS", "hint": "Strawberry meringue crush", "difficulty": "medium"},
+    {"answer": "APPLE CRUMBLE", "hint": "Orchard pudding with custard", "difficulty": "easy"},
+    {"answer": "SPOTTED DICK", "hint": "Steamed suet pudding", "difficulty": "hard"},
+    {"answer": "CORNISH PASTY", "hint": "Hand-held miner's lunch", "difficulty": "medium"},
+    {"answer": "BREAD PUDDING", "hint": "Thrifty spiced bake", "difficulty": "hard"},
+    {"answer": "MUSHY PEAS", "hint": "Chip-shop green mush", "difficulty": "medium"},
+    {"answer": "VICTORIA SPONGE", "hint": "Jam-filled celebration cake", "difficulty": "medium"},
+    {"answer": "HAGGIS", "hint": "Burns Night centrepiece", "difficulty": "medium"},
+    {"answer": "PORRIDGE", "hint": "Warming oat breakfast", "difficulty": "easy"},
+    {"answer": "CUSTARD", "hint": "Pouring pudding partner", "difficulty": "easy"},
+    {"answer": "TOAD IN THE HOLE", "hint": "Sausages baked in batter", "difficulty": "medium"}
+  ]},
+  {"id": "geography", "name": "Geography", "words": [
+    {"answer": "THAMES", "hint": "London's river", "difficulty": "easy"},
+    {"answer": "SEVERN", "hint": "Longest British river", "difficulty": "medium"},
+    {"answer": "BEN NEVIS", "hint": "Highest British peak", "difficulty": "medium"},
+    {"answer": "SNOWDON", "hint": "Highest Welsh peak", "difficulty": "medium"},
+    {"answer": "LAKE DISTRICT", "hint": "Cumbrian fells and meres", "difficulty": "medium"},
+    {"answer": "CORNWALL", "hint": "Pasty peninsula", "difficulty": "easy"},
+    {"answer": "DEVON", "hint": "Cream-tea county", "difficulty": "easy"},
+    {"answer": "YORKSHIRE", "hint": "God's own county", "difficulty": "easy"},
+    {"answer": "LOCH NESS", "hint": "Monster's home waters", "difficulty": "easy"},
+    {"answer": "STONEHENGE", "hint": "Wiltshire stone circle", "difficulty": "medium"},
+    {"answer": "PEAK DISTRICT", "hint": "First national park", "difficulty": "medium"},
+    {"answer": "DARTMOOR", "hint": "Pony moor", "difficulty": "medium"},
+    {"answer": "EXMOOR", "hint": "Red-deer moor", "difficulty": "hard"},
+    {"answer": "COTSWOLDS", "hint": "Honey-stone hills", "difficulty": "hard"},
+    {"answer": "PENNINES", "hint": "Backbone of England", "difficulty": "hard"},
+    {"answer": "ISLE OF SKYE", "hint": "Misty Hebridean isle", "difficulty": "medium"},
+    {"answer": "ISLE OF WIGHT", "hint": "Solent island", "difficulty": "medium"},
+    {"answer": "EDINBURGH", "hint": "Castle capital", "difficulty": "easy"},
+    {"answer": "CARDIFF", "hint": "Welsh capital", "difficulty": "easy"},
+    {"answer": "BELFAST", "hint": "Titanic's birthplace", "difficulty": "medium"},
+    {"answer": "DOVER", "hint": "White-cliff port", "difficulty": "easy"},
+    {"answer": "BATH", "hint": "Georgian spa city", "difficulty": "medium"},
+    {"answer": "FORT WILLIAM", "hint": "The Ben's gateway town", "difficulty": "hard"},
+    {"answer": "WHITE CLIFFS", "hint": "Dover's chalk face", "difficulty": "medium"},
+    {"answer": "ENGLISH CHANNEL", "hint": "La Manche crossing", "difficulty": "medium"}
+  ]},
+  {"id": "uk-number-ones", "name": "UK number ones", "words": [
+    {"answer": "STAY", "hint": "Shakespears Sister", "difficulty": "easy"},
+    {"answer": "MR BLOBBY", "hint": "Mr Blobby", "difficulty": "easy"},
+    {"answer": "BACK FOR GOOD", "hint": "Take That", "difficulty": "easy"},
+    {"answer": "EARTH SONG", "hint": "Michael Jackson", "difficulty": "easy"},
+    {"answer": "SPACEMAN", "hint": "Babylon Zoo", "difficulty": "medium"},
+    {"answer": "WANNABE", "hint": "Spice Girls", "difficulty": "easy"},
+    {"answer": "BARBIE GIRL", "hint": "Aqua", "difficulty": "easy"},
+    {"answer": "TUBTHUMPING", "hint": "Chumbawamba", "difficulty": "hard"},
+    {"answer": "BELIEVE", "hint": "Cher", "difficulty": "easy"},
+    {"answer": "MILLENNIUM", "hint": "Robbie Williams", "difficulty": "medium"},
+    {"answer": "NO MATTER WHAT", "hint": "Boyzone", "difficulty": "medium"},
+    {"answer": "MAMBO NO 5", "hint": "Lou Bega", "difficulty": "easy"},
+    {"answer": "BLUE (DA BA DEE)", "hint": "Eiffel 65", "difficulty": "medium"},
+    {"answer": "PURE SHORES", "hint": "All Saints", "difficulty": "medium"},
+    {"answer": "LADY MARMALADE", "hint": "Christina Aguilera, Lil' Kim, Mya and Pink", "difficulty": "hard"},
+    {"answer": "WHOLE AGAIN", "hint": "Atomic Kitten", "difficulty": "easy"},
+    {"answer": "LOSE YOURSELF", "hint": "Eminem", "difficulty": "medium"},
+    {"answer": "WHERE IS THE LOVE?", "hint": "The Black Eyed Peas", "difficulty": "medium"},
+    {"answer": "MAD WORLD", "hint": "Gary Jules", "difficulty": "medium"},
+    {"answer": "HIPS DON'T LIE", "hint": "Shakira featuring Wyclef Jean", "difficulty": "medium"},
+    {"answer": "PATIENCE", "hint": "Take That", "difficulty": "easy"},
+    {"answer": "BLEEDING LOVE", "hint": "Leona Lewis", "difficulty": "easy"},
+    {"answer": "GRACE KELLY", "hint": "Mika", "difficulty": "medium"},
+    {"answer": "HALLELUJAH", "hint": "Alexandra Burke", "difficulty": "easy"},
+    {"answer": "JUST DANCE", "hint": "Lady Gaga featuring Colby O'Donis", "difficulty": "medium"},
+    {"answer": "POKER FACE", "hint": "Lady Gaga", "difficulty": "easy"}
+  ]}
+]}
+</script><!-- words:end -->
 
 <script>
 "use strict";
 /* ============================================================
    Prototype C — "Arcade run"
    Single-file offline hangman. No network requests.
+   Words come only from the shared #hangman-words JSON block.
    Pure game logic lives in the section marked PURE below and is
    covered by the ?selftest assert suite at the bottom.
    ============================================================ */
 
-/* ---------------- word library ----------------
-   [TEXT, clue, difficulty]  difficulty: "e" | "m" | "h"
-   Music entries: the clue IS the artist; digits and punctuation
-   in music titles are pre-filled, only A-Z is ever guessed.   */
-const LIBRARY = {
-  "animals": [
-    ["ELEPHANT","Largest land animal, with a trunk","m"],
-    ["GIRAFFE","Tallest animal, with a long neck","e"],
-    ["PENGUIN","Flightless bird that swims","e"],
-    ["KANGAROO","Hops across Australia","e"],
-    ["CROCODILE","Armoured river reptile","m"],
-    ["FLAMINGO","Pink wading bird","e"],
-    ["HEDGEHOG","Spiny garden visitor","e"],
-    ["SQUIRREL","Nut-burying climber","e"],
-    ["BADGER","Nocturnal sett-dweller","m"],
-    ["OTTER","Playful river swimmer","e"],
-    ["FOX","Cunning russet hunter","e"],
-    ["TORTOISE","Slow reptile with a shell","e"],
-    ["CHAMELEON","Colour-changing lizard","m"],
-    ["ARMADILLO","Armoured mammal that rolls up","h"],
-    ["PLATYPUS","Egg-laying swimmer with a bill","h"],
-    ["MEERKAT","Upright burrowing lookout","m"],
-    ["WALRUS","Tusked Arctic giant","m"],
-    ["PORCUPINE","Quill-covered rodent","m"],
-    ["CHEETAH","Fastest land sprinter","e"],
-    ["LEOPARD","Spotted big cat","e"],
-    ["GORILLA","Gentle forest giant","e"],
-    ["JELLYFISH","Stinging sea drifter","m"],
-    ["STARFISH","Five-armed shore dweller","e"],
-    ["SEAHORSE","Tiny upright swimmer","m"],
-    ["DORMOUSE","Sleepy hazel-nut nibbler","h"]
-  ],
-  "mythology": [
-    ["ZEUS","King of the Greek gods","e"],
-    ["HERA","Queen of the Greek gods","m"],
-    ["APOLLO","God of sun and music","m"],
-    ["ATHENA","Goddess of wisdom","m"],
-    ["THOR","Hammer-wielding thunder god","e"],
-    ["ODIN","One-eyed Norse Allfather","m"],
-    ["LOKI","Norse trickster god","m"],
-    ["MEDUSA","Snake-haired Gorgon","m"],
-    ["MINOTAUR","Bull-headed labyrinth beast","m"],
-    ["PHOENIX","Bird reborn from ashes","e"],
-    ["KRAKEN","Giant sea monster","m"],
-    ["HYDRA","Many-headed serpent","m"],
-    ["PEGASUS","Winged horse","e"],
-    ["CYCLOPS","One-eyed giant","m"],
-    ["SPHINX","Riddling desert guardian","m"],
-    ["VALHALLA","Hall of slain heroes","h"],
-    ["EXCALIBUR","Arthur's legendary sword","m"],
-    ["MERLIN","Arthur's wizard","e"],
-    ["CERBERUS","Three-headed underworld hound","h"],
-    ["PERSEUS","Slayer of Medusa","h"],
-    ["THESEUS","Slayer of the Minotaur","h"],
-    ["ICARUS","Flew too close to the sun","m"],
-    ["ARES","Greek god of war","m"],
-    ["FREYA","Norse goddess of love","h"],
-    ["ANUBIS","Jackal-headed Egyptian god","h"]
-  ],
-  "plants": [
-    ["SUNFLOWER","Tall yellow summer bloom","e"],
-    ["DAFFODIL","Spring trumpet flower","e"],
-    ["BLUEBELL","Carpeting woodland flower","m"],
-    ["ROSE","Classic thorny bloom","e"],
-    ["TULIP","Dutch bulb favourite","e"],
-    ["ORCHID","Exotic long-lasting bloom","m"],
-    ["CACTUS","Spiny desert survivor","e"],
-    ["IVY","Climbing evergreen","e"],
-    ["OAK","Mighty acorn tree","e"],
-    ["WILLOW","Drooping riverside tree","e"],
-    ["CHESTNUT","Conker tree","m"],
-    ["BLACKBERRY","Bramble autumn fruit","e"],
-    ["DANDELION","Clock-blowing weed","e"],
-    ["THISTLE","Scotland's prickly emblem","m"],
-    ["HEATHER","Purple moorland shrub","m"],
-    ["MISTLETOE","Christmas kissing sprig","m"],
-    ["FERN","Frondy shade-lover","e"],
-    ["LAVENDER","Scented purple herb","e"],
-    ["ROSEMARY","Herb for remembrance","m"],
-    ["BASIL","Pesto's leafy base","e"],
-    ["HONEYSUCKLE","Sweet-scented climber","m"],
-    ["SNOWDROP","First bulb of the year","m"],
-    ["FOXGLOVE","Tall spotted bell flower","m"],
-    ["POINSETTIA","Crimson Christmas star","h"],
-    ["HAWTHORN","May-blossom hedge tree","h"]
-  ],
-  "gemstones": [
-    ["DIAMOND","Hardest sparkling gem","e"],
-    ["RUBY","Red precious stone","e"],
-    ["EMERALD","Green precious stone","e"],
-    ["SAPPHIRE","Blue precious stone","e"],
-    ["OPAL","Shifting rainbow flashes","m"],
-    ["AMETHYST","Purple quartz","m"],
-    ["TOPAZ","Golden November birthstone","m"],
-    ["GARNET","Deep-red January birthstone","m"],
-    ["PEARL","Oyster's lustrous gift","e"],
-    ["JADE","Carved green stone","e"],
-    ["QUARTZ","Common crystal","m"],
-    ["ONYX","Banded black stone","m"],
-    ["TURQUOISE","Blue-green December stone","m"],
-    ["MOONSTONE","Glowing June birthstone","h"],
-    ["PERIDOT","Olive-green August gem","h"],
-    ["ZIRCON","Brilliant December stone","h"],
-    ["AQUAMARINE","Sea-blue March gem","h"],
-    ["CITRINE","Lemon-yellow quartz","h"],
-    ["MALACHITE","Swirled green copper stone","h"],
-    ["BERYL","The family behind emerald","h"],
-    ["JASPER","Speckled opaque quartz","h"],
-    ["BLOODSTONE","Green stone with red flecks","h"],
-    ["ROSE QUARTZ","Pink stone of love","m"],
-    ["LAPIS LAZULI","Deep-blue stone of pharaohs","h"],
-    ["AGATE","Banded chalcedony stone","m"]
-  ],
-  "birds": [
-    ["ROBIN","Red-breasted garden friend","e"],
-    ["SPARROW","Cheerful brown hop-about","e"],
-    ["BLACKBIRD","Golden-beaked songster","e"],
-    ["KINGFISHER","Diving jewel of rivers","m"],
-    ["PUFFIN","Clown-faced sea parrot","m"],
-    ["OWL","Night-time hooter","e"],
-    ["EAGLE","Soaring hunter","e"],
-    ["FALCON","Speedy sky hunter","m"],
-    ["KESTREL","Hovering motorway hunter","m"],
-    ["HERON","Patient grey fisher","m"],
-    ["SWAN","Graceful river glide","e"],
-    ["MAGPIE","Chattering black-and-white thief","e"],
-    ["JAY","Pinkish screeching woodland bird","h"],
-    ["WREN","Tiny loud songster","m"],
-    ["CHAFFINCH","Shy woodland finch","h"],
-    ["GOLDFINCH","Red-faced thistle feeder","h"],
-    ["WOODPECKER","Tree-drumming borer","m"],
-    ["NIGHTINGALE","Famed night singer","m"],
-    ["SWALLOW","Summer fork-tailed visitor","e"],
-    ["SWIFT","Screaming summer sickle","m"],
-    ["CORMORANT","Diving black fisher","h"],
-    ["PELICAN","Pouch-billed giant","m"],
-    ["ALBATROSS","Ocean's widest wings","h"],
-    ["STARLING","Murmuration maker","m"],
-    ["DOVE","Symbol of peace","e"]
-  ],
-  "food and drink": [
-    ["FISH AND CHIPS","Chippy classic","e"],
-    ["COTTAGE PIE","Mince topped with mash","m"],
-    ["PORK PIE","Picnic pastry","m"],
-    ["CRUMPET","Holey toasted tea-time treat","m"],
-    ["SCONE","Cream-tea classic","e"],
-    ["TEA","The nation's favourite brew","e"],
-    ["LEMONADE","Fizzy picnic cooler","e"],
-    ["GINGER BEER","Fiery bottled brew","m"],
-    ["MARMITE","Love-it-or-hate-it spread","m"],
-    ["CHEDDAR","The nation's favourite cheese","e"],
-    ["STILTON","Blue-veined Christmas cheese","m"],
-    ["SAUSAGE ROLL","Bakery favourite","e"],
-    ["BLACK PUDDING","Full-English blood sausage","h"],
-    ["TRIFLE","Layered party pudding","m"],
-    ["ETON MESS","Strawberry meringue crush","m"],
-    ["APPLE CRUMBLE","Orchard pudding with custard","e"],
-    ["SPOTTED DICK","Steamed suet pudding","h"],
-    ["CORNISH PASTY","Hand-held miner's lunch","m"],
-    ["BREAD PUDDING","Thrifty spiced bake","h"],
-    ["MUSHY PEAS","Chip-shop green mush","m"],
-    ["VICTORIA SPONGE","Jam-filled celebration cake","m"],
-    ["HAGGIS","Burns Night centrepiece","m"],
-    ["PORRIDGE","Warming oat breakfast","e"],
-    ["CUSTARD","Pouring pudding partner","e"],
-    ["TOAD IN THE HOLE","Sausages baked in batter","m"]
-  ],
-  "geography": [
-    ["THAMES","London's river","e"],
-    ["SEVERN","Longest British river","m"],
-    ["BEN NEVIS","Highest British peak","m"],
-    ["SNOWDON","Highest Welsh peak","m"],
-    ["LAKE DISTRICT","Cumbrian fells and meres","m"],
-    ["CORNWALL","Pasty peninsula","e"],
-    ["DEVON","Cream-tea county","e"],
-    ["YORKSHIRE","God's own county","e"],
-    ["LOCH NESS","Monster's home waters","e"],
-    ["STONEHENGE","Wiltshire stone circle","m"],
-    ["PEAK DISTRICT","First national park","m"],
-    ["DARTMOOR","Pony moor","m"],
-    ["EXMOOR","Red-deer moor","h"],
-    ["COTSWOLDS","Honey-stone hills","h"],
-    ["PENNINES","Backbone of England","h"],
-    ["ISLE OF SKYE","Misty Hebridean isle","m"],
-    ["ISLE OF WIGHT","Solent island","m"],
-    ["EDINBURGH","Castle capital","e"],
-    ["CARDIFF","Welsh capital","e"],
-    ["BELFAST","Titanic's birthplace","m"],
-    ["DOVER","White-cliff port","e"],
-    ["BATH","Georgian spa city","m"],
-    ["FORT WILLIAM","The Ben's gateway town","h"],
-    ["WHITE CLIFFS","Dover's chalk face","m"],
-    ["ENGLISH CHANNEL","La Manche crossing","m"]
-  ],
-  "uk number ones": [
-    ["STAY","Shakespears Sister","e"],
-    ["MR BLOBBY","Mr Blobby","e"],
-    ["BACK FOR GOOD","Take That","e"],
-    ["EARTH SONG","Michael Jackson","e"],
-    ["SPACEMAN","Babylon Zoo","m"],
-    ["WANNABE","Spice Girls","e"],
-    ["BARBIE GIRL","Aqua","e"],
-    ["TUBTHUMPING","Chumbawamba","h"],
-    ["BELIEVE","Cher","e"],
-    ["MILLENNIUM","Robbie Williams","m"],
-    ["NO MATTER WHAT","Boyzone","m"],
-    ["MAMBO NO 5","Lou Bega","e"],
-    ["BLUE (DA BA DEE)","Eiffel 65","m"],
-    ["PURE SHORES","All Saints","m"],
-    ["LADY MARMALADE","Christina Aguilera, Lil' Kim, Mya and Pink","h"],
-    ["WHOLE AGAIN","Atomic Kitten","e"],
-    ["LOSE YOURSELF","Eminem","m"],
-    ["WHERE IS THE LOVE?","The Black Eyed Peas","m"],
-    ["MAD WORLD","Gary Jules","m"],
-    ["HIPS DON'T LIE","Shakira featuring Wyclef Jean","m"],
-    ["PATIENCE","Take That","e"],
-    ["BLEEDING LOVE","Leona Lewis","e"],
-    ["GRACE KELLY","Mika","m"],
-    ["HALLELUJAH","Alexandra Burke","e"],
-    ["JUST DANCE","Lady Gaga featuring Colby O'Donis","m"],
-    ["POKER FACE","Lady Gaga","e"]
-  ]
-};
-const CATEGORIES = Object.keys(LIBRARY);
 const BADGES = [
   ["first-win","Off the Mark","Solve your first word"],
   ["clean-sheet","Clean Sheet","Solve with zero misses"],
@@ -771,18 +757,41 @@ function letterCount(text){
   return n;
 }
 function hasSpace(text){ return text.indexOf(" ") !== -1; }
-/* Flatten the library and keep entries matching the settings. */
-function eligibleEntries(library, cats, settings){
+function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+/* Shared word data -> playable categories. Categories that are
+   malformed or have no guessable words are dropped. */
+function parseWordData(raw){
   const out = [];
-  for (const cat of cats){
-    if (!settings.cats[cat]) continue;
-    const rows = library[cat] || [];
-    for (const row of rows){
-      const text = row[0];
+  const list = raw && Array.isArray(raw.categories) ? raw.categories : [];
+  for (const c of list){
+    if (!c || typeof c.id !== "string" || !c.id) continue;
+    const words = [];
+    for (const w of Array.isArray(c.words) ? c.words : []){
+      if (!w || typeof w.answer !== "string") continue;
+      const answer = w.answer.trim().toUpperCase();
+      if (!letterCount(answer)) continue;
+      words.push({
+        answer:answer,
+        hint: typeof w.hint === "string" ? w.hint : "",
+        difficulty: ["easy","medium","hard"].indexOf(w.difficulty) !== -1 ? w.difficulty : "medium"
+      });
+    }
+    if (!words.length) continue;
+    out.push({ id:c.id, name: typeof c.name === "string" && c.name ? c.name : c.id, words:words });
+  }
+  return out;
+}
+/* Flatten the categories and keep entries matching the settings. */
+function eligibleEntries(cats, settings){
+  const out = [];
+  for (const c of cats){
+    if (!settings.cats[c.id]) continue;
+    for (const w of c.words){
+      const text = w.answer;
       const n = letterCount(text);
       if (n < settings.min || n > settings.max) continue;
       if (!settings.phrases && hasSpace(text)) continue;
-      out.push({ text:text, clue:row[1], diff:row[2], cat:cat });
+      out.push({ text:text, clue:w.hint, diff:w.difficulty, cat:c.id, catName:c.name });
     }
   }
   return out;
@@ -817,17 +826,105 @@ function isSolved(text, guessed){
 }
 /* Scoring: base by length x difficulty, flawless bonus grows the combo. */
 function pointsFor(o){
-  const per = o.diff === "h" ? 20 : o.diff === "m" ? 15 : 10;
+  const per = o.diff === "hard" ? 20 : o.diff === "medium" ? 15 : 10;
   const base = o.letters * per;
   let bonus = 0;
   if (o.flawless) bonus = 25 * (o.comboBefore + 1);
   if (o.quick) bonus += 50;
   return base + bonus;
 }
-function defaultSettings(){
-  const cats = {};
-  for (const c of CATEGORIES) cats[c] = true;
-  return { min:3, max:14, phrases:true, cats:cats, lives:6, quick:false, mute:false };
+/* How far up the pitch City are after `misses`: 0 at kick-off, 1 (the
+   shooting chance) with one chance left; the final miss is the shot. */
+function stageProgress(misses, lives){
+  if (lives <= 1) return 1;
+  return clamp(misses / (lives - 1), 0, 1);
+}
+/* Pitch coordinates are metres: x 0-105 towards the Arsenal goal,
+   y 0-68 from the far touchline. Index 0 is always the goalkeeper. */
+/* Man City 4-3-3: GK, LB, LCB, RCB, RB, CDM, LCM, RCM, LW, ST, RW */
+const CITY_START = [[5,34],[22,9],[17,24],[17,44],[22,59],[30,34],[38,22],[38,46],[48,8],[50,34],[48,60]];
+const CITY_CHANCE = [[28,34],[68,10],[50,25],[50,43],[62,47],[66,33],[80,21],[83,44],[95,13],[88,33],[95,56]];
+function cityShape(p, flank){
+  const f = flank || 0;
+  return CITY_START.map(function(a, i){
+    const b = CITY_CHANCE[i];
+    let y = a[1] + (b[1] - a[1]) * p;
+    /* midfield and attack overload one flank mid-move, then converge */
+    if (i >= 6) y += f * 3 * Math.sin(Math.PI * p);
+    return [a[0] + (b[0] - a[0]) * p, clamp(y, 2, 66)];
+  });
+}
+/* Arsenal 4-4-2 block: GK, back four, midfield four, two strikers.
+   Drops deeper and narrower as City advance, and slides towards the ball. */
+function arsenalShape(p, ballY){
+  const by = ballY == null ? 34 : ballY;
+  const xb = 66 + 29 * p, xm = xb - (13 - 4 * p), xf = xb - (26 - 9 * p);
+  const squeeze = 1 - 0.18 * p;
+  function lane(y, pull){ return clamp(34 + (y - 34) * squeeze + (by - 34) * pull, 3, 65); }
+  const out = [[103, clamp(34 + (by - 34) * 0.12, 31, 37)]];
+  [12,27,41,56].forEach(function(y, i){ out.push([xb - (i === 0 || i === 3 ? 1.5 : 0), lane(y, 0.22)]); });
+  [10,26,42,58].forEach(function(y, i){ out.push([xm - (i === 0 || i === 3 ? 1 : 0), lane(y, 0.34)]); });
+  [27,41].forEach(function(y){ out.push([xf, lane(y, 0.4)]); });
+  return out;
+}
+/* Which City player should have the ball at progress p. */
+function carrierFor(p, alt){
+  if (p >= 1) return 9;
+  if (p <= 0) return alt ? 3 : 2;
+  if (p < 0.34) return alt ? 4 : 5;
+  if (p < 0.67) return alt ? 7 : 6;
+  return alt ? 10 : 8;
+}
+/* An outfield player positioned between the ball and the target to
+   play the ball through; -1 when nobody fits. */
+function pickRelay(fromIdx, toIdx, shape, ballX, rand){
+  const tx = shape[toIdx][0];
+  const lo = Math.min(ballX, tx) - 8, hi = Math.max(ballX, tx) + 6;
+  let best = -1, bestScore = -Infinity;
+  for (let i = 1; i < shape.length; i++){
+    if (i === fromIdx || i === toIdx) continue;
+    const x = shape[i][0];
+    if (x < lo || x > hi) continue;
+    const score = rand() * 10 - Math.abs(x - (ballX + tx) / 2) * 0.5;
+    if (score > bestScore){ bestScore = score; best = i; }
+  }
+  return best;
+}
+/* Motion segment: cubic Hermite from the actor's current position and
+   velocity to a resting target, so a new move never jolts the old one.
+   `bulge` bends the path sideways without changing either end velocity. */
+function makeSeg(t0, d, from, to, bulge){
+  let vx = from.vx, vy = from.vy;
+  const cap = (Math.hypot(to[0] - from.x, to[1] - from.y) * 1.2 + 2) / d;
+  const sp = Math.hypot(vx, vy);
+  if (sp > cap){ vx *= cap / sp; vy *= cap / sp; }
+  return { t0:t0, d:Math.max(0.001, d), p0:[from.x, from.y], v0:[vx, vy], p1:[to[0], to[1]], bulge:bulge || null };
+}
+function evalSeg(s, t){
+  if (t >= s.t0 + s.d) return { x:s.p1[0], y:s.p1[1], vx:0, vy:0 };
+  const u = Math.max(0, (t - s.t0) / s.d), u2 = u * u, u3 = u2 * u;
+  const h00 = 2*u3 - 3*u2 + 1, h10 = u3 - 2*u2 + u, h01 = 3*u2 - 2*u3;
+  const d00 = 6*u2 - 6*u, d10 = 3*u2 - 4*u + 1, d01 = 6*u - 6*u2;
+  const b = 16 * u2 * (1 - u) * (1 - u), db = 32 * u * (1 - u) * (1 - 2*u);
+  const bx = s.bulge ? s.bulge[0] : 0, by = s.bulge ? s.bulge[1] : 0;
+  return {
+    x: h00*s.p0[0] + h10*s.d*s.v0[0] + h01*s.p1[0] + b*bx,
+    y: h00*s.p0[1] + h10*s.d*s.v0[1] + h01*s.p1[1] + b*by,
+    vx: (d00*s.p0[0] + d10*s.d*s.v0[0] + d01*s.p1[0] + db*bx) / s.d,
+    vy: (d00*s.p0[1] + d10*s.d*s.v0[1] + d01*s.p1[1] + db*by) / s.d
+  };
+}
+
+/* ================= word data ================= */
+function readWordData(){
+  try{ return JSON.parse(document.getElementById('hangman-words').textContent); }
+  catch(e){ return null; }
+}
+const CATEGORIES = parseWordData(readWordData());
+function defaultSettings(cats){
+  const c = {};
+  for (const cat of cats || CATEGORIES) c[cat.id] = true;
+  return { min:3, max:14, phrases:true, cats:c, lives:6, quick:false, mute:false };
 }
 function defaultStats(){
   return { streak:0, bestStreak:0, wins:{}, played:0, best:0, badges:{} };
@@ -845,8 +942,11 @@ function loadJSON(key, fallback){
     return v;
   }catch(e){ return fallback; }
 }
-function sanitizeSettings(v){
-  const d = defaultSettings();
+/* Earlier builds keyed categories by lower-case name, not id. */
+function legacyKey(cat){ return cat.name.toLowerCase(); }
+function sanitizeSettings(v, cats){
+  cats = cats || CATEGORIES;
+  const d = defaultSettings(cats);
   if (!v || typeof v !== "object") return d;
   const s = {
     min: Math.min(14, Math.max(3, Number(v.min) || 3)),
@@ -859,17 +959,29 @@ function sanitizeSettings(v){
   };
   if (s.min > s.max){ const t = s.min; s.min = s.max; s.max = t; }
   if (v.cats && typeof v.cats === "object"){
-    for (const c of CATEGORIES) s.cats[c] = v.cats[c] !== false;
+    for (const c of cats){
+      const on = c.id in v.cats ? v.cats[c.id] : v.cats[legacyKey(c)];
+      s.cats[c.id] = on !== false;
+    }
   }
   return s;
 }
-function sanitizeStats(v){
+function sanitizeStats(v, cats){
+  cats = cats || CATEGORIES;
   const d = defaultStats();
   if (!v || typeof v !== "object") return d;
+  const wins = (v.wins && typeof v.wins === "object") ? Object.assign({}, v.wins) : {};
+  for (const c of cats){
+    const old = legacyKey(c);
+    if (old !== c.id && wins[old] != null){
+      wins[c.id] = (Number(wins[c.id]) || 0) + (Number(wins[old]) || 0);
+      delete wins[old];
+    }
+  }
   return {
     streak: Math.max(0, Number(v.streak) || 0),
     bestStreak: Math.max(0, Number(v.bestStreak) || 0),
-    wins: (v.wins && typeof v.wins === "object") ? v.wins : {},
+    wins: wins,
     played: Math.max(0, Number(v.played) || 0),
     best: Math.max(0, Number(v.best) || 0),
     badges: (v.badges && typeof v.badges === "object") ? v.badges : {}
@@ -893,7 +1005,7 @@ function ensureAudio(){
     master.connect(actx.destination);
   }catch(e){ actx = null; }
 }
-function tone(freq, dur, type, when, slideTo){
+function tone(freq, dur, type, when, slideTo, vol){
   if (!actx || settings.mute) return;
   try{
     const t = actx.currentTime + (when || 0);
@@ -903,13 +1015,13 @@ function tone(freq, dur, type, when, slideTo){
     o.frequency.setValueAtTime(freq, t);
     if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(1, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(vol || 1, t + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(master);
     o.start(t); o.stop(t + dur + 0.05);
   }catch(e){}
 }
-function crowd(dur, low, when){
+function crowd(dur, low, when, vol){
   if (!actx || settings.mute) return;
   try{
     const t = actx.currentTime + (when || 0);
@@ -922,7 +1034,7 @@ function crowd(dur, low, when){
     f.type = "bandpass"; f.frequency.value = low ? 300 : 1200; f.Q.value = 0.6;
     const g = actx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.9, t + dur * 0.25);
+    g.gain.exponentialRampToValueAtTime(vol || 0.9, t + dur * 0.25);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     src.connect(f); f.connect(g); g.connect(master);
     src.start(t);
@@ -932,7 +1044,10 @@ const SFX = {
   click(){ tone(660, 0.07, "triangle", 0); },
   good(){ tone(740, 0.1, "sine", 0); tone(988, 0.12, "sine", 0.07); },
   bad(){ tone(196, 0.22, "sawtooth", 0, 130); },
-  kick(){ tone(150, 0.09, "sine", 0, 60); },
+  kick(){ tone(150, 0.09, "sine", 0, 60, 0.45); },
+  shot(){ tone(130, 0.12, "triangle", 0, 55); crowd(0.5, false, 0, 0.4); },
+  tackle(){ tone(120, 0.1, "triangle", 0, 70, 0.7); },
+  clear(){ tone(170, 0.12, "sine", 0, 60); crowd(0.8, false, 0.05, 0.5); },
   cheer(){ tone(523,0.12,"triangle",0); tone(659,0.12,"triangle",0.1); tone(784,0.2,"triangle",0.2); crowd(0.9,false,0.05); },
   groan(){ tone(330,0.3,"sawtooth",0,140); tone(220,0.4,"sawtooth",0.15,90); crowd(1.1,true,0); },
   badge(){ tone(880,0.1,"sine",0); tone(1174,0.16,"sine",0.09); }
@@ -940,30 +1055,466 @@ const SFX = {
 window.addEventListener("pointerdown", ensureAudio, { passive:true });
 window.addEventListener("keydown", ensureAudio);
 
+/* ================= stadium: projection ================= */
+/* A side-on broadcast camera: the far touchline is narrower and higher. */
+const CAM_D = 200, CAM_F = 724, Y_FAR = 62, Y_NEAR = 246;
+function depthScale(y){ return CAM_F / (CAM_D + (68 - y)); }
+const K_NEAR = depthScale(68), K_FAR = depthScale(0);
+const CAM_H = (Y_NEAR - Y_FAR) / (K_NEAR - K_FAR);
+const CAM_Y0 = Y_FAR - CAM_H * K_FAR;
+function project(x, y, z){
+  const k = depthScale(y);
+  return [200 + (x - 52.5) * k, CAM_Y0 + CAM_H * k - (z || 0) * k, k];
+}
+/* goals are drawn larger than life so they read next to the figures */
+const GOAL_HW = 4.6, GOAL_H = 5.2, GOAL_D = 2.4;
+
+function f1(n){ return n.toFixed(1); }
+function ptsStr(list){ return list.map(function(p){ return f1(p[0]) + "," + f1(p[1]); }).join(" "); }
+function pathOf(list, close){ return "M" + list.map(function(p){ return f1(p[0]) + " " + f1(p[1]); }).join("L") + (close ? "Z" : ""); }
+function P(x, y, z){ return project(x, y, z).slice(0, 2); }
+function quad(x0, y0, x1, y1){ return [P(x0,y0), P(x1,y0), P(x1,y1), P(x0,y1)]; }
+function arc(cx, cy, r, keep){
+  const out = [];
+  for (let i = 0; i <= 64; i++){
+    const a = i / 64 * Math.PI * 2, x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+    if (!keep || keep(x)) out.push(P(x, y));
+  }
+  return out;
+}
+function goalSVG(gx, out){
+  /* out: +1 net behind x=105, -1 net behind x=0 */
+  const bx = gx + out * GOAL_D, y0 = 34 - GOAL_HW, y1 = 34 + GOAL_HW, hb = GOAL_H * 0.82;
+  let mesh = "";
+  for (let i = 1; i < 6; i++){
+    const y = y0 + (y1 - y0) * i / 6;
+    mesh += pathOf([P(gx, y, GOAL_H), P(bx, y, hb), P(bx, y, 0)]);
+  }
+  for (let i = 1; i < 4; i++){
+    const z = hb * i / 4;
+    mesh += pathOf([P(bx, y0, z), P(bx, y1, z)]);
+  }
+  const back = '<polygon points="' + ptsStr([P(bx,y0,0), P(bx,y0,hb), P(bx,y1,hb), P(bx,y1,0)]) + '" fill="rgba(255,233,244,.07)"/>' +
+    '<polygon points="' + ptsStr([P(gx,y0,GOAL_H), P(bx,y0,hb), P(bx,y1,hb), P(gx,y1,GOAL_H)]) + '" fill="rgba(255,233,244,.05)"/>' +
+    '<path d="' + mesh + pathOf([P(gx,y0,GOAL_H), P(bx,y0,hb), P(bx,y0,0), P(gx,y0,0)]) + pathOf([P(gx,y1,GOAL_H), P(bx,y1,hb), P(bx,y1,0), P(gx,y1,0)]) +
+    '" fill="none" stroke="rgba(255,233,244,.4)" stroke-width=".5"/>';
+  const frame = '<path d="' + pathOf([P(gx,y0,0), P(gx,y0,GOAL_H), P(gx,y1,GOAL_H), P(gx,y1,0)]) +
+    '" fill="none" stroke="#ff2e88" stroke-width="3" stroke-opacity=".35" stroke-linejoin="round"/>' +
+    '<path d="' + pathOf([P(gx,y0,0), P(gx,y0,GOAL_H), P(gx,y1,GOAL_H), P(gx,y1,0)]) +
+    '" fill="none" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>';
+  return { back:back, frame:frame };
+}
+function buildPitch(svg){
+  let s = '<defs>' +
+    '<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b0731"/><stop offset="1" stop-color="#07010f"/></linearGradient>' +
+    '<pattern id="crowd" width="14" height="7" patternUnits="userSpaceOnUse">' +
+      '<circle cx="2" cy="2" r="1.3" fill="#ff7ab8" fill-opacity=".45"/><circle cx="7" cy="4.6" r="1.3" fill="#7fd4ff" fill-opacity=".3"/>' +
+      '<circle cx="11.5" cy="1.8" r="1.2" fill="#fff" fill-opacity=".22"/><circle cx="4.6" cy="5.6" r="1.1" fill="#ff4d5e" fill-opacity=".35"/>' +
+      '<circle cx="9.6" cy="6.4" r="1" fill="#ff2e88" fill-opacity=".3"/></pattern>' +
+    '<linearGradient id="standShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07010f" stop-opacity=".9"/><stop offset=".7" stop-color="#07010f" stop-opacity=".2"/><stop offset="1" stop-color="#07010f" stop-opacity=".55"/></linearGradient>' +
+    '<linearGradient id="board" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff2e88"/><stop offset=".5" stop-color="#b3186a"/><stop offset="1" stop-color="#ff2e88"/></linearGradient>' +
+    '<radialGradient id="pool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".13"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>' +
+    '<radialGradient id="vig" cx=".5" cy=".55" r=".75"><stop offset=".6" stop-color="#05010d" stop-opacity="0"/><stop offset="1" stop-color="#05010d" stop-opacity=".7"/></radialGradient>' +
+    '<radialGradient id="lamp" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#ffd6ea" stop-opacity=".7"/><stop offset="1" stop-color="#ff2e88" stop-opacity="0"/></radialGradient>' +
+    '<filter id="neon" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.4"/></filter>' +
+    '</defs>';
+  s += '<rect width="400" height="266" fill="url(#sky)"/>';
+  /* stand and crowd */
+  s += '<rect y="10" width="400" height="' + (Y_FAR - 12) + '" fill="#13052a"/>';
+  s += '<rect y="10" width="400" height="' + (Y_FAR - 12) + '" fill="url(#crowd)"/>';
+  s += '<rect y="10" width="400" height="' + (Y_FAR - 12) + '" fill="url(#standShade)"/>';
+  s += '<path d="M0 10H400" stroke="#ff2e88" stroke-width="1.2" stroke-opacity=".7"/>';
+  /* floodlight lamps on the roof */
+  [40, 140, 260, 360].forEach(function(x){ s += '<ellipse cx="' + x + '" cy="8" rx="26" ry="9" fill="url(#lamp)"/>'; });
+  /* surrounding grass and stripes */
+  s += '<polygon points="' + ptsStr(quad(-12, -4, 117, 74)) + '" fill="#0a4a33"/>';
+  for (let i = 0; i < 10; i++){
+    s += '<polygon points="' + ptsStr(quad(i * 10.5, 0, (i + 1) * 10.5, 68)) + '" fill="' + (i % 2 ? "#0e6444" : "#117a52") + '"/>';
+  }
+  /* LED board behind the far touchline */
+  const b0 = P(-6, -3, 0), b1 = P(111, -3, 1.3);
+  s += '<rect x="' + f1(b0[0]) + '" y="' + f1(b1[1]) + '" width="' + f1(b1[0] - b0[0]) + '" height="' + f1(b0[1] - b1[1]) + '" fill="url(#board)" opacity=".85"/>';
+  s += '<text x="200" y="' + f1(b0[1] - 1) + '" font-size="3" font-weight="800" letter-spacing="2" fill="#fff" text-anchor="middle" opacity=".9">ARCADE RUN · MAN CITY v ARSENAL · ARCADE RUN · MAN CITY v ARSENAL · ARCADE RUN</text>';
+  /* floodlight pools */
+  [[26, 30], [79, 30]].forEach(function(c){
+    const p = P(c[0], c[1]);
+    s += '<ellipse cx="' + f1(p[0]) + '" cy="' + f1(p[1]) + '" rx="120" ry="70" fill="url(#pool)"/>';
+  });
+  /* markings */
+  let lines = pathOf(quad(0, 0, 105, 68), true) + pathOf([P(52.5, 0), P(52.5, 68)]) + pathOf(arc(52.5, 34, 9.15), true);
+  lines += pathOf(quad(0, 13.84, 16.5, 54.16)) + pathOf(quad(0, 24.84, 5.5, 43.16));
+  lines += pathOf(quad(105, 13.84, 88.5, 54.16)) + pathOf(quad(105, 24.84, 99.5, 43.16));
+  lines += pathOf(arc(11, 34, 9.15, function(x){ return x > 16.5; })) + pathOf(arc(94, 34, 9.15, function(x){ return x < 88.5; }));
+  s += '<path d="' + pathOf(quad(0, 0, 105, 68), true) + '" fill="none" stroke="#ff2e88" stroke-width="2.6" filter="url(#neon)"/>';
+  s += '<path d="' + lines + '" fill="none" stroke="#fff" stroke-opacity=".72" stroke-width=".9" stroke-linejoin="round"/>';
+  [[52.5, 34], [11, 34], [94, 34]].forEach(function(c){
+    const p = P(c[0], c[1]);
+    s += '<ellipse cx="' + f1(p[0]) + '" cy="' + f1(p[1]) + '" rx="1.3" ry=".9" fill="#fff" fill-opacity=".8"/>';
+  });
+  const g = goalSVG(0, -1);
+  s += g.back + g.frame;
+  s += '<rect width="400" height="266" fill="url(#vig)"/>';
+  svg.innerHTML = s;
+}
+
+/* ================= stadium: actors ================= */
+const KITS = {
+  city:   { shirt:"#7fd4ff", shorts:"#f4fbff", socks:"#7fd4ff", trim:"#1b4f75" },
+  cityGk: { shirt:"#ff2e88", shorts:"#2a0b3d", socks:"#ff2e88", trim:"#6d0a3a" },
+  ars:    { shirt:"#e5243b", shorts:"#ffffff", socks:"#ffffff", trim:"#7a0d1c", sleeves:"#ffffff" },
+  arsGk:  { shirt:"#ffd23f", shorts:"#1c1c1c", socks:"#ffd23f", trim:"#7a5a00" }
+};
+function figureSVG(kit){
+  return '<ellipse rx="4.8" ry="1.5" fill="#04000c" fill-opacity=".5"/>' +
+    '<g class="bd">' +
+      '<path d="M-1.5 0L-1.1-6M1.5 0L1.1-6" stroke="' + kit.socks + '" stroke-width="1.8" stroke-linecap="round"/>' +
+      '<rect x="-2.7" y="-8.4" width="5.4" height="3.2" rx="1" fill="' + kit.shorts + '"/>' +
+      '<rect x="-3.2" y="-15" width="6.4" height="7.4" rx="2.2" fill="' + kit.shirt + '" stroke="' + kit.trim + '" stroke-width=".5"/>' +
+      (kit.sleeves ? '<rect x="-4.4" y="-14.6" width="1.9" height="4" rx=".9" fill="' + kit.sleeves + '"/><rect x="2.5" y="-14.6" width="1.9" height="4" rx=".9" fill="' + kit.sleeves + '"/>' : '') +
+      '<path d="M-2.2-14.3Q0-15.3 2.2-14.3" stroke="#fff" stroke-opacity=".6" stroke-width=".7" fill="none"/>' +
+      '<circle cy="-17.3" r="2.2" fill="#ffe3ec"/>' +
+    '</g>';
+}
+const scene = {
+  actors:[], city:[], ars:[], cues:[], clockOffset:0, busyUntil:0,
+  mode:"home", stageN:0, p:0, netHit:-99, reduced:false
+};
+const B = { events:[], holder:null, el:null, shadow:null, ring:null, ringO:0, sy:0 };
+function now(){ return performance.now() / 1000 + scene.clockOffset; }
+function restSeg(pos){ return { t0:-1e9, d:0.001, p0:pos.slice(), v0:[0,0], p1:pos.slice(), bulge:null }; }
+function actorAt(a, t){
+  let s = a.segs[0];
+  for (const g of a.segs){ if (g.t0 <= t) s = g; else break; }
+  return evalSeg(s, t);
+}
+function moveTo(a, to, at, d, bulge, shuffle){
+  const st = actorAt(a, at);
+  a.segs = a.segs.filter(function(g){ return g.t0 < at; });
+  a.segs.push(makeSeg(at, d, st, [clamp(to[0], -1, 106), clamp(to[1], 1, 67)], bulge));
+  if (!shuffle){ a.base = to.slice(); busy(at + d); }
+}
+function busy(t){ scene.busyUntil = Math.max(scene.busyUntil, t); }
+function setFx(a, kind, t0, d, dir){ a.fx = { kind:kind, t0:t0, d:d, dir:dir || 1 }; busy(t0 + d); }
+function nearestTo(list, pt, outfield){
+  let best = null, bd = Infinity;
+  for (let i = outfield ? 1 : 0; i < list.length; i++){
+    const s = actorAt(list[i], now());
+    const d = Math.hypot(s.x - pt[0], s.y - pt[1]);
+    if (d < bd){ bd = d; best = list[i]; }
+  }
+  return best;
+}
+/* ---- ball: a timeline of "owned by" and "in flight" events ---- */
+const EASE = {
+  lin(u){ return u; },
+  pass(u){ return u * (1.6 - 0.6 * u); },   /* rolls out, still moving on arrival */
+  out(u){ return 1 - (1 - u) * (1 - u); },
+  fall(u){ return u * u; }                    /* gravity */
+};
+function lerp3(a, b, k){ return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]; }
+function ownedSpot(a, t){ const s = actorAt(a, t); return [s.x + a.dir * 0.9, s.y + 0.35, 0]; }
+function ballEventAt(t){
+  let e = B.events[0];
+  for (const g of B.events){ if (g.t <= t) e = g; else break; }
+  return e;
+}
+function ballAt(t){
+  const e = ballEventAt(t);
+  if (e.kind === "own"){
+    const spot = ownedSpot(e.who, t);
+    const q = e.from ? (t - e.t) / 0.14 : 1;
+    if (q < 1){ const k = q * q * (3 - 2 * q); return lerp3(e.from, spot, k); }
+    return spot;
+  }
+  const u = clamp((t - e.t) / e.d, 0, 1);
+  const p = lerp3(e.from, e.to, EASE[e.ease](u));
+  p[2] += e.arc * 4 * u * (1 - u);
+  return p;
+}
+function cutBall(at){ B.events = B.events.filter(function(g){ return g.t < at; }); }
+/* Play the ball to `rcv` at time `at`, aiming where they will be. */
+function passBall(rcv, at, o){
+  o = o || {};
+  const from = ballAt(at);
+  let d = 0.6, to = null, lofted = false, dist = 0;
+  for (let k = 0; k < 3; k++){
+    to = ownedSpot(rcv, at + d);
+    dist = Math.hypot(to[0] - from[0], to[1] - from[1]);
+    lofted = o.lofted || dist > 34;
+    d = o.quick ? 0.16 : lofted ? 0.5 + dist / 48 : 0.3 + dist / 32;
+  }
+  to = ownedSpot(rcv, at + d);
+  cutBall(at);
+  B.events.push({ t:at, kind:"fly", from:from, to:to, d:d, arc: lofted ? Math.min(14, dist * 0.17) : 0, ease: lofted ? "lin" : "pass", sound:o.sound || "kick" });
+  B.events.push({ t:at + d, kind:"own", who:rcv, from:to });
+  B.holder = rcv;
+  busy(at + d);
+  return at + d;
+}
+function cityHolder(t){
+  return B.holder && B.holder.team === "city" ? B.holder : nearestTo(scene.city, ballAt(t), true);
+}
+/* Arsenal slide across, drop off and send the nearest player to press. */
+function arsenalReact(p, ballPt, at, d){
+  const shape = arsenalShape(p, ballPt[1]);
+  let pi = 1, best = Infinity;
+  for (let i = 1; i < 11; i++){
+    const dd = Math.hypot(shape[i][0] - ballPt[0], shape[i][1] - ballPt[1]);
+    if (dd < best){ best = dd; pi = i; }
+  }
+  const gx = 105 - ballPt[0], gy = 34 - ballPt[1], gl = Math.hypot(gx, gy) || 1;
+  shape[pi] = [ballPt[0] + gx / gl * 2.6, ballPt[1] + gy / gl * 2.6];
+  shape.forEach(function(pos, i){
+    moveTo(scene.ars[i], pos, at + (i === pi ? 0 : 0.04 + Math.random() * 0.12), i === pi ? d * 0.8 : d);
+  });
+}
+function goHome(t, cityDelay, arsDelay){
+  cityShape(0, 0).forEach(function(pos, i){ moveTo(scene.city[i], pos, t + cityDelay + Math.random() * 0.15, 1.6 + Math.random() * 0.3); });
+  arsenalShape(0, 34).forEach(function(pos, i){ moveTo(scene.ars[i], pos, t + arsDelay + Math.random() * 0.15, 1.6 + Math.random() * 0.3); });
+}
+/* With reduced motion every script lands at once behind a calm fade. */
+function afterScript(){
+  if (!scene.reduced) return;
+  const skip = scene.busyUntil - now() + 0.02;
+  if (skip > 0) scene.clockOffset += skip;
+  if (scene.fg.animate) scene.fg.animate([{ opacity:0.15 }, { opacity:1 }], { duration:320, easing:"ease" });
+}
+/* ---- choreography ---- */
+const RUN_DELAY = [0.34, 0.22, 0.26, 0.26, 0.22, 0.14, 0.08, 0.08, 0, 0, 0];
+scene.passage = function(p){
+  const t = now();
+  scene.stageN++;
+  const alt = scene.stageN % 2 === 1;
+  const shape = cityShape(p, alt ? 1 : -1);
+  const holder = cityHolder(t);
+  /* off-ball runs first: forwards go early and bend their runs */
+  shape.forEach(function(pos, i){
+    const bulge = i >= 8 ? [0, (pos[1] < 34 ? -1 : 1) * 2.2] : null;
+    moveTo(scene.city[i], pos, t + RUN_DELAY[i] + Math.random() * 0.08, 1.9 + Math.random() * 0.35, bulge);
+  });
+  const ti = carrierFor(p, alt);
+  const ri = pickRelay(scene.city.indexOf(holder), ti, shape, ballAt(t)[0], Math.random);
+  let tk = t + 0.22, last = holder;
+  if (ri >= 0){
+    const arr = passBall(scene.city[ri], tk);
+    arsenalReact(p, ownedSpot(scene.city[ri], arr), tk + 0.18, 1.0);
+    tk = arr + 0.3; last = scene.city[ri];
+  }
+  if (scene.city[ti] !== last){
+    const arr2 = passBall(scene.city[ti], tk);
+    arsenalReact(p, ownedSpot(scene.city[ti], arr2), tk + 0.18, 1.1);
+  } else {
+    arsenalReact(p, ballAt(tk), tk, 1.1);
+  }
+  scene.mode = "attack"; scene.p = p;
+  afterScript();
+};
+scene.goal = function(onNet){
+  const t = now();
+  const st = scene.city[9];
+  let tShot;
+  if (B.holder !== st){ tShot = passBall(st, t + 0.08) + 0.24; }
+  else {
+    const s = actorAt(st, t);
+    moveTo(st, [Math.min(s.x + 2.5, 95), s.y], t, 0.5);
+    tShot = t + 0.3;
+  }
+  const side = Math.random() < 0.5 ? -1 : 1;
+  const ty = 34 + side * 3.3, hit = tShot + 0.42;
+  const from = ballAt(tShot);
+  cutBall(tShot);
+  B.events.push({ t:tShot, kind:"fly", from:from, to:[105.4, ty, 3.4], d:0.42, arc:0.6, ease:"lin", sound:"shot" });
+  B.events.push({ t:hit, kind:"fly", from:[105.4, ty, 3.4], to:[107.3, ty + side * 0.6, 1.8], d:0.2, arc:0, ease:"out" });
+  B.events.push({ t:hit + 0.2, kind:"fly", from:[107.3, ty + side * 0.6, 1.8], to:[107, ty + side * 0.8, 0], d:0.34, arc:0, ease:"fall" });
+  B.holder = null;
+  scene.netHit = hit;
+  /* keeper reads it late: full stretch, beaten */
+  const gk = scene.ars[0];
+  moveTo(gk, [103.4, 34 + side * 2.3], tShot + 0.06, 0.34);
+  setFx(gk, "dive", tShot + 0.06, 2.4, side);
+  /* the scorer wheels away to the corner, team-mates chase */
+  const flag = [100, side < 0 ? 5 : 63];
+  moveTo(st, flag, hit + 0.15, 1.7, [-3, 0]);
+  setFx(st, "celebrate", hit + 0.7, 1.6);
+  [8, 10, 7, 6].forEach(function(i, n){
+    moveTo(scene.city[i], [flag[0] - 3 - n * 1.6, flag[1] - side * (2 + n * 1.4)], hit + 0.35 + n * 0.08, 1.8);
+    setFx(scene.city[i], "celebrate", hit + 1.3 + n * 0.1, 1.2);
+  });
+  for (let i = 1; i < 11; i++) setFx(scene.ars[i], "dejected", hit + 0.2, 2.4);
+  if (onNet) scene.cues.push({ t:hit, fn:onNet });
+  busy(hit + 0.6);
+  scene.mode = "goal"; scene.p = 1;
+  afterScript();
+};
+scene.clearance = function(){
+  const t = now();
+  const carrier = cityHolder(t);
+  const tt = t + 0.4;
+  const cp = actorAt(carrier, tt);
+  const tackler = nearestTo(scene.ars, [cp.x, cp.y], true);
+  moveTo(tackler, [cp.x + 1.4, cp.y + 0.4], t, 0.4);
+  moveTo(carrier, [cp.x - 1.4, cp.y - 0.6], tt, 0.7);
+  setFx(carrier, "stumble", tt, 0.8);
+  const tc = tt + 0.3;
+  goHome(tc, 0.1, 0.25);
+  passBall(tackler, tt - 0.04, { quick:true, sound:"tackle" });
+  passBall(scene.city[2], tc, { lofted:true, sound:"clear" });
+  setFx(tackler, "celebrate", tc + 0.1, 0.9);
+  scene.mode = "home"; scene.p = 0;
+  afterScript();
+};
+scene.reset = function(){
+  const t = now();
+  goHome(t, 0, 0.1);
+  if (scene.mode === "goal"){
+    /* keeper fishes the ball out of the net and sends it long */
+    const gk = scene.ars[0];
+    moveTo(gk, [104.2, 34], t, 0.5);
+    passBall(scene.city[2], passBall(gk, t + 0.05, { sound:"none" }) + 0.25, { lofted:true, sound:"clear" });
+  } else if (B.holder !== scene.city[2]) passBall(scene.city[2], t + 0.2);
+  scene.mode = "home"; scene.p = 0;
+  afterScript();
+};
+/* ---- rendering: one requestAnimationFrame loop for 22 players + ball ---- */
+function makeActor(team, i, kit, dir, pos){
+  const root = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  root.innerHTML = figureSVG(kit);
+  const a = { team:team, i:i, dir:dir, root:root, body:root.querySelector(".bd"), segs:[restSeg(pos)], base:pos.slice(), phase:Math.random() * 6, fx:null, tr:"", br:"", sy:pos[1] };
+  scene.actors.push(a);
+  return a;
+}
+function buildScene(){
+  const fg = scene.fg = document.getElementById("pitchFg");
+  const g = goalSVG(105, 1);
+  fg.innerHTML =
+    '<defs><radialGradient id="ballGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff7ab8" stop-opacity=".7"/><stop offset="1" stop-color="#ff2e88" stop-opacity="0"/></radialGradient></defs>' +
+    '<g id="netBack">' + g.back + '</g>' + g.frame +
+    '<g id="under"><ellipse id="ring" rx="6.5" ry="2" fill="none" stroke="#ff7ab8" stroke-width=".9" opacity="0"/>' +
+    '<ellipse id="ballShadow" rx="2.3" ry=".8" fill="#04000c" fill-opacity=".55"/></g>' +
+    '<g id="actors"></g>';
+  scene.net = document.getElementById("netBack");
+  scene.netX = P(105, 34)[0];
+  scene.layer = document.getElementById("actors");
+  B.shadow = document.getElementById("ballShadow");
+  B.ring = document.getElementById("ring");
+  B.el = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  B.el.innerHTML = '<circle r="6" fill="url(#ballGlow)"/><circle r="2.3" fill="#fff" stroke="#ff2e88" stroke-width=".8"/><circle cx="-.6" cy="-.5" r=".8" fill="#2b0a1e"/>';
+  const home = cityShape(0, 0), away = arsenalShape(0, 34);
+  for (let i = 0; i < 11; i++) scene.city.push(makeActor("city", i, i ? KITS.city : KITS.cityGk, 1, home[i]));
+  for (let i = 0; i < 11; i++) scene.ars.push(makeActor("ars", i, i ? KITS.ars : KITS.arsGk, -1, away[i]));
+  B.events = [{ t:-1e9, kind:"own", who:scene.city[2], from:null }];
+  B.holder = scene.city[2];
+  scene.order = scene.actors.concat([B]);
+  scene.order.forEach(function(a){ scene.layer.appendChild(a.root || B.el); });
+  const mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+  scene.reduced = !!(mq && mq.matches);
+  if (mq && mq.addEventListener) mq.addEventListener("change", function(){ scene.reduced = mq.matches; });
+  requestAnimationFrame(frame);
+}
+function fxPose(a, t, pose){
+  const fx = a.fx;
+  if (!fx) return;
+  const q = t - fx.t0;
+  if (q < 0) return;
+  if (q > fx.d){ a.fx = null; return; }
+  if (fx.kind === "dive"){
+    const down = 1 - Math.pow(1 - Math.min(1, q / 0.3), 3);
+    const up = q > fx.d - 0.5 ? (q - (fx.d - 0.5)) / 0.5 : 0;
+    pose.rot += fx.dir * 72 * down * (1 - up * up * (3 - 2 * up));
+    pose.hop += 5 * Math.sin(Math.PI * Math.min(1, q / 0.45));
+  } else if (fx.kind === "celebrate"){
+    const fade = 1 - q / fx.d;
+    pose.hop += Math.abs(Math.sin(q * 10)) * 3 * fade;
+    pose.rot += Math.sin(q * 14) * 6 * fade;
+  } else if (fx.kind === "dejected"){
+    pose.rot += a.dir * 10 * Math.sin(Math.PI * q / fx.d);
+  } else if (fx.kind === "stumble"){
+    pose.rot += Math.sin(q * 22) * 16 * Math.exp(-q * 4);
+  }
+}
+let lastMs = 0, sortTick = 0, shuffleAt = 0;
+function frame(ms){
+  const dt = lastMs ? Math.min(0.05, (ms - lastMs) / 1000) : 0.016;
+  lastMs = ms;
+  const t = now();
+  /* sounds and callbacks fire on the frame their motion starts */
+  for (const e of B.events){
+    if (!e.fired && e.t <= t){ e.fired = true; if (e.sound && SFX[e.sound] && e.t > t - 0.25) SFX[e.sound](); }
+  }
+  for (let i = scene.cues.length - 1; i >= 0; i--){
+    if (scene.cues[i].t <= t){ const c = scene.cues.splice(i, 1)[0]; c.fn(); }
+  }
+  for (const a of scene.actors){
+    while (a.segs.length > 1 && a.segs[1].t0 <= t) a.segs.shift();
+    const s = evalSeg(a.segs[0], t);
+    const speed = Math.hypot(s.vx, s.vy);
+    a.phase += speed * dt * 2.2;
+    const pose = { rot:clamp(s.vx * 2.2, -14, 14), hop:Math.abs(Math.sin(a.phase)) * 1.4 * Math.min(1, speed / 3.5) };
+    fxPose(a, t, pose);
+    const p = project(s.x, s.y, 0);
+    const tr = "translate(" + f1(p[0]) + " " + f1(p[1]) + ") scale(" + (p[2] / K_NEAR).toFixed(3) + ")";
+    if (tr !== a.tr){ a.root.setAttribute("transform", tr); a.tr = tr; }
+    const br = "rotate(" + f1(pose.rot) + ") translate(0 " + (-pose.hop).toFixed(2) + ")";
+    if (br !== a.br){ a.body.setAttribute("transform", br); a.br = br; }
+    a.sy = s.y; a.speed = speed;
+  }
+  /* ball, its shadow and the carrier ring */
+  const e = ballEventAt(t);
+  const b = ballAt(t);
+  if (e.kind === "own" && e.who.speed > 0.4) b[0] += e.who.dir * 0.45 * Math.abs(Math.sin(e.who.phase));
+  const gp = project(b[0], b[1], 0), bp = project(b[0], b[1], b[2]), bs = gp[2] / K_NEAR;
+  B.shadow.setAttribute("transform", "translate(" + f1(gp[0]) + " " + f1(gp[1]) + ") scale(" + (bs * (1 - Math.min(0.5, b[2] / 12))).toFixed(3) + ")");
+  B.el.setAttribute("transform", "translate(" + f1(bp[0]) + " " + f1(bp[1] - 2.3 * bs) + ") scale(" + bs.toFixed(3) + ")");
+  B.sy = b[1] + 0.05;
+  const owner = e.kind === "own" && (!e.from || t - e.t > 0.14) ? e.who : null;
+  B.ringO += ((owner ? 0.9 : 0) - B.ringO) * Math.min(1, dt * 10);
+  if (owner){
+    const o = project(owner.segs[0] ? evalSeg(owner.segs[0], t).x : 0, owner.sy, 0);
+    B.ring.setAttribute("transform", "translate(" + f1(o[0]) + " " + f1(o[1]) + ") scale(" + (o[2] / K_NEAR).toFixed(3) + ")");
+  }
+  B.ring.setAttribute("opacity", B.ringO.toFixed(2));
+  /* net ripple after a goal */
+  const nq = t - scene.netHit;
+  if (nq >= 0 && nq < 1.6){
+    const amp = 0.22 * Math.exp(-nq * 3.2) * Math.sin(nq * 22);
+    scene.net.setAttribute("transform", "translate(" + f1(scene.netX) + " 0) scale(" + (1 + amp).toFixed(3) + " " + (1 + amp * 0.15).toFixed(3) + ") translate(" + f1(-scene.netX) + " 0)");
+    scene.netLive = true;
+  } else if (scene.netLive){ scene.net.removeAttribute("transform"); scene.netLive = false; }
+  /* paint nearer players over farther ones */
+  if (++sortTick % 6 === 0){
+    const sorted = scene.order.slice().sort(function(x, y){ return x.sy - y.sy; });
+    if (sorted.some(function(x, i){ return x !== scene.order[i]; })){
+      scene.order = sorted;
+      sorted.forEach(function(x){ scene.layer.appendChild(x.root || B.el); });
+    }
+  }
+  if (t > shuffleAt) idleShuffle(t);
+  requestAnimationFrame(frame);
+}
+/* players holding shape keep adjusting, so nobody stands frozen */
+function idleShuffle(t){
+  shuffleAt = t + 0.45;
+  if (scene.reduced || t < scene.busyUntil + 0.3) return;
+  for (let n = 0; n < 3; n++){
+    const a = scene.actors[Math.floor(Math.random() * scene.actors.length)];
+    if (a.segs.length > 1 || t < a.segs[0].t0 + a.segs[0].d) continue;
+    const r = a.i === 0 ? 0.6 : 1.5;
+    moveTo(a, [a.base[0] + (Math.random() * 2 - 1) * r, a.base[1] + (Math.random() * 2 - 1) * r], t, 1.1 + Math.random() * 0.9, null, true);
+  }
+}
+
 /* ================= game state ================= */
 let run = { score:0, combo:0 };
 let cur = null; /* {entry, guessed:Set, misses, hintUsed, startTime, over} */
 let lastText = "";
+let nextTimer = 0;
+let cellEls = [], keyEls = {};
 
 const $ = function(id){ return document.getElementById(id); };
 const tilesEl = $("tiles"), keysEl = $("keys"), dotsEl = $("dots");
 const bannerEl = $("banner"), flashEl = $("flash"), toastEl = $("toast");
-const ballEl = $("ball"), attEl = $("attacker");
-const def1El = $("def1"), def2El = $("def2"), keeperEl = $("keeper");
+const reduceMotion = function(){ return scene.reduced; };
 
-const PITCH = { x0:64, x1:308, y:118, attBack:-26 };
-function ballPos(){
-  const p = cur ? cur.misses / settings.lives : 0;
-  return { x: PITCH.x0 + p * (PITCH.x1 - PITCH.x0), y: PITCH.y - p * 14 };
-}
-function placeActors(){
-  const b = ballPos();
-  ballEl.style.transform = "translate(" + b.x + "px," + b.y + "px)";
-  attEl.style.transform = "translate(" + (b.x + PITCH.attBack) + "px," + (b.y + 16) + "px)";
-  def1El.style.transform = "translate(318px,86px)";
-  def2El.style.transform = "translate(330px,142px)";
-  keeperEl.style.transform = "translate(372px,114px)";
-}
 function renderDots(){
   dotsEl.innerHTML = "";
   for (let i = 0; i < settings.lives; i++){
@@ -972,66 +1523,120 @@ function renderDots(){
     dotsEl.appendChild(d);
   }
 }
+function updateDots(){
+  Array.prototype.forEach.call(dotsEl.children, function(d, i){ d.classList.toggle("used", !!cur && i < cur.misses); });
+}
+function renderLives(){
+  const left = cur ? Math.max(0, settings.lives - cur.misses) : 0;
+  $("livesLine").innerHTML = "<strong>" + left + "</strong> left";
+  dotsEl.parentNode.setAttribute("aria-label", left + " chance" + (left === 1 ? "" : "s") + " left");
+}
 function bump(el){
   el.classList.remove("bump");
   void el.offsetWidth;
   el.classList.add("bump");
   setTimeout(function(){ el.classList.remove("bump"); }, 200);
 }
-function renderScore(){
-  $("scoreVal").textContent = run.score;
+let countRaf = 0;
+function countTo(el, to){
+  cancelAnimationFrame(countRaf);
+  const from = Number(el.textContent) || 0;
+  if (reduceMotion() || from === to){ el.textContent = to; return; }
+  const t0 = performance.now();
+  (function step(ms){
+    const u = Math.min(1, (ms - t0) / 650), k = 1 - Math.pow(1 - u, 3);
+    el.textContent = Math.round(from + (to - from) * k);
+    if (u < 1) countRaf = requestAnimationFrame(step);
+  })(t0);
+}
+function renderScore(animate){
+  if (animate) countTo($("scoreVal"), run.score); else { cancelAnimationFrame(countRaf); $("scoreVal").textContent = run.score; }
   const c = $("comboVal");
   c.textContent = "×" + run.combo;
   c.classList.toggle("hot", run.combo >= 2);
   $("bestVal").textContent = stats.best;
   $("streakVal").textContent = stats.streak;
 }
-function renderWord(revealAll){
+function renderWord(){
   tilesEl.innerHTML = "";
-  const cells = maskOf(cur.entry.text, cur.guessed);
-  cells.forEach(function(cell, i){
+  cellEls = [];
+  const words = cur.entry.text.split(" ");
+  const longest = Math.max.apply(null, words.map(function(w){ return w.length; }));
+  const avail = tilesEl.clientWidth || 340;
+  tilesEl.style.setProperty("--tw", clamp(Math.floor((avail - (longest - 1) * 5) / longest), 20, 38) + "px");
+  let wordEl = null, n = 0;
+  maskOf(cur.entry.text, cur.guessed).forEach(function(cell){
+    if (cell.kind === "gap"){ wordEl = null; cellEls.push(null); return; }
+    if (!wordEl){ wordEl = document.createElement("div"); wordEl.className = "word"; tilesEl.appendChild(wordEl); }
     const s = document.createElement("span");
-    if (cell.kind === "gap"){ s.className = "tile gap"; s.textContent = ""; }
-    else {
-      s.className = "tile" + (cell.kind === "fixed" ? " fixed" : "");
-      s.textContent = cell.shown ? cell.ch : "";
-      s.style.animationDelay = (i * 22) + "ms";
-      if (revealAll && cell.kind === "letter" && !cur.guessed.has(cell.ch)) s.classList.add("reveal");
-      if (revealAll && cell.kind === "letter" && cur.guessed.has(cell.ch) && !isSolved(cur.entry.text, cur.guessed)) s.classList.add("miss-dim");
-    }
-    tilesEl.appendChild(s);
+    s.className = "tile enter" + (cell.kind === "fixed" ? " fixed" : "");
+    s.style.setProperty("--i", n++);
+    const c = document.createElement("span");
+    c.className = "ch";
+    c.textContent = cell.shown ? cell.ch : "";
+    s.appendChild(c);
+    wordEl.appendChild(s);
+    cellEls.push(s);
   });
-  const left = settings.lives - cur.misses;
-  $("livesLine").innerHTML = "<strong>" + left + "</strong> chance" + (left === 1 ? "" : "s") + " left";
 }
+function revealLetter(ch){
+  let n = 0;
+  Array.from(cur.entry.text).forEach(function(c, i){
+    if (c !== ch) return;
+    const el = cellEls[i];
+    el.firstChild.textContent = ch;
+    el.classList.remove("enter");
+    el.style.setProperty("--d", (n++ * 55) + "ms");
+    el.classList.add("pop");
+  });
+}
+function revealMissed(){
+  Array.from(cur.entry.text).forEach(function(c, i){
+    const el = cellEls[i];
+    if (!el || !isLetter(c) || cur.guessed.has(c)) return;
+    el.firstChild.textContent = c;
+    el.classList.remove("enter");
+    el.classList.add("missed");
+  });
+}
+/* keys are built once and reset per word, so a new word costs no DOM churn */
 function renderKeys(){
-  keysEl.innerHTML = "";
+  keysEl.hidden = false;
   for (let c = 65; c <= 90; c++){
     const ch = String.fromCharCode(c);
-    const b = document.createElement("button");
+    let b = keyEls[ch];
+    if (!b){
+      b = document.createElement("button");
+      b.textContent = ch;
+      b.setAttribute("aria-label", "Guess " + ch);
+      b.addEventListener("click", function(){ guess(ch); });
+      keysEl.appendChild(b);
+      keyEls[ch] = b;
+    }
     b.className = "key";
-    b.textContent = ch;
-    b.setAttribute("aria-label", "Guess " + ch);
+    b.disabled = cur.over;
     if (cur.guessed.has(ch)){
       b.disabled = true;
       b.classList.add(cur.entry.text.indexOf(ch) !== -1 ? "right" : "wrong");
-    } else if (cur.over){
-      b.disabled = true;
     }
-    b.addEventListener("click", function(){ guess(ch); });
-    keysEl.appendChild(b);
   }
 }
-function renderAll(revealAll){
-  renderScore(); renderDots(); renderWord(revealAll); renderKeys(); placeActors();
-  $("catTag").textContent = cur.entry.cat;
+function lockKeys(){ for (const k in keyEls) keyEls[k].disabled = true; $("clueBtn").disabled = true; }
+function renderAll(){
+  renderScore(false); renderDots(); renderLives(); renderWord(); renderKeys();
+  $("catTag").textContent = cur.entry.catName;
 }
-function showBanner(text, cityTint, ms){
-  bannerEl.textContent = text;
-  bannerEl.classList.toggle("city-tint", !!cityTint);
+let bannerTimer = 0;
+function showBanner(main, sub, city, ms){
+  $("bannerMain").textContent = main;
+  $("bannerSub").textContent = sub || "";
+  bannerEl.classList.toggle("city", !!city);
   bannerEl.classList.add("show");
-  clearTimeout(showBanner.t);
-  showBanner.t = setTimeout(function(){ bannerEl.classList.remove("show"); }, ms || 1500);
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(function(){ bannerEl.classList.remove("show"); }, ms || 1500);
+}
+function pulse(el, peak, ms){
+  if (el.animate) el.animate([{ opacity:0 }, { opacity:peak, offset:0.25 }, { opacity:0 }], { duration:ms, easing:"ease-out" });
 }
 let toastTimer = 0;
 function toast(text, ms){
@@ -1039,6 +1644,26 @@ function toast(text, ms){
   toastEl.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, ms || 2200);
+}
+function confetti(fromEl){
+  if (reduceMotion() || !Element.prototype.animate) return;
+  const layer = $("confetti");
+  const r = fromEl.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const colours = ["#ff2e88", "#ff7ab8", "#7fd4ff", "#ffd166", "#ffffff"];
+  for (let i = 0; i < 28; i++){
+    const p = document.createElement("i");
+    p.style.left = cx + "px"; p.style.top = cy + "px";
+    p.style.background = colours[i % colours.length];
+    layer.appendChild(p);
+    const ang = -Math.PI / 2 + (Math.random() - 0.5) * 2.2, v = 90 + Math.random() * 130;
+    const dx = Math.cos(ang) * v, dy = Math.sin(ang) * v, spin = (Math.random() - 0.5) * 720;
+    p.animate([
+      { transform:"translate(-50%,-50%) rotate(0deg)", opacity:1 },
+      { transform:"translate(calc(-50% + " + dx.toFixed(0) + "px), calc(-50% + " + dy.toFixed(0) + "px)) rotate(" + (spin / 2).toFixed(0) + "deg)", opacity:1, offset:0.55 },
+      { transform:"translate(calc(-50% + " + (dx * 1.2).toFixed(0) + "px), calc(-50% + " + (dy + 120).toFixed(0) + "px)) rotate(" + spin.toFixed(0) + "deg)", opacity:0 }
+    ], { duration:1000 + Math.random() * 400, easing:"cubic-bezier(0.23, 1, 0.32, 1)" }).onfinish = function(){ p.remove(); };
+  }
 }
 function awardBadge(id){
   if (stats.badges[id]) return;
@@ -1055,7 +1680,7 @@ function checkBadges(ctx){
   if (ctx.solved && ctx.misses >= 3) awardBadge("comeback");
   const wonCats = Object.keys(stats.wins).filter(function(k){ return stats.wins[k] > 0; });
   if (wonCats.length >= 5) awardBadge("explorer");
-  if (ctx.solved && ctx.diff === "h" && !ctx.hintUsed) awardBadge("scholar");
+  if (ctx.solved && ctx.diff === "hard" && !ctx.hintUsed) awardBadge("scholar");
   if (ctx.quickBonus) awardBadge("quick");
   if (run.score >= 500) awardBadge("scorer-500");
   if (stats.played >= 25) awardBadge("ever-present");
@@ -1067,43 +1692,52 @@ function startRun(){
   startWord();
 }
 function startWord(){
-  const list = eligibleEntries(LIBRARY, CATEGORIES, settings);
+  clearTimeout(nextTimer);
+  const list = eligibleEntries(CATEGORIES, settings);
   const empty = $("emptyState");
+  if (scene.mode !== "home") scene.reset();
   if (!list.length){
     cur = null;
     empty.hidden = false;
+    $("clueRow").hidden = true;
     tilesEl.innerHTML = "";
-    keysEl.innerHTML = "";
+    keysEl.hidden = true;
     $("catTag").textContent = "—";
-    $("livesLine").innerHTML = "<strong>0</strong> chances left";
-    renderDots(); renderScore();
+    renderDots(); renderLives(); renderScore(false);
     return;
   }
   empty.hidden = true;
+  $("clueRow").hidden = false;
   const entry = pickEntry(list, lastText);
   lastText = entry.text;
   cur = { entry:entry, guessed:new Set(), misses:0, hintUsed:false, startTime:Date.now(), over:false };
   $("clueText").textContent = "";
   $("clueText").classList.remove("show");
+  $("clueBtn").hidden = false;
   $("clueBtn").disabled = false;
-  $("clueBtn").textContent = "Show clue";
-  flashEl.classList.remove("on");
-  renderAll(false);
+  $("hintCost").hidden = false;
+  renderAll();
 }
 function guess(ch){
   ensureAudio();
   if (!cur || cur.over || cur.guessed.has(ch)) return;
   cur.guessed.add(ch);
+  const key = keyEls[ch];
+  if (key) key.disabled = true;
   if (cur.entry.text.indexOf(ch) !== -1){
     SFX.good();
+    if (key) key.classList.add("right");
+    revealLetter(ch);
     if (isSolved(cur.entry.text, cur.guessed)){ onWin(); return; }
   } else {
     cur.misses++;
-    SFX.bad(); SFX.kick();
-    placeActors(); renderDots();
+    SFX.bad();
+    if (key) key.classList.add("wrong");
+    updateDots(); renderLives();
+    pulse($("edge"), 1, 600);
     if (cur.misses >= settings.lives){ onLoss(); return; }
+    scene.passage(stageProgress(cur.misses, settings.lives));
   }
-  renderWord(false); renderKeys();
 }
 function onWin(){
   cur.over = true;
@@ -1120,15 +1754,16 @@ function onWin(){
   if (run.score > stats.best) stats.best = run.score;
   checkBadges({ solved:true, misses:cur.misses, diff:cur.entry.diff, hintUsed:cur.hintUsed, quickBonus:quickBonus });
   saveStats();
-  /* Arsenal clear it upfield: keeper-side ball flies away, cheer */
-  ballEl.style.transform = "translate(40px,30px)";
-  attEl.style.transform = "translate(150px,150px)";
-  def1El.style.transform = "translate(250px,80px)";
+  /* Arsenal win it back and clear it upfield */
+  scene.clearance();
   SFX.cheer();
-  showBanner("CLEARED! +" + pts, false, 1400);
+  lockKeys();
+  cellEls.forEach(function(el){ if (el) el.classList.add("win"); });
+  confetti(tilesEl);
+  showBanner("CLEARED!", "+" + pts + (flawless ? " · flawless" : ""), false, 1500);
+  renderScore(true);
   bump($("scoreVal"));
-  renderAll(true);
-  setTimeout(function(){ if (cur && cur.over) startWord(); }, 1700);
+  nextTimer = setTimeout(function(){ if (cur && cur.over) startWord(); }, 1700);
 }
 function onLoss(){
   cur.over = true;
@@ -1137,17 +1772,19 @@ function onLoss(){
   run.combo = 0;
   checkBadges({ solved:false, misses:cur.misses, diff:cur.entry.diff, hintUsed:cur.hintUsed, quickBonus:false });
   saveStats();
-  /* The final pass is a goal: ball into the Arsenal net, groan */
-  ballEl.style.transform = "translate(389px,114px)";
-  flashEl.classList.add("on");
-  SFX.groan();
-  showBanner("GOAL — Man City score", true, 2200);
-  renderAll(true);
-  setTimeout(function(){
-    flashEl.classList.remove("on");
+  lockKeys();
+  revealMissed();
+  renderScore(false);
+  /* The final pass is a goal: shot, dive, ripple, groan */
+  scene.goal(function(){
+    pulse(flashEl, 1, 900);
+    SFX.groan();
+    showBanner("GOAL", "Man City score", true, 1700);
+  });
+  nextTimer = setTimeout(function(){
     startRun();
     toast("Full time on that run. New attack under way — score: 0");
-  }, 2400);
+  }, 3200);
 }
 
 /* ================= settings UI ================= */
@@ -1160,15 +1797,17 @@ const catGrid = $("catGrid");
 CATEGORIES.forEach(function(c){
   const b = document.createElement("button");
   b.className = "catchip";
-  b.textContent = c.replace(/\b\w/g, function(m){ return m.toUpperCase(); });
+  b.textContent = c.name;
   b.setAttribute("aria-pressed", "true");
-  b.dataset.cat = c;
+  b.dataset.cat = c.id;
   b.addEventListener("click", function(){
     const on = b.getAttribute("aria-pressed") === "true";
     b.setAttribute("aria-pressed", String(!on));
   });
   catGrid.appendChild(b);
 });
+const ICON_SOUND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h3.5L12 5v14l-4.5-4H4z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.6 7.6 0 0 1 0 10.8"/></svg>';
+const ICON_MUTE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h3.5L12 5v14l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>';
 function syncSettingsUI(){
   minLenEl.value = settings.min;
   maxLenEl.value = settings.max;
@@ -1177,7 +1816,7 @@ function syncSettingsUI(){
   $("muteSw").setAttribute("aria-checked", String(settings.mute));
   $("livesRange").value = settings.lives;
   $("livesVal").textContent = settings.lives;
-  $("soundBtn").textContent = settings.mute ? "🔇" : "🔊";
+  $("soundBtn").innerHTML = settings.mute ? ICON_MUTE : ICON_SOUND;
   $("soundBtn").setAttribute("aria-pressed", String(settings.mute));
   catGrid.querySelectorAll(".catchip").forEach(function(b){
     b.setAttribute("aria-pressed", String(settings.cats[b.dataset.cat] !== false));
@@ -1211,13 +1850,21 @@ function openSheet(el){
   });
 }
 function closeSheet(el){
+  if (el.hidden) return;
   el.classList.remove("open");
-  setTimeout(function(){ el.hidden = true; }, 260);
+  setTimeout(function(){ if (!el.classList.contains("open")) el.hidden = true; }, 260);
 }
+document.querySelectorAll(".scrim").forEach(function(s){
+  s.addEventListener("click", function(){ closeSheet(s.parentNode); });
+});
 $("settingsBtn").addEventListener("click", function(){ SFX.click(); syncSettingsUI(); openSheet($("settingsSheet")); });
 $("setDone").addEventListener("click", function(){
   SFX.click(); readSettingsUI(); closeSheet($("settingsSheet"));
-  if (cur && !cur.over){ renderDots(); renderWord(false); }
+  if (cur && !cur.over){
+    renderDots(); renderLives();
+    const p = stageProgress(cur.misses, settings.lives);
+    if (cur.misses > 0 && p !== scene.p) scene.passage(p);
+  }
   else { startWord(); }
   toast("Settings saved");
 });
@@ -1234,19 +1881,18 @@ $("soundBtn").addEventListener("click", function(){
 $("statsBtn").addEventListener("click", function(){ SFX.click(); renderStats(); openSheet($("statsSheet")); });
 $("statsDone").addEventListener("click", function(){ SFX.click(); closeSheet($("statsSheet")); });
 $("statsWipe").addEventListener("click", function(){
-  stats = defaultStats(); saveStats(); renderStats(); SFX.click(); toast("Stats erased");
+  stats = defaultStats(); saveStats(); renderStats(); renderScore(false); SFX.click(); toast("Stats erased");
 });
 $("nextBtn").addEventListener("click", function(){ SFX.click(); if (cur && !cur.over){ run.combo = 0; } startWord(); });
 $("runBtn").addEventListener("click", function(){ SFX.click(); startRun(); toast("New run — score reset"); });
 $("clueBtn").addEventListener("click", function(){
   if (!cur || cur.over) return;
   ensureAudio(); SFX.click();
-  const label = cur.entry.cat === "uk number ones" ? "Artist: " : "Clue: ";
-  $("clueText").textContent = label + cur.entry.clue;
-  $("clueText").classList.add("show");
+  $("clueText").textContent = "Clue: " + cur.entry.clue;
+  $("clueBtn").hidden = true;
+  $("hintCost").hidden = true;
+  requestAnimationFrame(function(){ $("clueText").classList.add("show"); });
   cur.hintUsed = true;
-  $("clueBtn").disabled = true;
-  $("clueBtn").textContent = "Clue shown";
 });
 function renderStats(){
   $("stBest").textContent = stats.best;
@@ -1257,9 +1903,8 @@ function renderStats(){
   CATEGORIES.forEach(function(c){
     const d = document.createElement("div");
     d.className = "cell";
-    d.innerHTML = "";
-    const name = document.createElement("span"); name.textContent = c;
-    const b = document.createElement("b"); b.textContent = stats.wins[c] || 0;
+    const name = document.createElement("span"); name.textContent = c.name;
+    const b = document.createElement("b"); b.textContent = stats.wins[c.id] || 0;
     d.appendChild(name); d.appendChild(b); wg.appendChild(d);
   });
   const bg = $("badgeGrid"); bg.innerHTML = "";
@@ -1301,29 +1946,46 @@ function runSelfTests(){
   t("count music punct", letterCount("BLUE (DA BA DEE)"), 11);
   t("count apostrophe", letterCount("HIPS DON'T LIE"), 11);
   t("count question", letterCount("WHERE IS THE LOVE?"), 14);
-  /* every embedded entry fits the 3-14 filter band */
-  let bad = [];
+  /* the embedded word block parses and every entry is playable */
+  t("word block parses", readWordData() !== null && CATEGORIES.length > 0, true);
+  const bad = [];
   for (const c of CATEGORIES){
-    for (const row of LIBRARY[c]){
-      const k = letterCount(row[0]);
-      if (k < 3 || k > 14) bad.push(c + ":" + row[0] + "=" + k);
+    for (const w of c.words){
+      const k = letterCount(w.answer);
+      if (k < 3 || k > 14 || w.answer !== w.answer.toUpperCase() || !w.hint) bad.push(c.id + ":" + w.answer);
     }
   }
-  t("all entries within 3-14 letters", bad, []);
-  /* category sizes (spec: about 25 each) */
-  const sizes = CATEGORIES.map(function(c){ return LIBRARY[c].length; });
-  t("category sizes", sizes, [25,25,25,25,25,25,25,26]);
-  /* filtering */
-  const sNoPhrase = Object.assign(defaultSettings(), { phrases:false });
-  const noP = eligibleEntries(LIBRARY, CATEGORIES, sNoPhrase);
-  t("phrases off removes spaced", noP.some(function(e){ return hasSpace(e.text); }), false);
-  t("phrases off keeps single", noP.length > 100, true);
-  const sLong = Object.assign(defaultSettings(), { min:12, max:14 });
-  const long = eligibleEntries(LIBRARY, CATEGORIES, sLong);
-  t("length filter respected", long.every(function(e){ const k = letterCount(e.text); return k >= 12 && k <= 14; }), true);
-  const sNone = defaultSettings();
-  CATEGORIES.forEach(function(c){ sNone.cats[c] = false; });
-  t("no categories -> empty", eligibleEntries(LIBRARY, CATEGORIES, sNone), []);
+  t("all entries playable (3-14 letters, upper case, hinted)", bad, []);
+  t("category ids unique", new Set(CATEGORIES.map(function(c){ return c.id; })).size, CATEGORIES.length);
+  /* data adapter: absent and empty categories are dropped */
+  t("no data -> no categories", parseWordData(null), []);
+  t("no categories key -> none", parseWordData({ version:1 }), []);
+  const fx = parseWordData({ version:1, categories:[
+    { id:"birds", name:"Birds", words:[
+      { answer:"owl", hint:"Hoots", difficulty:"easy" },
+      { answer:"GREAT TIT", hint:"Garden regular", difficulty:"hard" },
+      { answer:"123", hint:"no letters", difficulty:"easy" },
+      { answer:"KINGFISHER", hint:"River jewel", difficulty:"bogus" },
+      null
+    ]},
+    { id:"empty", name:"Empty", words:[] },
+    { id:"nowords", name:"No words" },
+    { name:"No id", words:[{ answer:"ROBIN", hint:"Red", difficulty:"easy" }] },
+    { id:"plants", words:[{ answer:"OAK", hint:"Acorns", difficulty:"medium" }] }
+  ]});
+  t("adapter keeps only playable categories", fx.map(function(c){ return c.id; }), ["birds","plants"]);
+  t("adapter upper-cases answers", fx[0].words[0].answer, "OWL");
+  t("adapter drops letterless answers", fx[0].words.map(function(w){ return w.answer; }), ["OWL","GREAT TIT","KINGFISHER"]);
+  t("adapter defaults bad difficulty", fx[0].words[2].difficulty, "medium");
+  t("adapter falls back to id for name", fx[1].name, "plants");
+  /* filtering, against the fixture so it holds for any word list */
+  const fxAll = { min:3, max:14, phrases:true, lives:6, cats:{ birds:true, plants:true } };
+  t("all on", eligibleEntries(fx, fxAll).map(function(e){ return e.text; }), ["OWL","GREAT TIT","KINGFISHER","OAK"]);
+  t("phrases off removes spaced", eligibleEntries(fx, Object.assign({}, fxAll, { phrases:false })).map(function(e){ return e.text; }), ["OWL","KINGFISHER","OAK"]);
+  t("length filter respected", eligibleEntries(fx, Object.assign({}, fxAll, { min:4, max:9 })).map(function(e){ return e.text; }), ["GREAT TIT"]);
+  t("category off", eligibleEntries(fx, Object.assign({}, fxAll, { cats:{ birds:false, plants:true } })).map(function(e){ return e.text; }), ["OAK"]);
+  t("no categories -> empty", eligibleEntries(fx, Object.assign({}, fxAll, { cats:{} })), []);
+  t("entry carries category name and fields", eligibleEntries(fx, fxAll)[3], { text:"OAK", clue:"Acorns", diff:"medium", cat:"plants", catName:"plants" });
   /* picking */
   t("pick empty -> null", pickEntry([], "X"), null);
   const one = [{ text:"OWL" }];
@@ -1339,14 +2001,58 @@ function runSelfTests(){
   t("solved false", isSolved("TEA", new Set(["T","E"])), false);
   t("solved ignores punct", isSolved("MAMBO NO 5", new Set(["M","A","B","O","N"])), true);
   /* scoring from hand-computed values */
-  t("points easy base", pointsFor({ letters:5, diff:"e", flawless:false, comboBefore:0, quick:false }), 50);
-  t("points hard base", pointsFor({ letters:5, diff:"h", flawless:false, comboBefore:0, quick:false }), 100);
-  t("points flawless combo", pointsFor({ letters:5, diff:"e", flawless:true, comboBefore:2, quick:false }), 50 + 75);
-  t("points quick", pointsFor({ letters:5, diff:"e", flawless:false, comboBefore:0, quick:true }), 100);
+  t("points easy base", pointsFor({ letters:5, diff:"easy", flawless:false, comboBefore:0, quick:false }), 50);
+  t("points medium base", pointsFor({ letters:5, diff:"medium", flawless:false, comboBefore:0, quick:false }), 75);
+  t("points hard base", pointsFor({ letters:5, diff:"hard", flawless:false, comboBefore:0, quick:false }), 100);
+  t("points flawless combo", pointsFor({ letters:5, diff:"easy", flawless:true, comboBefore:2, quick:false }), 50 + 75);
+  t("points quick", pointsFor({ letters:5, diff:"easy", flawless:false, comboBefore:0, quick:true }), 100);
   /* storage sanitizers recover from corrupt data */
-  t("bad settings reset", sanitizeSettings(null).lives, 6);
-  t("bad stats reset", sanitizeStats("junk").played, 0);
-  t("settings clamp", sanitizeSettings({ min:1, max:99, lives:99 }).max, 14);
+  const cats2 = [{ id:"food-and-drink", name:"Food and drink" }, { id:"birds", name:"Birds" }];
+  t("bad settings reset", sanitizeSettings(null, cats2).lives, 6);
+  t("bad stats reset", sanitizeStats("junk", cats2).played, 0);
+  t("settings clamp", sanitizeSettings({ min:1, max:99, lives:99 }, cats2).max, 14);
+  t("settings default every category on", sanitizeSettings({}, cats2).cats, { "food-and-drink":true, birds:true });
+  t("settings keep category off by id", sanitizeSettings({ cats:{ birds:false } }, cats2).cats, { "food-and-drink":true, birds:false });
+  t("settings migrate legacy name key", sanitizeSettings({ cats:{ "food and drink":false } }, cats2).cats, { "food-and-drink":false, birds:true });
+  t("stats migrate legacy wins", sanitizeStats({ wins:{ "food and drink":3, birds:2 } }, cats2).wins, { birds:2, "food-and-drink":3 });
+  /* stage mapping: kick-off at 0, shooting chance with one chance left */
+  function stages(lives){ const out = []; for (let k = 0; k <= lives; k++) out.push(Math.round(stageProgress(k, lives) * 1000) / 1000); return out; }
+  t("stages 4 lives", stages(4), [0, 0.333, 0.667, 1, 1]);
+  t("stages 6 lives", stages(6), [0, 0.2, 0.4, 0.6, 0.8, 1, 1]);
+  t("stages 10 lives", stages(10), [0, 0.111, 0.222, 0.333, 0.444, 0.556, 0.667, 0.778, 0.889, 1, 1]);
+  t("stage clamps past the end", stageProgress(12, 6), 1);
+  /* formations: eleven a side, keeper first, everyone on the pitch */
+  function onPitch(shape){ return shape.every(function(p){ return p[0] >= 0 && p[0] <= 105 && p[1] >= 0 && p[1] <= 68; }); }
+  function meanX(shape){ return shape.reduce(function(s, p){ return s + p[0]; }, 0) / shape.length; }
+  const okShapes = [0, 0.25, 0.5, 0.75, 1].every(function(p){
+    const c = cityShape(p, 1), a = arsenalShape(p, 10);
+    return c.length === 11 && a.length === 11 && onPitch(c) && onPitch(a) &&
+      c.slice(1).every(function(q){ return q[0] > c[0][0]; }) &&
+      a.slice(1).every(function(q){ return q[0] < a[0][0]; });
+  });
+  t("11 v 11, keepers deepest, all on the pitch", okShapes, true);
+  t("City advance as progress grows", meanX(cityShape(0, 0)) < meanX(cityShape(0.5, 0)) && meanX(cityShape(0.5, 0)) < meanX(cityShape(1, 0)), true);
+  t("Arsenal drop deeper as City advance", meanX(arsenalShape(0, 34)) < meanX(arsenalShape(1, 34)), true);
+  t("City 4-3-3 lines at kick-off", cityShape(0, 0).map(function(p){ return p[0]; }), [5, 22, 17, 17, 22, 30, 38, 38, 48, 50, 48]);
+  t("Arsenal 4-4-2 lines", arsenalShape(0, 34).map(function(p){ return p[0]; }), [103, 64.5, 66, 66, 64.5, 52, 53, 53, 52, 40, 40]);
+  t("striker inside 20m at the shooting chance", 105 - cityShape(1, 0)[9][0] <= 20, true);
+  t("Arsenal slide towards the ball", arsenalShape(0.5, 10)[2][1] < arsenalShape(0.5, 58)[2][1], true);
+  t("carrier is the striker at the chance", carrierFor(1, false), 9);
+  t("carrier is a centre-back at kick-off", [carrierFor(0, false), carrierFor(0, true)], [2, 3]);
+  const sh = cityShape(0.5, 0);
+  const relays = [0, 0.3, 0.6, 0.99].map(function(r){ return pickRelay(5, 6, sh, sh[5][0], function(){ return r; }); });
+  t("relay never the keeper, passer or receiver", relays.every(function(i){ return i > 0 && i !== 5 && i !== 6; }), true);
+  t("relay -1 when nobody fits", pickRelay(1, 2, [[0,0],[10,0],[12,0]], 10, Math.random), -1);
+  /* motion segments: start where the actor is, keep its velocity, land on target */
+  const seg = makeSeg(1, 2, { x:10, y:20, vx:3, vy:0 }, [30, 20], [0, 4]);
+  const s0 = evalSeg(seg, 1), s1 = evalSeg(seg, 3), sm = evalSeg(seg, 2);
+  t("segment starts at current position", [s0.x, s0.y], [10, 20]);
+  t("segment keeps incoming velocity", [Math.round(s0.vx * 1000) / 1000, Math.round(s0.vy * 1000) / 1000], [3, 0]);
+  t("segment lands at rest on target", [s1.x, s1.y, s1.vx, s1.vy], [30, 20, 0, 0]);
+  t("segment bulge bends the path midway", Math.round(sm.y * 1000) / 1000, 24);
+  t("segment caps runaway velocity", makeSeg(0, 1, { x:0, y:0, vx:100, vy:0 }, [1, 0]).v0[0], 3.2);
+  const a1 = evalSeg(seg, 1.999), a2 = evalSeg(seg, 2.001);
+  t("segment is continuous", Math.abs(a1.x - a2.x) < 0.05 && Math.abs(a1.y - a2.y) < 0.05, true);
   if (failures.length){
     console.error("SELFTEST FAIL (" + failures.length + "/" + n + "):\n" + failures.join("\n"));
   } else {
@@ -1356,6 +2062,8 @@ function runSelfTests(){
 }
 
 /* ================= boot ================= */
+buildPitch($("pitchBg"));
+buildScene();
 syncSettingsUI();
 startRun();
 if (new URLSearchParams(window.location.search).has("selftest")){
