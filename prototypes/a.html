@@ -3,26 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#fdf3ec">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cellipse cx='16' cy='13' rx='10' ry='12' fill='%23f4a8c0' stroke='%236d1f3c' stroke-width='2'/%3E%3Cpath d='M16 25 L16 30' stroke='%236d1f3c' stroke-width='2'/%3E%3C/svg%3E">
-<title>Hangman · Classic calm</title>
+<meta name="theme-color" content="#fdf2f0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M5 29 H17 M9 29 V4 H24 V8 M9 10 L14 4' fill='none' stroke='%234a1631' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='24' cy='12' r='4' fill='none' stroke='%23e0457f' stroke-width='2.4'/%3E%3Cpath d='M24 16 V23 M24 18 L20 21 M24 18 L28 21' stroke='%23e0457f' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>Hangman · Pen &amp; paper</title>
 <style>
   :root{
-    --paper:#fdf3ec;
-    --paper-deep:#f9e8db;
-    --rule:rgba(190,120,150,.16);
-    --margin-line:rgba(230,120,150,.35);
-    --ink:#6d1f3c;
-    --ink-soft:#96506e;
-    --ink-faint:#b98ba0;
-    --accent:#d6457b;
-    --accent-deep:#a92c5c;
-    --good:#2e7d4f;
-    --bad:#b03a48;
-    --card:#fffaf6;
+    --paper:#fdf2f0;
+    --sheet:#fffafa;
+    --rule:rgba(214,104,140,.13);
+    --margin-line:rgba(232,98,140,.36);
+    --ink:#4a1631;
+    --ink-soft:#874462;
+    --ink-faint:#c9a0b3;
+    --accent:#e0457f;
+    --accent-deep:#b0275e;
+    --accent-wash:#fde3ec;
+    --good:#2f7a52;
+    --shadow:74,22,49;
+    --hand:"Noteworthy","Bradley Hand","Segoe Print","Chalkboard SE","Comic Sans MS",cursive;
     --ease-out:cubic-bezier(.23,1,.32,1);
     --ease-in-out:cubic-bezier(.77,0,.175,1);
-    --key-h:52px;
+    --ease-drawer:cubic-bezier(.32,.72,0,1);
+    --ease-back:cubic-bezier(.34,1.56,.64,1);
+    --key-h:50px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
@@ -31,242 +34,362 @@
     color:var(--ink);
     background-color:var(--paper);
     background-image:
-      linear-gradient(90deg,transparent 0 34px,var(--margin-line) 34px 36px,transparent 36px),
+      radial-gradient(120% 70% at 50% -10%,rgba(255,255,255,.85),transparent 62%),
+      linear-gradient(90deg,transparent 0 30px,var(--margin-line) 30px 32px,transparent 32px),
       repeating-linear-gradient(180deg,transparent 0 31px,var(--rule) 31px 32px);
     min-height:100dvh;
     display:flex;justify-content:center;
     touch-action:manipulation;
   }
+  button{font:inherit;color:inherit}
   .page{
     width:100%;max-width:480px;min-height:100dvh;
     display:flex;flex-direction:column;
-    padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);
+    padding:calc(env(safe-area-inset-top,0px) + 10px) 16px calc(env(safe-area-inset-bottom,0px) + 12px);
   }
+  /* page entrance: once per load, staggered */
+  .enter{animation:rise 560ms var(--ease-out) backwards}
+  .enter:nth-child(2){animation-delay:60ms}
+  .enter:nth-child(3){animation-delay:120ms}
+  .enter:nth-child(4){animation-delay:170ms}
+  .enter:nth-child(5){animation-delay:220ms}
+  .enter:nth-child(6){animation-delay:260ms}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}}
   /* ---------- header ---------- */
-  header{display:flex;align-items:center;gap:10px;padding:2px 2px 0}
+  header{display:flex;align-items:center;gap:8px;padding:2px 0 0}
   .brand{flex:1;min-width:0}
-  .brand h1{font-size:21px;margin:0;letter-spacing:.3px;font-weight:800}
-  .brand h1 .thin{font-weight:500;color:var(--ink-soft);font-size:14px}
-  .squiggle{display:block;width:148px;height:8px;margin-top:2px}
-  .squiggle path{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round;
-    stroke-dasharray:1;stroke-dashoffset:0}
-  .load .squiggle path{animation:draw 900ms var(--ease-out) .1s backwards}
-  @keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+  .brand h1{font-family:var(--hand);font-size:27px;line-height:1.05;margin:0;font-weight:700;letter-spacing:-.01em}
+  .squiggle{display:block;width:118px;height:8px;margin-top:1px}
+  .squiggle path{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round}
   .pill{
-    font-size:12.5px;font-weight:700;color:var(--ink);
-    background:var(--card);border:1.5px solid var(--ink-faint);border-radius:999px;
-    padding:5px 11px;white-space:nowrap;
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:13px;font-weight:800;color:var(--accent-deep);font-variant-numeric:tabular-nums;
+    background:var(--sheet);border-radius:999px;padding:6px 11px 6px 9px;white-space:nowrap;
+    box-shadow:0 0 0 1px rgba(var(--shadow),.1),0 2px 6px -3px rgba(var(--shadow),.3);
   }
+  .pill svg{width:14px;height:14px}
   .iconbtn{
-    width:42px;height:42px;flex:0 0 auto;border-radius:50%;
-    border:1.5px solid var(--ink-faint);background:var(--card);color:var(--ink);
-    font-size:19px;line-height:1;cursor:pointer;
+    width:44px;height:44px;flex:0 0 auto;border-radius:50%;border:0;cursor:pointer;
+    background:var(--sheet);color:var(--ink);
+    box-shadow:0 0 0 1px rgba(var(--shadow),.1),0 2px 6px -3px rgba(var(--shadow),.3);
     display:flex;align-items:center;justify-content:center;
-    transition:transform 150ms var(--ease-out),opacity 150ms var(--ease-out),background-color 150ms ease;
+    transition:transform 140ms var(--ease-out),background-color 200ms ease,color 200ms ease;
   }
+  .iconbtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
   @media (hover:hover) and (pointer:fine){.iconbtn:hover{background:#fff}}
-  .iconbtn:active{transform:scale(.93)}
-  .iconbtn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-  /* ---------- scene ---------- */
+  .iconbtn:active{transform:scale(.92);transition-duration:70ms}
+  .iconbtn .off{display:none}
+  .iconbtn[aria-pressed="false"] .on{display:none}
+  .iconbtn[aria-pressed="false"] .off{display:inline}
+  .iconbtn[aria-pressed="false"]{color:var(--ink-faint)}
+  /* ---------- scene: a taped-down sheet of drawing paper ---------- */
   .scene-card{
-    margin-top:10px;background:var(--card);
-    border:1.5px solid var(--ink-faint);border-radius:18px;
-    box-shadow:0 2px 0 rgba(109,31,60,.08);
-    overflow:hidden;
+    position:relative;margin:14px 2px 0;border-radius:6px 6px 14px 14px;
+    background:
+      radial-gradient(circle at 1px 1px,rgba(214,104,140,.16) 1px,transparent 1.4px) 0 0/14px 14px,
+      linear-gradient(180deg,#fffdfc,#fff5f5);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.9),
+      0 0 0 1px rgba(var(--shadow),.07),
+      0 3px 8px -4px rgba(var(--shadow),.2),
+      0 18px 34px -20px rgba(var(--shadow),.5);
+    transform:rotate(-.5deg);
   }
-  svg.scene{display:block;width:100%;height:auto}
-  .balloon{transition:transform 950ms var(--ease-in-out),opacity 950ms ease;transform-box:fill-box;transform-origin:center}
-  .balloon.away{transform:translate(46px,-190px) rotate(16deg);opacity:0}
-  .bob{animation:bob 2.6s ease-in-out infinite alternate}
-  @keyframes bob{from{transform:translateY(0)}to{transform:translateY(-9px)}}
-  .basket{transition:transform 1100ms var(--ease-in-out)}
-  .basket.landed{transform:translateY(26px) rotate(-3deg)}
-  .landshadow{opacity:0;transition:opacity 800ms ease}
-  .landshadow.show{opacity:.25}
-  .star{opacity:0;transform:scale(.4);transform-box:fill-box;transform-origin:center;
-    transition:transform 320ms var(--ease-out),opacity 320ms var(--ease-out)}
-  .star.show{opacity:1;transform:scale(1)}
-  .drawline{stroke-dasharray:1;stroke-dashoffset:0}
-  .load .drawline{animation:draw 1.4s var(--ease-out) backwards}
+  .scene-card::before{ /* washi tape */
+    content:"";position:absolute;top:-10px;left:50%;width:86px;height:21px;margin-left:-43px;
+    background:repeating-linear-gradient(135deg,rgba(240,128,170,.5) 0 6px,rgba(246,160,192,.5) 6px 12px);
+    transform:rotate(2.4deg);border-radius:2px;box-shadow:0 1px 2px rgba(var(--shadow),.12);
+  }
+  svg.scene{display:block;width:100%;height:auto;transform-origin:50% 100%}
+  /* pen strokes: pathLength 1, the gap is twice the dash so a hidden stroke shows no cap dot */
+  .ink,.sk,.drawline{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 2}
+  .ink,.sk{stroke-dashoffset:1.02}
+  .ink{stroke:var(--ink);stroke-width:4.2}
+  .ink.rope{stroke:#a0566f;stroke-width:3.2}
+  .ink.dot{stroke-width:4.4}
+  .ink.thin{stroke-width:2.6}
+  .sk{stroke:var(--ink-soft);stroke-width:1.4;opacity:.45}
+  .scenery{stroke:var(--ink-faint);stroke-width:2.2}
+  .scenery.pink{stroke:var(--accent)}
+  .load .drawline{animation:draw 1100ms var(--ease-out) 200ms backwards}
+  @keyframes draw{from{stroke-dashoffset:1.02}to{stroke-dashoffset:0}}
+  .cloud{animation:drift 9s ease-in-out infinite alternate}
+  @keyframes drift{from{transform:translateX(-5px)}to{transform:translateX(7px)}}
+  .face-alt{opacity:0}
+  #fig,#ropeB,#armR,#bubble,.face-alt{transform-box:view-box}
+  #fig{transform-origin:206px 186px}
+  #armR{transform-origin:206px 112px}
+  #ropeB{transform-origin:206px 51px}
+  #bubble{transform-origin:228px 108px;opacity:0}
+  .bubble-text{font-family:var(--hand);font-weight:700;font-size:15px;fill:var(--accent-deep)}
   /* ---------- word ---------- */
-  .meta{display:flex;gap:8px;align-items:center;margin:12px 2px 0;flex-wrap:wrap}
-  .tag{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;border:1.5px solid var(--ink-faint);color:var(--ink-soft);background:transparent}
-  .tag.diff-easy{border-color:var(--good);color:var(--good)}
-  .tag.diff-medium{border-color:#b07d1e;color:#8a5f10}
-  .tag.diff-hard{border-color:var(--bad);color:var(--bad)}
-  .lives{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--ink-soft)}
-  .tiles{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:12px 0 4px;min-height:64px;align-content:center}
-  .word{display:flex;gap:6px}
+  .meta{display:flex;gap:6px;align-items:center;margin:14px 2px 0;flex-wrap:wrap}
+  .tag{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;color:var(--ink-soft);background:rgba(255,255,255,.6);
+    box-shadow:0 0 0 1px rgba(var(--shadow),.12)}
+  .tag.diff-easy{color:var(--good)}
+  .tag.diff-medium{color:#8a5f10}
+  .tag.diff-hard{color:var(--accent-deep)}
+  .tag:empty{display:none}
+  .lives{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  .tiles{
+    --n:6;
+    --tw:min(36px,calc((min(100vw,480px) - 40px - (var(--n) - 1) * 5px) / var(--n)));
+    display:flex;flex-wrap:wrap;gap:8px calc(var(--tw) * .7);justify-content:center;align-content:center;
+    margin:10px 0 0;min-height:56px;
+  }
+  .word{display:flex;gap:5px}
   .tile{
-    width:34px;height:48px;display:flex;align-items:center;justify-content:center;
-    font-size:24px;font-weight:800;color:var(--ink);
-    border-bottom:3px solid var(--ink-soft);border-radius:6px 6px 0 0;
-    background:rgba(255,255,255,.45);
+    position:relative;width:var(--tw);height:calc(var(--tw) * 1.36);
+    display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;
+    font-family:var(--hand);font-weight:700;font-size:calc(var(--tw) * .82);line-height:1;color:var(--ink);
   }
-  .tile.fixed{border-bottom-color:transparent;color:var(--ink-faint);font-size:22px;background:transparent;width:auto;min-width:18px}
-  .tile.gap{border:none;background:transparent;width:14px}
-  .tile.reveal{animation:pop 260ms var(--ease-out)}
-  @keyframes pop{0%{transform:scale(.55);opacity:0}100%{transform:scale(1);opacity:1}}
-  .wordmiss{font-size:14px;color:var(--ink-soft);text-align:center;min-height:20px;margin:2px}
+  .tile::after{
+    content:"";position:absolute;left:9%;right:9%;bottom:0;height:2.6px;border-radius:2px;background:var(--ink-soft);
+    transform:rotate(calc(var(--r) * .4));transform-origin:0 50%;
+    animation:underline 460ms var(--ease-out) calc(var(--i) * 28ms) backwards;
+  }
+  @keyframes underline{from{transform:rotate(calc(var(--r) * .4)) scaleX(.04);opacity:0}}
+  .tile .ch{
+    display:block;opacity:0;transform:translateY(-12px) rotate(var(--r)) scale(.7);
+    transition:opacity 200ms var(--ease-out),transform 420ms var(--ease-back);
+  }
+  .tile.shown .ch{opacity:1;transform:rotate(var(--r))}
+  .tile.late .ch{color:var(--accent)}
+  .tile.fixed{width:auto;min-width:calc(var(--tw) * .45);color:var(--ink-soft)}
+  .tile.fixed::after{display:none}
+  .missed{display:flex;align-items:center;justify-content:center;gap:2px 9px;flex-wrap:wrap;min-height:28px;margin:10px 0 0}
+  .missed .lbl{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-right:2px}
+  .missed .lbl:only-child{display:none}
+  .ml{position:relative;font-family:var(--hand);font-weight:700;font-size:20px;line-height:1;color:var(--ink-soft);padding:2px 1px}
+  .ml::after{content:"";position:absolute;left:-3px;right:-3px;top:52%;height:2.2px;border-radius:2px;background:var(--accent);
+    transform:rotate(-14deg);transform-origin:0 50%;animation:strike 260ms var(--ease-out) 120ms backwards}
+  @keyframes strike{from{transform:rotate(-14deg) scaleX(.05);opacity:0}}
   /* ---------- clue ---------- */
-  .cluebox{text-align:center;margin:2px 0 0;min-height:44px}
+  .cluebox{text-align:center;margin:2px 0 0;min-height:46px;display:flex;align-items:center;justify-content:center}
   .cluebtn{
-    font:inherit;font-size:14px;font-weight:700;color:var(--accent-deep);
+    font-size:14px;font-weight:700;color:var(--accent-deep);cursor:pointer;
     background:transparent;border:1.5px dashed var(--ink-faint);border-radius:999px;
-    padding:8px 16px;cursor:pointer;min-height:44px;
-    transition:transform 150ms var(--ease-out),opacity 200ms ease;
+    padding:8px 16px;min-height:44px;
+    transition:transform 140ms var(--ease-out);
   }
-  .cluebtn:active{transform:scale(.95)}
-  .cluetext{font-size:14.5px;color:var(--ink-soft);font-style:italic;margin:0;padding:10px 8px;
-    opacity:0;transition:opacity 250ms ease}
-  .cluetext.show{opacity:1}
-  /* ---------- keyboard ---------- */
-  .keys{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:8px}
+  .cluebtn:active{transform:scale(.96);transition-duration:70ms}
+  .cluetext{font-family:var(--hand);font-size:16.5px;color:var(--ink-soft);margin:0;padding:8px 10px;line-height:1.3}
+  .cluetext.show{animation:clue 380ms var(--ease-out)}
+  @keyframes clue{from{opacity:0;transform:translateY(6px);filter:blur(2px)}}
+  /* ---------- keyboard: circled when right, crossed out when wrong ---------- */
+  .keys{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-top:6px}
   .key{
-    font:inherit;font-weight:800;font-size:18px;color:var(--ink);
-    min-height:var(--key-h);border-radius:14px;cursor:pointer;
-    background:var(--card);border:1.5px solid var(--ink-faint);
-    box-shadow:0 2px 0 rgba(109,31,60,.12);
+    position:relative;border:0;cursor:pointer;
+    font-family:var(--hand);font-weight:700;font-size:22px;line-height:1;color:var(--ink);
+    min-height:var(--key-h);border-radius:13px;
+    background-color:#fffafa;
+    box-shadow:inset 0 1px 0 #fff,0 0 0 1px rgba(var(--shadow),.11),0 2px 0 rgba(var(--shadow),.12),0 7px 12px -9px rgba(var(--shadow),.45);
     display:flex;align-items:center;justify-content:center;
-    transition:transform 130ms var(--ease-out),opacity 200ms ease,background-color 200ms ease,color 200ms ease;
+    transition:transform 150ms var(--ease-out),background-color 220ms ease,color 220ms ease,opacity 220ms ease;
     user-select:none;-webkit-user-select:none;
   }
-  @media (hover:hover) and (pointer:fine){.key:not(:disabled):hover{background:#fff}}
-  .key:not(:disabled):active{transform:scale(.9)}
-  .key.good{background:#dcefe2;border-color:var(--good);color:var(--good)}
-  .key.bad{background:#f7dee1;border-color:var(--bad);color:var(--bad);opacity:.75}
+  .key::before{ /* pen circle */
+    content:"";position:absolute;inset:6px 7px;border:2.2px solid var(--accent);border-radius:50%;
+    opacity:0;transform:rotate(-10deg) scale(.6);
+    transition:opacity 160ms ease,transform 320ms var(--ease-back);
+  }
+  .key::after{ /* pen cross-out */
+    content:"";position:absolute;left:20%;right:20%;top:50%;height:2.6px;margin-top:-1.3px;border-radius:2px;background:var(--accent);
+    opacity:0;transform:rotate(-28deg) scaleX(.05);transform-origin:0 50%;
+    transition:opacity 80ms ease,transform 240ms var(--ease-out);
+  }
+  @media (hover:hover) and (pointer:fine){.key:not(:disabled):hover{background-color:#fff}}
+  .key:not(:disabled):active{transform:translateY(1px) scale(.93);transition-duration:60ms}
   .key:disabled{cursor:default}
+  .key.good{color:var(--accent-deep);background-color:var(--accent-wash)}
+  .key.good::before{opacity:1;transform:rotate(-10deg) scale(1)}
+  .key.bad{color:var(--ink-faint);background-color:rgba(255,250,250,.55)}
+  .key.bad::after{opacity:1;transform:rotate(-28deg) scaleX(1)}
+  .keys.over .key:not(.good):not(.bad){opacity:.5}
   /* ---------- sheets & panels ---------- */
   .scrim{
-    position:fixed;inset:0;background:rgba(109,31,60,.32);
-    opacity:0;pointer-events:none;transition:opacity 250ms ease;z-index:20;
+    position:fixed;inset:0;background:rgba(var(--shadow),.3);z-index:20;
+    opacity:0;pointer-events:none;transition:opacity 220ms ease;
   }
-  .scrim.open{opacity:1;pointer-events:auto}
+  .scrim.open{opacity:1;pointer-events:auto;transition-duration:300ms}
   .sheet{
-    position:fixed;left:50%;bottom:0;z-index:21;
-    width:100%;max-width:480px;max-height:86dvh;overflow:auto;
-    background:var(--paper);border-radius:22px 22px 0 0;
-    border:1.5px solid var(--ink-faint);border-bottom:none;
-    padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 22px);
-    transform:translate(-50%,102%);opacity:.4;
-    transition:transform 320ms var(--ease-out),opacity 250ms ease;
+    position:fixed;left:0;right:0;bottom:0;margin:0 auto;z-index:21;
+    width:100%;max-width:480px;max-height:88dvh;overflow:auto;overscroll-behavior:contain;
+    background:var(--paper);border-radius:24px 24px 0 0;
+    box-shadow:0 -1px 0 rgba(255,255,255,.8) inset,0 -12px 40px -12px rgba(var(--shadow),.35);
+    padding:8px 20px calc(env(safe-area-inset-bottom,0px) + 22px);
+    transform:translateY(102%);visibility:hidden;
+    transition:transform 260ms var(--ease-out),visibility 0s linear 260ms;
   }
-  .sheet.open{transform:translate(-50%,0);opacity:1}
-  .grab{width:44px;height:5px;border-radius:99px;background:var(--ink-faint);margin:6px auto 12px;opacity:.7}
-  .sheet h2{font-size:18px;margin:0 0 4px}
-  .sheet p.sub{font-size:13px;color:var(--ink-soft);margin:0 0 12px}
-  .row{margin:14px 0}
-  .row label.lbl{display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:8px}
-  .row label.lbl output{color:var(--accent-deep)}
-  input[type=range]{width:100%;accent-color:var(--accent);height:44px}
+  .sheet.open{transform:none;visibility:visible;transition:transform 460ms var(--ease-drawer),visibility 0s}
+  .grab{width:40px;height:5px;border-radius:99px;background:var(--ink-faint);margin:6px auto 14px;opacity:.7}
+  .sheet h2{font-family:var(--hand);font-size:23px;margin:0 0 2px}
+  .sheet h3{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:20px 0 8px}
+  .sheet p.sub{font-size:13px;color:var(--ink-soft);margin:0 0 10px}
+  .row{margin:16px 0}
+  .row .lbl{display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:6px}
+  .row .lbl output{color:var(--accent-deep);font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--accent);height:44px;margin:0}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{font:inherit;font-size:13.5px;font-weight:700;padding:10px 14px;min-height:44px;border-radius:999px;
-    border:1.5px solid var(--ink-faint);background:var(--card);color:var(--ink-soft);cursor:pointer;
-    transition:transform 130ms var(--ease-out),background-color 180ms ease,color 180ms ease}
-  .chip:active{transform:scale(.94)}
-  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-  .stepper{display:flex;align-items:center;gap:14px}
-  .stepper button{width:48px;height:48px;border-radius:50%;font-size:22px;font-weight:800;
-    border:1.5px solid var(--ink-faint);background:var(--card);color:var(--ink);cursor:pointer}
-  .stepper button:active{transform:scale(.9)}
-  .stepper output{font-size:20px;font-weight:800;min-width:2ch;text-align:center}
+  .chip{font-size:13.5px;font-weight:700;padding:10px 14px;min-height:44px;border-radius:999px;border:0;cursor:pointer;
+    background:var(--sheet);color:var(--ink-soft);box-shadow:0 0 0 1.5px rgba(var(--shadow),.14);
+    transition:transform 140ms var(--ease-out),background-color 200ms ease,color 200ms ease,box-shadow 200ms ease}
+  .chip:active{transform:scale(.95);transition-duration:70ms}
+  .chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);box-shadow:0 0 0 1.5px var(--ink)}
+  .stepper{display:flex;align-items:center;gap:16px}
+  .stepper button{width:48px;height:48px;border-radius:50%;font-size:22px;font-weight:800;border:0;cursor:pointer;
+    background:var(--sheet);box-shadow:0 0 0 1.5px rgba(var(--shadow),.14);transition:transform 140ms var(--ease-out)}
+  .stepper button:active{transform:scale(.9);transition-duration:70ms}
+  .stepper output{font-size:22px;font-weight:800;min-width:2ch;text-align:center;font-variant-numeric:tabular-nums}
+  .stepper .hint{font-size:12.5px;color:var(--ink-soft);font-weight:600}
   .switchrow{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;min-height:48px}
-  .switch{width:56px;height:34px;border-radius:99px;border:1.5px solid var(--ink-faint);background:#e9d5de;
-    position:relative;cursor:pointer;transition:background-color 200ms ease}
-  .switch::after{content:"";position:absolute;top:3px;left:4px;width:25px;height:25px;border-radius:50%;
-    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform 220ms var(--ease-out)}
+  .switch{width:56px;height:34px;border-radius:99px;background:#ead6df;position:relative;cursor:pointer;flex:0 0 auto;
+    transition:background-color 220ms ease}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.22),0 3px 8px -2px rgba(0,0,0,.15);transition:transform 260ms var(--ease-out)}
   .switch[aria-checked="true"]{background:var(--accent)}
-  .switch[aria-checked="true"]::after{transform:translateX(21px)}
+  .switch[aria-checked="true"]::after{transform:translateX(22px)}
   .btnrow{display:flex;gap:10px;margin-top:16px}
-  .btn{flex:1;font:inherit;font-size:16px;font-weight:800;min-height:52px;border-radius:16px;cursor:pointer;
-    border:1.5px solid var(--ink);transition:transform 140ms var(--ease-out)}
-  .btn:active{transform:scale(.96)}
-  .btn.primary{background:var(--ink);color:var(--paper)}
-  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn{flex:1;font-size:16px;font-weight:800;min-height:52px;border-radius:16px;cursor:pointer;border:0;
+    transition:transform 140ms var(--ease-out)}
+  .btn:active{transform:scale(.96);transition-duration:70ms}
+  .btn.primary{background:var(--ink);color:var(--paper);box-shadow:0 6px 14px -8px rgba(var(--shadow),.8)}
+  .btn.ghost{background:transparent;color:var(--ink);box-shadow:0 0 0 1.5px rgba(var(--shadow),.25)}
   /* stats */
-  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
-  .stat{background:var(--card);border:1.5px solid var(--ink-faint);border-radius:14px;padding:10px;text-align:center}
-  .stat b{display:block;font-size:22px}
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+  .stat{background:var(--sheet);border-radius:14px;padding:12px 10px;text-align:center;box-shadow:0 0 0 1px rgba(var(--shadow),.1)}
+  .stat b{display:block;font-family:var(--hand);font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
   .stat span{font-size:12px;color:var(--ink-soft);font-weight:700}
-  .catwins{font-size:13px;color:var(--ink-soft);margin:6px 0}
-  .catwins b{color:var(--ink)}
+  .catwins{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13.5px;color:var(--ink-soft);margin:0}
+  .catwins b{color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
   .badges{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .badge{background:var(--card);border:1.5px solid var(--ink-faint);border-radius:14px;padding:10px;font-size:12px}
-  .badge b{display:block;font-size:13px;margin-bottom:2px}
-  .badge.locked{opacity:.45}
-  .badge.won{border-color:var(--accent)}
+  .badge{background:var(--sheet);border-radius:14px;padding:10px 11px;font-size:12px;color:var(--ink-soft);box-shadow:0 0 0 1px rgba(var(--shadow),.1)}
+  .badge b{display:block;font-size:13.5px;color:var(--ink);margin-bottom:2px}
+  .badge.locked{opacity:.55}
+  .badge.won{box-shadow:0 0 0 1.5px var(--accent);background:var(--accent-wash)}
+  .badge.won b{color:var(--accent-deep)}
   /* result card */
   .result{
-    position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:22;
-    width:min(440px,calc(100% - 32px));
-    background:var(--card);border:2px solid var(--ink);border-radius:20px;
-    padding:18px;box-shadow:0 12px 40px rgba(109,31,60,.25);
-    transform:translate(-50%,24px) scale(.96);opacity:0;pointer-events:none;
-    transition:transform 300ms var(--ease-out),opacity 250ms ease;
+    position:fixed;left:0;right:0;margin:0 auto;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:22;
+    width:min(448px,calc(100% - 24px));
+    background:var(--sheet);border-radius:24px;padding:18px 18px 16px;
+    box-shadow:inset 0 1px 0 #fff,0 0 0 1px rgba(var(--shadow),.1),0 24px 50px -16px rgba(var(--shadow),.5);
+    transform:translateY(calc(100% + 40px));visibility:hidden;
+    transition:transform 260ms var(--ease-out),visibility 0s linear 260ms;
   }
-  .result.open{transform:translate(-50%,0) scale(1);opacity:1;pointer-events:auto}
-  .result h2{margin:0 0 4px;font-size:20px}
-  .result p{margin:6px 0;font-size:14px;color:var(--ink-soft)}
-  .result .answer{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:1px}
+  .result.open{transform:none;visibility:visible;transition:transform 560ms var(--ease-drawer),visibility 0s}
+  .result h2{font-family:var(--hand);margin:0;font-size:25px;line-height:1.15}
+  .result .answer{font-family:var(--hand);font-size:24px;font-weight:700;color:var(--accent-deep);letter-spacing:.06em;margin-top:4px}
+  .result p{margin:6px 0 0;font-size:14px;color:var(--ink-soft)}
+  .result.open .stagger{animation:rise 460ms var(--ease-out) backwards}
+  .result.open .stagger:nth-child(2){animation-delay:70ms}
+  .result.open .stagger:nth-child(3){animation-delay:120ms}
+  .result.open .stagger:nth-child(4){animation-delay:160ms}
+  .result.open .stagger:nth-child(5){animation-delay:200ms}
   /* toast */
   .toast{
-    position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:30;
-    transform:translate(-50%,16px);opacity:0;pointer-events:none;
+    position:fixed;left:0;right:0;margin:0 auto;width:max-content;max-width:calc(100% - 40px);
+    top:calc(env(safe-area-inset-top,0px) + 10px);z-index:30;
     background:var(--ink);color:var(--paper);font-size:14px;font-weight:700;
-    padding:12px 18px;border-radius:999px;max-width:calc(100% - 40px);text-align:center;
-    transition:transform 280ms var(--ease-out),opacity 250ms ease;
+    padding:11px 18px;border-radius:999px;text-align:center;
+    box-shadow:0 12px 30px -10px rgba(var(--shadow),.7);
+    transform:translateY(calc(-100% - 20px));visibility:hidden;
+    transition:transform 240ms var(--ease-out),visibility 0s linear 240ms;
   }
-  .toast.open{transform:translate(-50%,0);opacity:1}
-  .empty{margin:26px 6px;padding:18px;background:var(--card);border:1.5px dashed var(--ink-faint);
+  .toast.open{transform:none;visibility:visible;transition:transform 480ms var(--ease-drawer),visibility 0s}
+  .empty{margin:22px 6px;padding:18px;background:var(--sheet);border:1.5px dashed var(--ink-faint);
     border-radius:16px;font-size:14px;color:var(--ink-soft);text-align:center}
   .empty button{margin-top:10px}
-  footer{margin-top:auto;padding:14px 4px 0;text-align:center;font-size:12px;color:var(--ink-faint)}
+  footer{margin-top:auto;padding:12px 4px 0;text-align:center;font-size:12px;color:var(--ink-soft)}
   @media (prefers-reduced-motion:reduce){
-    *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
-      transition-duration:200ms !important}
-    .balloon.away{transform:none}
-    .bob{animation:none}
-    .load .squiggle path,.load .drawline{animation:none}
+    /* calm fades only: no travel, no pen strokes, no overshoot */
+    .enter,.result.open .stagger{animation-name:fade}
+    @keyframes fade{from{opacity:0}}
+    .load .drawline,.cloud,.tile::after,.ml::after{animation:none}
+    .cluetext.show{animation:fade 300ms ease}
+    .tile .ch{transform:rotate(var(--r));transition:opacity 260ms ease}
+    .key::before{transform:rotate(-10deg)}
+    .key::after{transform:rotate(-28deg)}
+    .key::before,.key::after{transition:opacity 220ms ease}
+    .sheet,.result,.toast,.sheet.open,.result.open,.toast.open{transform:none}
+    .sheet,.result,.toast{opacity:0;transition:opacity 220ms ease,visibility 0s linear 220ms}
+    .sheet.open,.result.open,.toast.open{opacity:1;transition:opacity 220ms ease,visibility 0s}
   }
 </style>
 </head>
 <body>
 <div class="page">
-  <header>
+  <header class="enter">
     <div class="brand">
-      <h1>Hangman <span class="thin">· classic calm</span></h1>
-      <svg class="squiggle" viewBox="0 0 148 8" aria-hidden="true"><path pathLength="1" d="M2 5 C 30 1, 60 7, 90 4 S 130 3, 146 5"/></svg>
+      <h1>Hangman</h1>
+      <svg class="squiggle" viewBox="0 0 118 8" aria-hidden="true"><path class="drawline" pathLength="1" d="M2 5 C 24 1, 48 7, 72 4 S 104 3, 116 5"/></svg>
     </div>
-    <span class="pill" id="streakPill" title="Current win streak">★ 0</span>
-    <button class="iconbtn" id="soundBtn" aria-label="Toggle sound" aria-pressed="false">♪</button>
-    <button class="iconbtn" id="statsBtn" aria-label="Stats and badges">☰</button>
-    <button class="iconbtn" id="settingsBtn" aria-label="Open settings">⚙</button>
+    <span class="pill" id="streakPill" title="Current win streak"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 l2.7 5.6 6.1 .8 -4.5 4.2 1.1 6.1 L12 16.6 6.6 19.5 7.7 13.4 3.2 9.2 l6.1 -.8 Z" fill="currentColor"/></svg><span id="streakNum">0</span></span>
+    <button class="iconbtn" id="soundBtn" aria-label="Sound" aria-pressed="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5 h3.2 L12 5.5 v13 l-4.8 -4 H4 Z"/><path class="on" d="M15.5 9 c1.4 1.6 1.4 4.4 0 6 M18.3 6.5 c2.8 3 2.8 8 0 11"/><path class="off" d="M16 9.5 l5 5 M21 9.5 l-5 5"/></svg>
+    </button>
+    <button class="iconbtn" id="statsBtn" aria-label="Stats and badges">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 h10 v4 a5 5 0 0 1 -10 0 Z M7 6 H4 a3 3 0 0 0 3.5 4 M17 6 h3 a3 3 0 0 1 -3.5 4 M12 13 v4 M8.5 20 h7 l-1 -3 h-5 Z"/></svg>
+    </button>
+    <button class="iconbtn" id="settingsBtn" aria-label="Open settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7 h9 M17 7 h3 M4 17 h3 M11 17 h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>
+    </button>
   </header>
 
-  <div class="scene-card" aria-hidden="true">
-    <svg class="scene" id="scene" viewBox="0 0 360 250" role="img" aria-label="A cat in a basket held up by balloons"></svg>
+  <div class="scene-card enter" id="sceneCard">
+    <svg class="scene" id="scene" viewBox="0 0 360 236" aria-hidden="true">
+      <g id="scenery">
+        <circle class="scenery pink drawline" pathLength="1" cx="314" cy="34" r="12" fill="#ffe6ee"/>
+        <path class="scenery pink drawline" pathLength="1" d="M314 14 v-5 M331 21 l4 -3 M336 37 h5 M297 21 l-4 -3"/>
+        <g class="cloud">
+          <path class="scenery drawline" pathLength="1" fill="#fffafa" d="M264 60 C 258 52, 266 44, 275 48 C 278 38, 294 37, 298 46 C 307 43, 315 51, 309 59 C 296 62, 278 62, 264 60 Z"/>
+        </g>
+        <path class="scenery drawline" pathLength="1" d="M12 222 C 70 219, 130 225, 190 222 S 300 220, 348 223"/>
+        <path class="scenery drawline" pathLength="1" d="M28 222 l3 -7 l2 6 l3 -8 l2 9 M152 223 l2 -6 l3 6 l2 -8 l2 8 M318 222 l3 -7 l2 6 l3 -7 l1 8"/>
+        <path class="scenery pink drawline" pathLength="1" d="M262 222 C 263 214, 261 208, 262 202"/>
+        <circle class="scenery pink drawline" pathLength="1" cx="262" cy="198" r="4.5" fill="#fde3ec"/>
+      </g>
+      <g id="parts">
+        <g id="gallows"></g>
+        <g id="ropeB"></g>
+        <g id="fig">
+          <g id="eyes"></g>
+          <g id="mouth"></g>
+          <g id="armR"></g>
+          <path class="ink thin face-alt" id="xeyes" pathLength="1" d="M197.5 77.5 l5 5 M202.5 77.5 l-5 5 M209.5 77.5 l5 5 M214.5 77.5 l-5 5"/>
+          <path class="ink thin face-alt" id="sadMouth" pathLength="1" d="M200 91 q3 -2.5 6 0 t6 0"/>
+          <path class="ink thin face-alt" id="grin" pathLength="1" d="M199 87.5 Q 206 96 213 87.5"/>
+        </g>
+      </g>
+      <g id="fx"></g>
+      <g id="bubble">
+        <rect x="232" y="72" width="64" height="28" rx="13" fill="#fffafa" stroke="#e0457f" stroke-width="2"/>
+        <path d="M240 98.5 L228 108 L250 99.5" fill="#fffafa" stroke="#e0457f" stroke-width="2" stroke-linejoin="round"/>
+        <text class="bubble-text" x="264" y="91.5" text-anchor="middle">phew!</text>
+      </g>
+    </svg>
   </div>
 
-  <div class="meta">
-    <span class="tag" id="catTag">animals</span>
-    <span class="tag diff-easy" id="diffTag">easy</span>
+  <div class="meta enter">
+    <span class="tag" id="catTag"></span>
+    <span class="tag" id="diffTag"></span>
     <span class="lives" id="livesLabel"></span>
   </div>
 
-  <div class="tiles" id="tiles" aria-live="polite"></div>
-  <div class="wordmiss" id="missLabel"></div>
+  <div class="tiles enter" id="tiles" aria-live="polite"></div>
+  <div class="missed" id="missed"><span class="lbl">Missed</span></div>
 
   <div class="cluebox">
     <button class="cluebtn" id="clueBtn" hidden>Need a nudge? Show the clue</button>
-    <p class="cluetext" id="clueText"></p>
+    <p class="cluetext" id="clueText" hidden></p>
   </div>
 
   <div class="empty" id="emptyBox" hidden>
-    No words match those filters — try widening the word-length range or picking more categories.
+    No words match those filters. Try widening the word-length range or picking more categories.
     <br><button class="cluebtn" id="emptySettings">Open settings</button>
   </div>
 
-  <div class="keys" id="keys" role="group" aria-label="Letter keyboard"></div>
+  <div class="keys enter" id="keys" role="group" aria-label="Letter keyboard"></div>
 
   <footer>All progress stays on this phone · works offline</footer>
 </div>
@@ -291,15 +414,16 @@
     </div>
   </div>
   <div class="row">
-    <label class="lbl">Categories</label>
+    <span class="lbl">Categories</span>
     <div class="chips" id="catChips"></div>
   </div>
   <div class="row">
-    <label class="lbl">Balloons (lives) <output id="livesOut">6</output></label>
+    <span class="lbl">Lives <output id="livesOut">6</output></span>
     <div class="stepper">
       <button id="livesDown" aria-label="Fewer lives">−</button>
       <output id="livesNum">6</output>
       <button id="livesUp" aria-label="More lives">+</button>
+      <span class="hint">Fewer lives, bigger pen strokes</span>
     </div>
   </div>
   <div class="row">
@@ -323,159 +447,48 @@
     <div class="stat"><b id="stPlayed">0</b><span>games played</span></div>
     <div class="stat"><b id="stWon">0</b><span>games won</span></div>
   </div>
+  <h3>Wins per category</h3>
   <p class="catwins" id="catWins"></p>
-  <h2 style="font-size:15px;margin-top:14px">Badges</h2>
+  <h3>Badges</h3>
   <div class="badges" id="badgeGrid"></div>
   <div class="btnrow"><button class="btn primary" id="statsClose">Done</button></div>
 </section>
 
 <div class="result" id="result" role="status">
-  <h2 id="resTitle"></h2>
-  <div class="answer" id="resWord"></div>
-  <p id="resClue"></p>
-  <p id="resStats"></p>
-  <div class="btnrow">
+  <h2 id="resTitle" class="stagger"></h2>
+  <div class="answer stagger" id="resWord"></div>
+  <p id="resClue" class="stagger"></p>
+  <p id="resStats" class="stagger"></p>
+  <div class="btnrow stagger">
     <button class="btn ghost" id="resSettings">Settings</button>
     <button class="btn primary" id="resNext">New word</button>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<!-- words:begin --><script id="hangman-words" type="application/json">{"version":1,"categories":[{"id":"animals","name":"Animals","words":[{"answer":"FOX","hint":"A cunning russet mammal","difficulty":"easy"},{"answer":"BAT","hint":"A night flier that echolocates","difficulty":"easy"},{"answer":"HARE","hint":"Long-eared field runner","difficulty":"easy"},{"answer":"DEER","hint":"Grows antlers each autumn","difficulty":"easy"},{"answer":"MOLE","hint":"A blind tunnel digger","difficulty":"easy"},{"answer":"PONY","hint":"A small horse","difficulty":"easy"},{"answer":"OTTER","hint":"A playful river swimmer","difficulty":"easy"},{"answer":"RABBIT","hint":"A burrowing long-eared grazer","difficulty":"easy"},{"answer":"BADGER","hint":"A stripe-faced sett dweller","difficulty":"easy"},{"answer":"ZEBRA","hint":"Striped African grazer","difficulty":"easy"},{"answer":"LLAMA","hint":"An Andean woolly grazer","difficulty":"easy"},{"answer":"GIRAFFE","hint":"The tallest land animal","difficulty":"easy"},{"answer":"SQUIRREL","hint":"A nut-burying climber","difficulty":"easy"},{"answer":"HEDGEHOG","hint":"A spiny garden visitor","difficulty":"easy"},{"answer":"NEWT","hint":"A small pond amphibian","difficulty":"medium"},{"answer":"VOLE","hint":"A field-dwelling rodent","difficulty":"medium"},{"answer":"SHREW","hint":"A tiny insect-eating mammal","difficulty":"medium"},{"answer":"STOAT","hint":"Turns white in winter","difficulty":"medium"},{"answer":"WEASEL","hint":"Britain's smallest carnivore","difficulty":"medium"},{"answer":"DORMOUSE","hint":"A sleepy hazelnut nibbler","difficulty":"medium"},{"answer":"RED SQUIRREL","hint":"A russet native rarer than its grey cousin","difficulty":"medium"},{"answer":"GREY SEAL","hint":"A large blubbery beach hauled-out","difficulty":"medium"},{"answer":"PINE MARTEN","hint":"A tree-climbing forest hunter","difficulty":"hard"},{"answer":"HORSESHOE BAT","hint":"Named for its nose leaf shape","difficulty":"hard"},{"answer":"COMMON DOLPHIN","hint":"An acrobatic sea mammal","difficulty":"hard"},{"answer":"EDIBLE DORMOUSE","hint":"A fattened Roman delicacy, still wild in the Chilterns","difficulty":"hard"}]},{"id":"mythology","name":"Mythology","words":[{"answer":"ZEUS","hint":"King of the Greek gods","difficulty":"easy"},{"answer":"HERA","hint":"Queen of the Greek gods","difficulty":"easy"},{"answer":"ARES","hint":"Greek god of war","difficulty":"easy"},{"answer":"ODIN","hint":"The one-eyed Norse Allfather","difficulty":"easy"},{"answer":"THOR","hint":"Norse god with a hammer","difficulty":"easy"},{"answer":"LOKI","hint":"The Norse trickster god","difficulty":"easy"},{"answer":"ATLAS","hint":"The Titan doomed to hold up the sky","difficulty":"easy"},{"answer":"HYDRA","hint":"The many-headed serpent slain by Heracles","difficulty":"easy"},{"answer":"MEDUSA","hint":"The snake-haired Gorgon","difficulty":"easy"},{"answer":"MERLIN","hint":"The wizard of Camelot","difficulty":"easy"},{"answer":"PHOENIX","hint":"The bird reborn from its ashes","difficulty":"easy"},{"answer":"KRAKEN","hint":"A giant sea monster of legend","difficulty":"easy"},{"answer":"PEGASUS","hint":"The winged horse of myth","difficulty":"easy"},{"answer":"MINOTAUR","hint":"The bull-headed labyrinth dweller","difficulty":"easy"},{"answer":"SIREN","hint":"A singer who lured sailors to wreck","difficulty":"medium"},{"answer":"DRYAD","hint":"A tree nymph","difficulty":"medium"},{"answer":"SPHINX","hint":"The riddling lion of Thebes","difficulty":"medium"},{"answer":"CYCLOPS","hint":"A one-eyed giant","difficulty":"medium"},{"answer":"SELKIE","hint":"Seal-folk of Scottish tales","difficulty":"medium"},{"answer":"BANSHEE","hint":"A wailing Irish spirit","difficulty":"medium"},{"answer":"CERBERUS","hint":"The three-headed hound of Hades","difficulty":"medium"},{"answer":"VALHALLA","hint":"The Norse hall of fallen warriors","difficulty":"medium"},{"answer":"EXCALIBUR","hint":"The sword in the stone","difficulty":"medium"},{"answer":"LEPRECHAUN","hint":"A shoemaking Irish fairy","difficulty":"medium"},{"answer":"GOLDEN FLEECE","hint":"The prize sought by Jason and the Argonauts","difficulty":"hard"}]},{"id":"plants","name":"Plants","words":[{"answer":"OAK","hint":"A mighty acorn-bearing tree","difficulty":"easy"},{"answer":"ELM","hint":"A once-common hedgerow tree","difficulty":"easy"},{"answer":"IVY","hint":"A climbing evergreen","difficulty":"easy"},{"answer":"FERN","hint":"A shady frondy plant with no flowers","difficulty":"easy"},{"answer":"MOSS","hint":"A soft green carpet on stones","difficulty":"easy"},{"answer":"THYME","hint":"A tiny aromatic herb","difficulty":"easy"},{"answer":"DAISY","hint":"A lawn flower with white petals","difficulty":"easy"},{"answer":"TULIP","hint":"A spring bulb from Amsterdam fields","difficulty":"easy"},{"answer":"POPPY","hint":"A red remembrance flower","difficulty":"easy"},{"answer":"NETTLE","hint":"It stings — brew it or dodge it","difficulty":"easy"},{"answer":"BRAMBLE","hint":"Blackberry tangles","difficulty":"easy"},{"answer":"HEATHER","hint":"Purple moorland bloom","difficulty":"easy"},{"answer":"ORCHID","hint":"An exotic showy flower","difficulty":"medium"},{"answer":"FOXGLOVE","hint":"Tall spires, a heart medicine source","difficulty":"medium"},{"answer":"PRIMROSE","hint":"A pale early-spring flower","difficulty":"medium"},{"answer":"SNOWDROP","hint":"The first bulb of the year","difficulty":"easy"},{"answer":"DAFFODIL","hint":"Wales's spring trumpet","difficulty":"easy"},{"answer":"BLUEBELL","hint":"Carpets the woods in May","difficulty":"easy"},{"answer":"LAVENDER","hint":"A calming purple herb","difficulty":"easy"},{"answer":"ROSEMARY","hint":"A piney roast-potato herb","difficulty":"easy"},{"answer":"SUNFLOWER","hint":"It turns its face to follow the sun","difficulty":"easy"},{"answer":"DANDELION","hint":"A clock you can blow away","difficulty":"easy"},{"answer":"HONEYSUCKLE","hint":"A sweet-scented climber","difficulty":"medium"},{"answer":"SWEET PEA","hint":"A fragrant cottage-garden climber","difficulty":"medium"},{"answer":"FORGET ME NOT","hint":"A tiny blue remembrance flower","difficulty":"hard"}]},{"id":"gemstones","name":"Gemstones","words":[{"answer":"JET","hint":"Black Victorian mourning jewellery stone","difficulty":"easy"},{"answer":"ONYX","hint":"A banded black gemstone","difficulty":"easy"},{"answer":"OPAL","hint":"It flashes rainbow fire","difficulty":"easy"},{"answer":"JADE","hint":"A treasured green carving stone","difficulty":"easy"},{"answer":"RUBY","hint":"A red precious stone","difficulty":"easy"},{"answer":"PEARL","hint":"An oyster's treasure","difficulty":"easy"},{"answer":"CORAL","hint":"A sea-garden gem","difficulty":"easy"},{"answer":"AMBER","hint":"Fossilised tree resin, sometimes with insects","difficulty":"easy"},{"answer":"TOPAZ","hint":"A golden November birthstone","difficulty":"medium"},{"answer":"AGATE","hint":"A stripy chalcedony","difficulty":"medium"},{"answer":"QUARTZ","hint":"The commonest crystal","difficulty":"medium"},{"answer":"GARNET","hint":"A deep red January birthstone","difficulty":"medium"},{"answer":"PERIDOT","hint":"A light green August stone","difficulty":"medium"},{"answer":"CITRINE","hint":"A lemon-yellow quartz","difficulty":"medium"},{"answer":"EMERALD","hint":"A green precious stone","difficulty":"medium"},{"answer":"DIAMOND","hint":"The hardest gemstone","difficulty":"easy"},{"answer":"SAPPHIRE","hint":"A blue precious stone","difficulty":"easy"},{"answer":"AMETHYST","hint":"A purple quartz","difficulty":"medium"},{"answer":"TURQUOISE","hint":"A blue-green December stone","difficulty":"medium"},{"answer":"MOONSTONE","hint":"It glows like moonlight","difficulty":"medium"},{"answer":"TIGERS EYE","hint":"A golden-brown chatoyant stone","difficulty":"hard"},{"answer":"ROSE QUARTZ","hint":"A soft pink love stone","difficulty":"medium"},{"answer":"AQUAMARINE","hint":"A pale sea-blue beryl","difficulty":"hard"},{"answer":"BLOODSTONE","hint":"Green jasper flecked with red","difficulty":"hard"},{"answer":"LAPIS LAZULI","hint":"The ultramarine blue rock of pharaohs","difficulty":"hard"}]},{"id":"birds","name":"Birds","words":[{"answer":"OWL","hint":"A wise nocturnal hooter","difficulty":"easy"},{"answer":"JAY","hint":"A pinkish screeching woodland bird","difficulty":"easy"},{"answer":"WREN","hint":"A tiny loud songster","difficulty":"easy"},{"answer":"CROW","hint":"A clever black scavenger","difficulty":"easy"},{"answer":"DOVE","hint":"A symbol of peace","difficulty":"easy"},{"answer":"SWAN","hint":"A graceful necked river bird","difficulty":"easy"},{"answer":"DUCK","hint":"It quacks","difficulty":"easy"},{"answer":"SKYLARK","hint":"It sings high over the meadows","difficulty":"medium"},{"answer":"ROBIN","hint":"The gardener's red-breasted friend","difficulty":"easy"},{"answer":"RAVEN","hint":"A great croaking black bird","difficulty":"easy"},{"answer":"HERON","hint":"A patient grey fisher","difficulty":"easy"},{"answer":"GOOSE","hint":"It honks in a skein","difficulty":"easy"},{"answer":"MAGPIE","hint":"One for sorrow, chattering and pied","difficulty":"easy"},{"answer":"PUFFIN","hint":"A clown-faced seabird","difficulty":"easy"},{"answer":"GANNET","hint":"A spectacular plunge-diver","difficulty":"medium"},{"answer":"THRUSH","hint":"It repeats each phrase twice or thrice","difficulty":"medium"},{"answer":"KESTREL","hint":"It hovers over motorway verges","difficulty":"medium"},{"answer":"BUZZARD","hint":"A broad-winged soaring hawk","difficulty":"medium"},{"answer":"SPARROW","hint":"A chirpy brown town bird","difficulty":"easy"},{"answer":"STARLING","hint":"A murmur-forming mimic","difficulty":"medium"},{"answer":"BLACKBIRD","hint":"An orange-beaked dawn singer","difficulty":"easy"},{"answer":"CHAFFINCH","hint":"A pink-breasted finch","difficulty":"hard"},{"answer":"GOLDFINCH","hint":"A red-faced thistle-seed eater","difficulty":"hard"},{"answer":"KINGFISHER","hint":"A darting flash of orange and blue","difficulty":"medium"},{"answer":"BLUE TIT","hint":"A coconut-feeder acrobat","difficulty":"medium"}]},{"id":"food-and-drink","name":"Food & drink","words":[{"answer":"TEA","hint":"The national brew","difficulty":"easy"},{"answer":"PIE","hint":"Pastry with a filling","difficulty":"easy"},{"answer":"EGG","hint":"Fried, poached or scrambled","difficulty":"easy"},{"answer":"HAM","hint":"Cured pork for sandwiches","difficulty":"easy"},{"answer":"JAM","hint":"Spread for scones","difficulty":"easy"},{"answer":"BREAD","hint":"Baked daily staple","difficulty":"easy"},{"answer":"HONEY","hint":"Bees make it","difficulty":"easy"},{"answer":"SCONE","hint":"Best with jam and clotted cream","difficulty":"easy"},{"answer":"BUTTER","hint":"Churned and spreadable","difficulty":"easy"},{"answer":"CHEESE","hint":"Matured in a truckle","difficulty":"easy"},{"answer":"CIDER","hint":"Pressed apple drink","difficulty":"easy"},{"answer":"TRIFLE","hint":"Layered sponge, custard and jelly","difficulty":"medium"},{"answer":"CRUMPET","hint":"Full of holes for butter","difficulty":"medium"},{"answer":"PUDDING","hint":"Suet, steam and custard","difficulty":"medium"},{"answer":"CUSTARD","hint":"Poured over everything","difficulty":"easy"},{"answer":"SAUSAGE","hint":"A banger with mash","difficulty":"easy"},{"answer":"MARMITE","hint":"You either love it or hate it","difficulty":"medium"},{"answer":"CHEDDAR","hint":"A firm Somerset cheese","difficulty":"easy"},{"answer":"STILTON","hint":"A veiny blue Christmas cheese","difficulty":"medium"},{"answer":"ETON MESS","hint":"Strawberries, meringue and cream","difficulty":"medium"},{"answer":"BAKED BEANS","hint":"On toast, a student staple","difficulty":"easy"},{"answer":"FISH AND CHIPS","hint":"The seaside supper","difficulty":"medium"},{"answer":"MASHED POTATO","hint":"Buttery cloud beside the bangers","difficulty":"easy"},{"answer":"SHEPHERDS PIE","hint":"Minced lamb under a potato lid","difficulty":"medium"},{"answer":"TOAD IN THE HOLE","hint":"Sausages baked in batter","difficulty":"hard"}]},{"id":"geography","name":"Geography","words":[{"answer":"NILE","hint":"The world's longest river","difficulty":"easy"},{"answer":"ALPS","hint":"Ski peaks of Europe","difficulty":"easy"},{"answer":"SKYE","hint":"A misty Scottish isle","difficulty":"easy"},{"answer":"YORK","hint":"A walled Roman city","difficulty":"easy"},{"answer":"BATH","hint":"A Georgian spa city","difficulty":"easy"},{"answer":"DOVER","hint":"White cliffs port","difficulty":"easy"},{"answer":"DEVON","hint":"Cream teas and coastline","difficulty":"easy"},{"answer":"FJORD","hint":"A steep-sided sea inlet","difficulty":"medium"},{"answer":"THAMES","hint":"London's river","difficulty":"easy"},{"answer":"SEVERN","hint":"Britain's longest river","difficulty":"medium"},{"answer":"ORKNEY","hint":"Neolithic northern isles","difficulty":"medium"},{"answer":"SAHARA","hint":"The great desert","difficulty":"easy"},{"answer":"AMAZON","hint":"A mighty rainforest river","difficulty":"easy"},{"answer":"EVEREST","hint":"The world's highest peak","difficulty":"easy"},{"answer":"VOLCANO","hint":"It erupts","difficulty":"easy"},{"answer":"CORNISH COAST","hint":"Rugged south-western cliffs","difficulty":"medium"},{"answer":"SNOWDON","hint":"The highest peak in Wales","difficulty":"medium"},{"answer":"STONEHENGE","hint":"A stone circle on Salisbury Plain","difficulty":"medium"},{"answer":"PENINSULA","hint":"Nearly an island","difficulty":"medium"},{"answer":"ISTHMUS","hint":"A narrow strip joining two land masses","difficulty":"hard"},{"answer":"BEN NEVIS","hint":"Britain's highest mountain","difficulty":"medium"},{"answer":"LOCH NESS","hint":"Home of a famous monster","difficulty":"easy"},{"answer":"HADRIANS WALL","hint":"The Roman northern frontier","difficulty":"hard"},{"answer":"LAKE DISTRICT","hint":"Wainwright walking country","difficulty":"medium"},{"answer":"PEAK DISTRICT","hint":"Britain's first national park","difficulty":"hard"}]},{"id":"uk-number-ones","name":"UK no. 1s","words":[{"answer":"WANNABE","hint":"Spice Girls · 1996","difficulty":"easy"},{"answer":"BELIEVE","hint":"Cher · 1998","difficulty":"easy"},{"answer":"STAY","hint":"Shakespears Sister · 1992","difficulty":"easy"},{"answer":"TRAGEDY","hint":"Steps · 1999","difficulty":"easy"},{"answer":"MAMBO NO 5","hint":"Lou Bega · 1999","difficulty":"easy"},{"answer":"NEVER EVER","hint":"All Saints · 1998","difficulty":"easy"},{"answer":"UMBRELLA","hint":"Rihanna · 2007","difficulty":"easy"},{"answer":"POKER FACE","hint":"Lady Gaga · 2009","difficulty":"easy"},{"answer":"CRAZY","hint":"Gnarls Barkley · 2006","difficulty":"easy"},{"answer":"MERCY","hint":"Duffy · 2008","difficulty":"easy"},{"answer":"HUNG UP","hint":"Madonna · 2005","difficulty":"easy"},{"answer":"PATIENCE","hint":"Take That · 2006","difficulty":"easy"},{"answer":"SEXYBACK","hint":"Justin Timberlake · 2006","difficulty":"easy"},{"answer":"GRACE KELLY","hint":"Mika · 2007","difficulty":"easy"},{"answer":"GOODBYE","hint":"Spice Girls · 1998","difficulty":"easy"},{"answer":"MILLENNIUM","hint":"Robbie Williams · 1998","difficulty":"medium"},{"answer":"CRAZY IN LOVE","hint":"Beyoncé · 2003","difficulty":"medium"},{"answer":"BLEEDING LOVE","hint":"Leona Lewis · 2007","difficulty":"medium"},{"answer":"BACK FOR GOOD","hint":"Take That · 1995","difficulty":"medium"},{"answer":"NO MATTER WHAT","hint":"Boyzone · 1998","difficulty":"medium"},{"answer":"2 BECOME 1","hint":"Spice Girls · 1996","difficulty":"medium"},{"answer":"IT WASN'T ME","hint":"Shaggy · 2001","difficulty":"medium"},{"answer":"SATURDAY NIGHT","hint":"Whigfield · 1994","difficulty":"hard"},{"answer":"EARTH SONG","hint":"Michael Jackson · 1995","difficulty":"medium"},{"answer":"GREATEST DAY","hint":"Take That · 2008","difficulty":"medium"},{"answer":"AGAINST ALL ODDS","hint":"Mariah Carey & Westlife · 2000","difficulty":"hard"}]}]}</script><!-- words:end -->
 
 <script>
 "use strict";
 /* ============================================================
    Pure game logic (no DOM). Covered by the ?selftest check.
-   An entry: { w: "WORD OR PHRASE", c: "category id", clue: "...", d: "easy|medium|hard" }
+   Internal entry: { w: "WORD OR PHRASE", c: "category id", clue: "...", d: "easy|medium|hard" }
    ============================================================ */
-const CATS = [
-  ["animals","Animals"],["mythology","Mythology"],["plants","Plants"],
-  ["gemstones","Gemstones"],["birds","Birds"],["food","Food & drink"],
-  ["geography","Geography"],["music","UK no. 1s"]
-];
 
-/* word, clue, difficulty — British spelling throughout */
-const RAW = {
-animals:[
-["FOX","A cunning russet mammal","easy"],["BAT","A night flier that echolocates","easy"],
-["HARE","Long-eared field runner","easy"],["DEER","Grows antlers each autumn","easy"],
-["MOLE","A blind tunnel digger","easy"],["PONY","A small horse","easy"],
-["OTTER","A playful river swimmer","easy"],["RABBIT","A burrowing long-eared grazer","easy"],
-["BADGER","A stripe-faced sett dweller","easy"],["ZEBRA","Striped African grazer","easy"],
-["LLAMA","An Andean woolly grazer","easy"],["GIRAFFE","The tallest land animal","easy"],
-["SQUIRREL","A nut-burying climber","easy"],["HEDGEHOG","A spiny garden visitor","easy"],
-["NEWT","A small pond amphibian","medium"],["VOLE","A field-dwelling rodent","medium"],
-["SHREW","A tiny insect-eating mammal","medium"],["STOAT","Turns white in winter","medium"],
-["WEASEL","Britain's smallest carnivore","medium"],["DORMOUSE","A sleepy hazelnut nibbler","medium"],
-["RED SQUIRREL","A russet native rarer than its grey cousin","medium"],
-["GREY SEAL","A large blubbery beach hauled-out","medium"],
-["PINE MARTEN","A tree-climbing forest hunter","hard"],
-["HORSESHOE BAT","Named for its nose leaf shape","hard"],
-["COMMON DOLPHIN","An acrobatic sea mammal","hard"],
-["EDIBLE DORMOUSE","A fattened Roman delicacy, still wild in the Chilterns","hard"]],
-mythology:[
-["ZEUS","King of the Greek gods","easy"],["HERA","Queen of the Greek gods","easy"],
-["ARES","Greek god of war","easy"],["ODIN","The one-eyed Norse Allfather","easy"],
-["THOR","Norse god with a hammer","easy"],["LOKI","The Norse trickster god","easy"],
-["ATLAS","The Titan doomed to hold up the sky","easy"],["HYDRA","The many-headed serpent slain by Heracles","easy"],
-["MEDUSA","The snake-haired Gorgon","easy"],["MERLIN","The wizard of Camelot","easy"],
-["PHOENIX","The bird reborn from its ashes","easy"],["KRAKEN","A giant sea monster of legend","easy"],
-["PEGASUS","The winged horse of myth","easy"],["MINOTAUR","The bull-headed labyrinth dweller","easy"],
-["SIREN","A singer who lured sailors to wreck","medium"],["DRYAD","A tree nymph","medium"],
-["SPHINX","The riddling lion of Thebes","medium"],["CYCLOPS","A one-eyed giant","medium"],
-["SELKIE","Seal-folk of Scottish tales","medium"],["BANSHEE","A wailing Irish spirit","medium"],
-["CERBERUS","The three-headed hound of Hades","medium"],["VALHALLA","The Norse hall of fallen warriors","medium"],
-["EXCALIBUR","The sword in the stone","medium"],["LEPRECHAUN","A shoemaking Irish fairy","medium"],
-["GOLDEN FLEECE","The prize sought by Jason and the Argonauts","hard"]],
-plants:[
-["OAK","A mighty acorn-bearing tree","easy"],["ELM","A once-common hedgerow tree","easy"],
-["IVY","A climbing evergreen","easy"],["FERN","A shady frondy plant with no flowers","easy"],
-["MOSS","A soft green carpet on stones","easy"],["THYME","A tiny aromatic herb","easy"],
-["DAISY","A lawn flower with white petals","easy"],["TULIP","A spring bulb from Amsterdam fields","easy"],
-["POPPY","A red remembrance flower","easy"],["NETTLE","It stings — brew it or dodge it","easy"],
-["BRAMBLE","Blackberry tangles","easy"],["HEATHER","Purple moorland bloom","easy"],
-["ORCHID","An exotic showy flower","medium"],["FOXGLOVE","Tall spires, a heart medicine source","medium"],
-["PRIMROSE","A pale early-spring flower","medium"],["SNOWDROP","The first bulb of the year","easy"],
-["DAFFODIL","Wales's spring trumpet","easy"],["BLUEBELL","Carpets the woods in May","easy"],
-["LAVENDER","A calming purple herb","easy"],["ROSEMARY","A piney roast-potato herb","easy"],
-["SUNFLOWER","It turns its face to follow the sun","easy"],["DANDELION","A clock you can blow away","easy"],
-["HONEYSUCKLE","A sweet-scented climber","medium"],["SWEET PEA","A fragrant cottage-garden climber","medium"],
-["FORGET ME NOT","A tiny blue remembrance flower","hard"]],
-gemstones:[
-["JET","Black Victorian mourning jewellery stone","easy"],["ONYX","A banded black gemstone","easy"],
-["OPAL","It flashes rainbow fire","easy"],["JADE","A treasured green carving stone","easy"],
-["RUBY","A red precious stone","easy"],["PEARL","An oyster's treasure","easy"],
-["CORAL","A sea-garden gem","easy"],["AMBER","Fossilised tree resin, sometimes with insects","easy"],
-["TOPAZ","A golden November birthstone","medium"],["AGATE","A stripy chalcedony","medium"],
-["QUARTZ","The commonest crystal","medium"],["GARNET","A deep red January birthstone","medium"],
-["PERIDOT","A light green August stone","medium"],["CITRINE","A lemon-yellow quartz","medium"],
-["EMERALD","A green precious stone","medium"],["DIAMOND","The hardest gemstone","easy"],
-["SAPPHIRE","A blue precious stone","easy"],["AMETHYST","A purple quartz","medium"],
-["TURQUOISE","A blue-green December stone","medium"],["MOONSTONE","It glows like moonlight","medium"],
-["TIGERS EYE","A golden-brown chatoyant stone","hard"],["ROSE QUARTZ","A soft pink love stone","medium"],
-["AQUAMARINE","A pale sea-blue beryl","hard"],["BLOODSTONE","Green jasper flecked with red","hard"],
-["LAPIS LAZULI","The ultramarine blue rock of pharaohs","hard"]],
-birds:[
-["OWL","A wise nocturnal hooter","easy"],["JAY","A pinkish screeching woodland bird","easy"],
-["WREN","A tiny loud songster","easy"],["CROW","A clever black scavenger","easy"],
-["DOVE","A symbol of peace","easy"],["SWAN","A graceful necked river bird","easy"],
-["DUCK","It quacks","easy"],["SKYLARK","It sings high over the meadows","medium"],
-["ROBIN","The gardener's red-breasted friend","easy"],["RAVEN","A great croaking black bird","easy"],
-["HERON","A patient grey fisher","easy"],["GOOSE","It honks in a skein","easy"],
-["MAGPIE","One for sorrow, chattering and pied","easy"],["PUFFIN","A clown-faced seabird","easy"],
-["GANNET","A spectacular plunge-diver","medium"],["THRUSH","It repeats each phrase twice or thrice","medium"],
-["KESTREL","It hovers over motorway verges","medium"],["BUZZARD","A broad-winged soaring hawk","medium"],
-["SPARROW","A chirpy brown town bird","easy"],["STARLING","A murmur-forming mimic","medium"],
-["BLACKBIRD","An orange-beaked dawn singer","easy"],["CHAFFINCH","A pink-breasted finch","hard"],
-["GOLDFINCH","A red-faced thistle-seed eater","hard"],["KINGFISHER","A darting flash of orange and blue","medium"],
-["BLUE TIT","A coconut-feeder acrobat","medium"]],
-food:[
-["TEA","The national brew","easy"],["PIE","Pastry with a filling","easy"],
-["EGG","Fried, poached or scrambled","easy"],["HAM","Cured pork for sandwiches","easy"],
-["JAM","Spread for scones","easy"],["BREAD","Baked daily staple","easy"],
-["HONEY","Bees make it","easy"],["SCONE","Best with jam and clotted cream","easy"],
-["BUTTER","Churned and spreadable","easy"],["CHEESE","Matured in a truckle","easy"],
-["CIDER","Pressed apple drink","easy"],["TRIFLE","Layered sponge, custard and jelly","medium"],
-["CRUMPET","Full of holes for butter","medium"],["PUDDING","Suet, steam and custard","medium"],
-["CUSTARD","Poured over everything","easy"],["SAUSAGE","A banger with mash","easy"],
-["MARMITE","You either love it or hate it","medium"],["CHEDDAR","A firm Somerset cheese","easy"],
-["STILTON","A veiny blue Christmas cheese","medium"],["ETON MESS","Strawberries, meringue and cream","medium"],
-["BAKED BEANS","On toast, a student staple","easy"],["FISH AND CHIPS","The seaside supper","medium"],
-["MASHED POTATO","Buttery cloud beside the bangers","easy"],["SHEPHERDS PIE","Minced lamb under a potato lid","medium"],
-["TOAD IN THE HOLE","Sausages baked in batter","hard"]],
-geography:[
-["NILE","The world's longest river","easy"],["ALPS","Ski peaks of Europe","easy"],
-["SKYE","A misty Scottish isle","easy"],["YORK","A walled Roman city","easy"],
-["BATH","A Georgian spa city","easy"],["DOVER","White cliffs port","easy"],
-["DEVON","Cream teas and coastline","easy"],["FJORD","A steep-sided sea inlet","medium"],
-["THAMES","London's river","easy"],["SEVERN","Britain's longest river","medium"],
-["ORKNEY","Neolithic northern isles","medium"],["SAHARA","The great desert","easy"],
-["AMAZON","A mighty rainforest river","easy"],["EVEREST","The world's highest peak","easy"],
-["VOLCANO","It erupts","easy"],["CORNISH COAST","Rugged south-western cliffs","medium"],
-["SNOWDON","The highest peak in Wales","medium"],["STONEHENGE","A stone circle on Salisbury Plain","medium"],
-["PENINSULA","Nearly an island","medium"],["ISTHMUS","A narrow strip joining two land masses","hard"],
-["BEN NEVIS","Britain's highest mountain","medium"],["LOCH NESS","Home of a famous monster","easy"],
-["HADRIANS WALL","The Roman northern frontier","hard"],["LAKE DISTRICT","Wainwright walking country","medium"],
-["PEAK DISTRICT","Britain's first national park","hard"]],
-music:[
-["WANNABE","Spice Girls · 1996","easy"],["BELIEVE","Cher · 1998","easy"],
-["STAY","Shakespears Sister · 1992","easy"],["TRAGEDY","Steps · 1999","easy"],
-["MAMBO NO 5","Lou Bega · 1999","easy"],["NEVER EVER","All Saints · 1998","easy"],
-["UMBRELLA","Rihanna · 2007","easy"],["POKER FACE","Lady Gaga · 2009","easy"],
-["CRAZY","Gnarls Barkley · 2006","easy"],["MERCY","Duffy · 2008","easy"],
-["HUNG UP","Madonna · 2005","easy"],["PATIENCE","Take That · 2006","easy"],
-["SEXYBACK","Justin Timberlake · 2006","easy"],["GRACE KELLY","Mika · 2007","easy"],
-["GOODBYE","Spice Girls · 1998","easy"],["MILLENNIUM","Robbie Williams · 1998","medium"],
-["CRAZY IN LOVE","Beyoncé · 2003","medium"],["BLEEDING LOVE","Leona Lewis · 2007","medium"],
-["BACK FOR GOOD","Take That · 1995","medium"],["NO MATTER WHAT","Boyzone · 1998","medium"],
-["2 BECOME 1","Spice Girls · 1996","medium"],["IT WASN'T ME","Shaggy · 2001","medium"],
-["SATURDAY NIGHT","Whigfield · 1994","hard"],["EARTH SONG","Michael Jackson · 1995","medium"],
-["GREATEST DAY","Take That · 2008","medium"],
-["AGAINST ALL ODDS","Mariah Carey & Westlife · 2000","hard"]]
-};
-
-const ENTRIES = [];
-for (const [cid] of CATS) for (const [w, clue, d] of RAW[cid]) ENTRIES.push({w, c: cid, clue, d});
+/* Shared word data (schema version 1) to categories and entries. Categories with no usable words are left out. */
+function loadWords(data){
+  const cats = [], entries = [];
+  const list = data && Array.isArray(data.categories) ? data.categories : [];
+  for (const cat of list) {
+    if (!cat || typeof cat.id !== "string") continue;
+    const words = (Array.isArray(cat.words) ? cat.words : []).filter(x => x && typeof x.answer === "string" && /[A-Z]/.test(x.answer));
+    if (!words.length) continue;
+    cats.push([cat.id, typeof cat.name === "string" ? cat.name : cat.id]);
+    for (const x of words) entries.push({w: x.answer, c: cat.id, clue: typeof x.hint === "string" ? x.hint : "", d: x.difficulty || ""});
+  }
+  return {cats, entries};
+}
 
 /* letter count ignores spaces; digits/punctuation are pre-filled so not counted */
 function letterCount(w){ return (w.match(/[A-Z]/g) || []).length; }
@@ -508,30 +521,64 @@ function revealWord(w, guessed){
 }
 function hasWon(w, guessed){ return [...w].every(ch => !isGuessable(ch) || ch === " " || guessed.includes(ch)); }
 
+/* Drawing order: the gallows, then the figure. */
+const STAGE_IDS = ["base", "upright", "beam", "brace", "rope", "head", "body", "armL", "armR", "legL", "legR"];
+/* Stages drawn after `misses` wrong guesses, spread evenly so the final miss always completes the figure.
+   Lives never exceed the stage count, so every miss draws at least one stage. */
+function stagesShown(misses, lives){
+  if (misses <= 0) return 0;
+  if (misses >= lives) return STAGE_IDS.length;
+  return Math.ceil(misses * STAGE_IDS.length / lives);
+}
+
 /* ---------- tiny assert selftest (?selftest) ---------- */
 function selftest(){
   let pass = 0, fail = 0;
-  const ok = (name, cond) => { cond ? pass++ : (fail++, console.error("SELFTEST FAIL:", name)); };
-  ok("letterCount ignores spaces", letterCount("SWEET PEA") === 8);
-  ok("letterCount ignores digits", letterCount("MAMBO NO 5") === 7);
-  ok("letterCount apostrophe", letterCount("IT WASN'T ME") === 9);
-  const f = {min: 3, max: 5, phrases: false, cats: ["animals"]};
-  const got = filterEntries(ENTRIES, f);
-  ok("filter respects length + cats", got.length > 0 && got.every(e => e.c === "animals" && letterCount(e.w) >= 3 && letterCount(e.w) <= 5 && !e.w.includes(" ")));
-  const f2 = {min: 3, max: 14, phrases: false, cats: ["food"]};
-  ok("phrases toggle excludes phrases", filterEntries(ENTRIES, f2).every(e => !e.w.includes(" ")));
-  const f3 = {min: 14, max: 14, phrases: true, cats: CATS.map(c => c[0])};
-  ok("14-letter edge reachable", filterEntries(ENTRIES, f3).some(e => letterCount(e.w) === 14));
-  const p = pickEntry([{w:"A"},{w:"B"}], () => 0, 0);
-  ok("pickEntry avoids repeat", p.entry.w === "B");
-  ok("pickEntry empty -> null", pickEntry([], Math.random, -1) === null);
+  const ok = (name, fn) => {
+    let r = false;
+    try { r = fn(); } catch (e) {}
+    r === true ? pass++ : (fail++, console.error("SELFTEST FAIL:", name));
+  };
+  ok("letterCount ignores spaces", () => letterCount("SWEET PEA") === 8);
+  ok("letterCount ignores digits", () => letterCount("MAMBO NO 5") === 7);
+  ok("letterCount apostrophe", () => letterCount("IT WASN'T ME") === 9);
+  const fx = () => loadWords({version: 1, categories: [
+    {id: "a", name: "Alpha", words: [{answer: "FOX", hint: "Russet", difficulty: "easy"}, {answer: 5}, null]},
+    {id: "e", name: "Empty", words: []},
+    {id: "m", name: "No words"}]});
+  ok("loadWords: categories from names, empty ones left out", () => JSON.stringify(fx().cats) === '[["a","Alpha"]]');
+  ok("loadWords: entries mapped, bad words skipped", () => JSON.stringify(fx().entries) === '[{"w":"FOX","c":"a","clue":"Russet","d":"easy"}]');
+  ok("loadWords: absent data gives nothing", () => loadWords(null).cats.length === 0 && loadWords({}).entries.length === 0);
+  const pool = () => loadWords({version: 1, categories: [
+    {id: "p", name: "P", words: ["OWL", "OTTER", "PINE MARTEN", "SWEET PEA", "BEARDED VULTURE", "KINGFISHERLIKE"].map(answer => ({answer, hint: "", difficulty: "easy"}))},
+    {id: "q", name: "Q", words: [{answer: "ELK", hint: "", difficulty: "easy"}]}]}).entries;
+  ok("filter respects length + cats", () => filterEntries(pool(), {min: 3, max: 5, phrases: false, cats: ["p"]}).map(e => e.w).join() === "OWL,OTTER");
+  ok("phrases toggle excludes phrases", () => filterEntries(pool(), {min: 3, max: 14, phrases: false, cats: ["p"]}).map(e => e.w).join() === "OWL,OTTER,KINGFISHERLIKE");
+  ok("14-letter edge inclusive", () => filterEntries(pool(), {min: 14, max: 14, phrases: true, cats: ["p", "q"]}).map(e => e.w).join() === "BEARDED VULTURE,KINGFISHERLIKE");
+  ok("pickEntry avoids repeat", () => pickEntry([{w:"A"},{w:"B"}], () => 0, 0).entry.w === "B");
+  ok("pickEntry empty -> null", () => pickEntry([], Math.random, -1) === null);
   const r = revealWord("IT WASN'T ME", ["I","T"]);
-  ok("reveal shows guessed", r[0].shown === true && r[3].shown === false);
-  ok("reveal prefills punctuation", r.some(x => x.kind === "fixed" && x.ch === "'"));
-  ok("reveal gap for space", r.some(x => x.kind === "gap"));
-  ok("win detection", hasWon("FOX", ["F","O","X"]) === true);
-  ok("no false win", hasWon("FOX", ["F","O"]) === false);
-  ok("win ignores prefilled", hasWon("MAMBO NO 5", ["M","A","B","O","N"]) === true);
+  ok("reveal shows guessed", () => r[0].shown === true && r[3].shown === false);
+  ok("reveal prefills punctuation", () => r.some(x => x.kind === "fixed" && x.ch === "'"));
+  ok("reveal gap for space", () => r.some(x => x.kind === "gap"));
+  ok("win detection", () => hasWon("FOX", ["F","O","X"]) === true);
+  ok("no false win", () => hasWon("FOX", ["F","O"]) === false);
+  ok("win ignores prefilled", () => hasWon("MAMBO NO 5", ["M","A","B","O","N"]) === true);
+  ok("stages: 6 lives", () => [0,1,2,3,4,5,6].map(m => stagesShown(m, 6)).join() === "0,2,4,6,8,10,11");
+  ok("stages: 4 lives", () => [0,1,2,3,4].map(m => stagesShown(m, 4)).join() === "0,3,6,9,11");
+  ok("stages: 10 lives", () => [0,1,9,10].map(m => stagesShown(m, 10)).join() === "0,2,10,11");
+  ok("stages: every miss draws, last miss completes (4-10 lives)", () => [4,5,6,7,8,9,10].every(L => {
+    for (let m = 1; m <= L; m++) if (stagesShown(m, L) <= stagesShown(m - 1, L)) return false;
+    return stagesShown(L, L) === 11 && stagesShown(L - 1, L) < 11;
+  }));
+  ok("every stage has pen strokes", () => STAGE_IDS.every(id => STROKES[id] && STROKES[id].length > 0));
+  ok("embedded word data matches the shared schema", () => {
+    const d = readWordData();
+    return d.version === 1 && d.categories.length > 0 && d.categories.every(c =>
+      typeof c.id === "string" && typeof c.name === "string" && c.words.length > 0 && c.words.every(x =>
+        typeof x.answer === "string" && x.answer === x.answer.toUpperCase() && /[A-Z]/.test(x.answer) &&
+        typeof x.hint === "string" && ["easy", "medium", "hard"].includes(x.difficulty)));
+  });
   console.log(`SELFTEST ${fail === 0 ? "PASS" : "FAIL"} (${pass} passed, ${fail} failed)`);
   return fail === 0;
 }
@@ -539,8 +586,16 @@ function selftest(){
 /* ============================================================
    App state, storage, sound, rendering
    ============================================================ */
+function readWordData(){
+  try { return JSON.parse(document.getElementById("hangman-words").textContent); } catch { return null; }
+}
+const WORDS = loadWords(readWordData());
+const CATS = WORDS.cats, ENTRIES = WORDS.entries;
+
 const LS_SET = "hangman-a:settings", LS_STATS = "hangman-a:stats";
 const ALL_CATS = CATS.map(c => c[0]);
+/* Category ids renamed when the words moved to the shared schema; keeps saved choices and wins. */
+const OLD_CAT_IDS = {food: "food-and-drink", music: "uk-number-ones"};
 const DEF_SET = {min: 3, max: 12, phrases: true, cats: [...ALL_CATS], lives: 6, muted: false};
 const DEF_STATS = {streak: 0, best: 0, played: 0, won: 0, winsPerCat: {}, badges: []};
 
@@ -560,7 +615,7 @@ function sanitizeSettings(s){
   if (o.min > o.max) [o.min, o.max] = [o.max, o.min];
   o.lives = Math.min(10, Math.max(4, o.lives | 0 || 6));
   o.phrases = !!o.phrases; o.muted = !!o.muted;
-  o.cats = Array.isArray(o.cats) ? o.cats.filter(c => ALL_CATS.includes(c)) : [...ALL_CATS];
+  o.cats = Array.isArray(o.cats) ? o.cats.map(c => OLD_CAT_IDS[c] || c).filter(c => ALL_CATS.includes(c)) : [...ALL_CATS];
   if (!o.cats.length) o.cats = [...ALL_CATS];
   return o;
 }
@@ -568,6 +623,9 @@ function sanitizeStats(s){
   const o = {...DEF_STATS, ...s};
   o.streak |= 0; o.best |= 0; o.played |= 0; o.won |= 0;
   if (!o.winsPerCat || typeof o.winsPerCat !== "object") o.winsPerCat = {};
+  for (const [old, id] of Object.entries(OLD_CAT_IDS)) {
+    if (old in o.winsPerCat) { o.winsPerCat[id] = (o.winsPerCat[id] | 0) + (o.winsPerCat[old] | 0); delete o.winsPerCat[old]; }
+  }
   if (!Array.isArray(o.badges)) o.badges = [];
   return o;
 }
@@ -577,46 +635,73 @@ let stats = sanitizeStats(loadJSON(LS_STATS, DEF_STATS));
 const saveSettings = () => { try { localStorage.setItem(LS_SET, JSON.stringify(settings)); } catch {} };
 const saveStats = () => { try { localStorage.setItem(LS_STATS, JSON.stringify(stats)); } catch {} };
 
-/* ---------- sound: quiet Web Audio blips, created on first gesture ---------- */
-let actx = null;
-function tone(freq, dur, type, vol, when){
-  if (settings.muted) return;
+/* ---------- sound: quiet Web Audio, created on first gesture ---------- */
+let actx = null, noiseBuf = null;
+function audio(){
+  if (settings.muted) return null;
   try {
     if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
     if (actx.state === "suspended") actx.resume();
-    const t = actx.currentTime + (when || 0);
-    const o = actx.createOscillator(), g = actx.createGain();
-    o.type = type || "sine"; o.frequency.value = freq;
+    return actx;
+  } catch { return null; }
+}
+function tone(freq, dur, type, vol, when, glideTo){
+  const a = audio(); if (!a) return;
+  try {
+    const t = a.currentTime + (when || 0);
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(freq, t);
+    if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t + dur);
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol || 0.06, t + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(actx.destination);
+    o.connect(g).connect(a.destination);
     o.start(t); o.stop(t + dur + 0.02);
   } catch {}
 }
+/* filtered noise: the scratch of a pen nib on paper */
+function scratch(dur, when, vol, freq){
+  const a = audio(); if (!a) return;
+  try {
+    if (!noiseBuf) {
+      noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const t = a.currentTime + (when || 0), n = Math.max(0.05, Math.min(0.9, dur));
+    const src = a.createBufferSource(), bp = a.createBiquadFilter(), g = a.createGain();
+    src.buffer = noiseBuf;
+    bp.type = "bandpass"; bp.frequency.value = freq || 2400; bp.Q.value = 0.9;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.035, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + n);
+    src.connect(bp).connect(g).connect(a.destination);
+    src.start(t, Math.random() * 0.1); src.stop(t + n + 0.02);
+  } catch {}
+}
 const sfx = {
-  tap(){ tone(520, .09, "sine", .05); },
-  good(){ tone(660, .12, "sine", .06); tone(880, .14, "sine", .05, .07); },
-  bad(){ tone(220, .22, "triangle", .06); },
-  win(){ [523,659,784,1047].forEach((f,i) => tone(f, .18, "sine", .06, i * .09)); },
-  lose(){ [392,330,262].forEach((f,i) => tone(f, .25, "sine", .05, i * .12)); }
+  tap(){ tone(520, .09, "sine", .045); },
+  good(){ tone(660, .12, "sine", .055); tone(990, .16, "sine", .04, .06); },
+  bad(){ tone(196, .2, "triangle", .045); },
+  snap(when){ scratch(.07, when, .06, 4200); tone(1250, .06, "triangle", .03, when); },
+  thud(when){ tone(150, .16, "sine", .08, when, 70); },
+  win(when){ [523, 659, 784, 1047].forEach((f, i) => tone(f, .2, "sine", .05, (when || 0) + i * .09)); },
+  sigh(when){ tone(440, .9, "sine", .045, when, 262); }
 };
-window.addEventListener("pointerdown", function once(){
-  if (!settings.muted) { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} }
-}, {once: true});
+window.addEventListener("pointerdown", () => { audio(); }, {once: true});
 
 /* ---------- badges ---------- */
 const BADGES = [
-  ["first-win","First bloom","Win your first round", s => s.won >= 1],
-  ["flawless","Perfect picnic","Win without a single miss", s => s._flawless],
-  ["close-call","Last balloon","Win with one balloon left", s => s._closeCall],
-  ["streak-3","Three in a row","Reach a streak of 3", s => s.best >= 3],
+  ["first-win","Off the hook","Win your first round", s => s.won >= 1],
+  ["flawless","Clean sheet","Win without a single miss", s => s._flawless],
+  ["close-call","By a thread","Win with one life left", s => s._closeCall],
+  ["streak-3","Hat-trick","Reach a streak of 3", s => s.best >= 3],
   ["streak-5","On a roll","Reach a streak of 5", s => s.best >= 5],
   ["streak-10","Unstoppable","Reach a streak of 10", s => s.best >= 10],
   ["explorer","Explorer","Win in 3 different categories", s => Object.keys(s.winsPerCat).length >= 3],
-  ["collector","Collector","Win in all 8 categories", s => Object.keys(s.winsPerCat).length >= 8],
+  ["collector","Full set","Win in every category", s => CATS.length > 0 && CATS.every(([id]) => s.winsPerCat[id] > 0)],
   ["regular","Regular","Play 10 games", s => s.played >= 10],
-  ["veteran","Veteran","Play 50 games", s => s.played >= 50]
+  ["veteran","Dog-eared","Play 50 games", s => s.played >= 50]
 ];
 function checkBadges(){
   const fresh = [];
@@ -629,125 +714,187 @@ function checkBadges(){
 
 /* ---------- DOM ---------- */
 const $ = id => document.getElementById(id);
-const scene = $("scene"), tilesEl = $("tiles"), keysEl = $("keys"),
+const tilesEl = $("tiles"), keysEl = $("keys"), missedEl = $("missed"),
       catTag = $("catTag"), diffTag = $("diffTag"), livesLabel = $("livesLabel"),
-      missLabel = $("missLabel"), clueBtn = $("clueBtn"), clueText = $("clueText"),
-      emptyBox = $("emptyBox"), result = $("result"), toast = $("toast"),
-      streakPill = $("streakPill");
+      clueBtn = $("clueBtn"), clueText = $("clueText"),
+      emptyBox = $("emptyBox"), result = $("result"), toast = $("toast"), sceneSvg = $("scene");
+const RM = matchMedia("(prefers-reduced-motion: reduce)");
+const EASE_OUT = "cubic-bezier(.23,1,.32,1)", EASE_IN_OUT = "cubic-bezier(.77,0,.175,1)",
+      EASE_BACK = "cubic-bezier(.34,1.56,.64,1)",
+      EASE_FALL = "cubic-bezier(.11,0,.5,0)"; /* gravity: speeds up into the landing */
+const DROP = 36; /* hanging feet (y 186) to the ground (y 222) */
 
-const INK = "#6d1f3c", INKSOFT = "#96506e";
-const BALLOON_FILL = ["#f7c9d9","#f4a8c0","#efa0b8","#f9d3c2","#e8b4d6","#f6b8a0","#f2c6de","#f0a3b2","#fadadd","#eec3e0"];
-const BALLOON_INK = ["#c2457a","#a92c5c","#8f2b56","#b65a3f","#96506e","#a95a44","#b0527d","#9c3a5e","#c9838f","#8f5a80"];
+/* Pen strokes per stage: [path, group, style]. "ink" strokes get a faint pencil re-trace. */
+const STROKES = {
+  base:    [["M38 223 C 66 219, 104 224, 138 221", "gallows", "ink"]],
+  upright: [["M86 222 C 84 166, 87 104, 85 34", "gallows", "ink"]],
+  beam:    [["M80 37 C 122 34, 168 38, 214 35", "gallows", "ink"]],
+  brace:   [["M86 78 C 96 64, 108 52, 126 36", "gallows", "ink"]],
+  rope:    [["M206 36 C 207.5 41, 205 46, 206 51", "gallows", "rope"], ["M206 51 C 207 56, 205 61, 206 66", "ropeB", "rope"]],
+  head:    [["M206 66 C 216 66, 223 74, 223 83 C 223 93, 215 100, 206 100 C 196 100, 189 92, 189 83 C 189 74, 196 66.5, 208 67.5", "fig", "ink"],
+            ["M199.6 80.4 L200.4 81.6", "eyes", "dot"], ["M211.6 80.4 L212.4 81.6", "eyes", "dot"],
+            ["M201 89 Q 206 92.5 211 89", "mouth", "thin"]],
+  body:    [["M206 100 C 205 116, 207 132, 206 148", "fig", "ink"]],
+  armL:    [["M206 112 C 200 120, 192 128, 184 134", "fig", "ink"]],
+  armR:    [["M206 112 C 212 120, 220 128, 228 134", "armR", "ink"]],
+  legL:    [["M206 148 C 201 162, 195 174, 190 186", "fig", "ink"]],
+  legR:    [["M206 148 C 211 162, 217 174, 222 186", "fig", "ink"]]
+};
+const SVGNS = "http://www.w3.org/2000/svg";
+function svgPath(d, cls){
+  const p = document.createElementNS(SVGNS, "path");
+  p.setAttribute("d", d); p.setAttribute("pathLength", "1"); p.setAttribute("class", cls);
+  return p;
+}
+/* STAGE_EL[i] = strokes for stage i: {el, sk, len} */
+const STAGE_EL = STAGE_IDS.map(id => STROKES[id].map(([d, group, style]) => {
+  const g = $(group), s = {el: svgPath(d, "ink " + style), sk: null, len: 0};
+  if (style === "ink") { s.sk = svgPath(d, "sk"); s.sk.setAttribute("transform", "translate(.9 .8)"); g.appendChild(s.sk); }
+  g.appendChild(s.el);
+  s.len = s.el.getTotalLength();
+  return s;
+}));
 
-const G = {entry: null, guessed: [], misses: 0, over: false, lastIndex: -1, list: []};
+const G = {entry: null, guessed: [], misses: 0, drawn: 0, over: false, lastIndex: -1, list: [], round: 0, timers: []};
+const pen = {freeAt: 0};
 
-function balloonXs(n){
-  if (n === 1) return [180];
-  const xs = [];
-  for (let i = 0; i < n; i++) xs.push(46 + (268 * i) / (n - 1));
-  return xs;
+/* Run fn after ms unless a new round started meanwhile. */
+function later(ms, fn){
+  const round = G.round;
+  G.timers.push(setTimeout(() => { if (round === G.round) fn(); }, ms));
+}
+/* WAAPI with the end state committed, so a later animation starts from where this one left off. */
+function play(el, frames, opts){
+  const a = el.animate(frames, {fill: "both", ...opts});
+  a.onfinish = () => { try { a.commitStyles(); } catch {} a.cancel(); };
+  return a;
 }
 
-function renderScene(){
-  const n = settings.lives;
-  const xs = balloonXs(n);
-  let s = `<ellipse class="landshadow" id="landshadow" cx="180" cy="240" rx="70" ry="8" fill="${INK}"/>`;
-  s += `<path class="drawline" pathLength="1" d="M18 240 H342" stroke="${INKSOFT}" stroke-width="2" stroke-linecap="round" fill="none" opacity=".55"/>`;
-  // strings first (behind balloons + basket)
-  xs.forEach((x, i) => {
-    s += `<path id="str${i}" d="M${x} 96 Q ${(x + 180) / 2} 165, 180 208" stroke="${INKSOFT}" stroke-width="1.6" fill="none" opacity=".8"/>`;
-  });
-  // balloons
-  xs.forEach((x, i) => {
-    const f = BALLOON_FILL[i % BALLOON_FILL.length], k = BALLOON_INK[i % BALLOON_INK.length];
-    s += `<g class="balloon" id="bal${i}">`
-      + `<ellipse cx="${x}" cy="62" rx="23" ry="29" fill="${f}" stroke="${k}" stroke-width="2.2"/>`
-      + `<ellipse cx="${x - 8}" cy="52" rx="6" ry="9" fill="#ffffff" opacity=".5"/>`
-      + `<path d="M${x - 5} 90 L${x + 5} 90 L${x} 97 Z" fill="${k}"/></g>`;
-  });
-  // basket + cat
-  s += `<g class="basket" id="basket">`
-    + `<path d="M148 208 L212 208 L203 236 L157 236 Z" fill="#f3d9c8" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>`
-    + `<path d="M152 218 H208 M155 227 H205" stroke="${INKSOFT}" stroke-width="1.4"/>`
-    + `<circle cx="180" cy="196" r="17" fill="#f9e8db" stroke="${INK}" stroke-width="2.4"/>`
-    + `<path d="M166 186 L162 172 L174 180 Z M194 186 L198 172 L186 180 Z" fill="#f9e8db" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>`
-    + `<circle cx="173" cy="194" r="2.2" fill="${INK}"/><circle cx="187" cy="194" r="2.2" fill="${INK}"/>`
-    + `<path d="M176 200 Q180 203 184 200" stroke="${INK}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`
-    + `<path d="M160 193 L148 190 M160 198 L149 199 M200 193 L212 190 M200 198 L211 199" stroke="${INKSOFT}" stroke-width="1.3" stroke-linecap="round"/>`
-    + `</g>`;
-  // celebration stars (hidden until win)
-  const stars = [[128,150],[232,146],[180,118]];
-  stars.forEach(([x, y], i) => {
-    s += `<path class="star" id="star${i}" d="M${x} ${y-11} L${x+3.4} ${y-3.6} L${x+11} ${y-3.4} L${x+5} ${y+1.6} L${x+7} ${y+9} L${x} ${y+4.6} L${x-7} ${y+9} L${x-5} ${y+1.6} L${x-11} ${y-3.4} L${x-3.4} ${y-3.6} Z" fill="#e8a13c" stroke="${INK}" stroke-width="1.4"/>`;
-  });
-  scene.innerHTML = s;
+/* One pen stroke: the nib travels the path. Reduced motion: a soft fade instead. */
+function inkStroke(el, dur, delay){
+  el.style.strokeDashoffset = "0";
+  if (RM.matches) el.animate([{opacity: 0}, {opacity: 1}], {duration: 220, delay, fill: "backwards"});
+  else el.animate([{strokeDashoffset: "1.02"}, {strokeDashoffset: "0"}], {duration: dur, delay, easing: EASE_IN_OUT, fill: "backwards"});
+}
+/* Queue strokes on the single pen so each part follows the last, as by hand. Returns ms until the pen lifts. */
+function penDraw(strokes, fast){
+  const now = performance.now();
+  let t = Math.max(now, pen.freeAt);
+  const hurry = t - now > 450; /* fast tapping: catch up rather than lag behind */
+  for (const s of strokes) {
+    let dur = Math.min(460, 90 + s.len * 2);
+    if (fast) dur = Math.min(dur, 150); else if (hurry) dur *= 0.6;
+    if (RM.matches) dur = 120;
+    inkStroke(s.el, dur, t - now);
+    if (s.sk) inkStroke(s.sk, dur * 1.05, t - now + 50);
+    if (!fast) scratch(dur / 1000, (t - now) / 1000, 0.03, 2000 + Math.random() * 900);
+    t += dur;
+  }
+  pen.freeAt = t;
+  return t - now;
 }
 
-function renderTiles(fresh){
+function resetDrawing(){
+  const parts = $("parts");
+  let ghost = null;
+  if (G.drawn > 0 && !RM.matches) { /* rub out the old drawing while the fresh page is already live */
+    ghost = parts.cloneNode(true);
+    ghost.removeAttribute("id"); ghost.querySelectorAll("[id]").forEach(n => n.removeAttribute("id"));
+  }
+  sceneSvg.getAnimations({subtree: true}).forEach(a => { const t = a.effect && a.effect.target; if (!t || !t.closest("#scenery")) a.cancel(); });
+  parts.querySelectorAll(".ink, .sk").forEach(p => { p.style.strokeDashoffset = ""; p.style.opacity = ""; });
+  for (const id of ["fig", "ropeB", "armR", "bubble", "eyes", "mouth", "xeyes", "sadMouth", "grin"]) { $(id).style.transform = ""; $(id).style.opacity = ""; }
+  $("fx").replaceChildren();
+  if (ghost) {
+    parts.before(ghost);
+    ghost.animate([{opacity: 1}, {opacity: 0, transform: "translate(-3px, 3px)"}], {duration: 260, easing: EASE_OUT}).onfinish = () => ghost.remove();
+  }
+  G.drawn = 0; pen.freeAt = 0;
+}
+
+function buildTiles(){
   tilesEl.innerHTML = "";
   const words = G.entry.w.split(" ");
-  words.forEach((word, wi) => {
-    const wspan = document.createElement("span");
-    wspan.className = "word";
-    [...word].forEach(ch => {
-      const t = document.createElement("span");
-      if (ch === " " || !isGuessable(ch)) { t.className = "tile fixed"; t.textContent = ch; }
-      else if (G.guessed.includes(ch)) {
-        t.className = "tile" + (fresh === ch ? " reveal" : "");
-        t.textContent = ch;
-      } else { t.className = "tile"; t.textContent = ""; }
-      wspan.appendChild(t);
-    });
-    tilesEl.appendChild(wspan);
-  });
+  tilesEl.style.setProperty("--n", Math.max(...words.map(w => w.length)));
+  let i = 0;
+  for (const word of words) {
+    const ws = document.createElement("span");
+    ws.className = "word";
+    for (const ch of word) {
+      const t = document.createElement("span"), c = document.createElement("span");
+      t.style.setProperty("--r", ((Math.random() * 2 - 1) * 5).toFixed(1) + "deg");
+      t.style.setProperty("--i", i++);
+      c.className = "ch";
+      if (isGuessable(ch)) { t.className = "tile"; t.dataset.ch = ch; }
+      else { t.className = "tile fixed shown"; c.textContent = ch; }
+      t.appendChild(c); ws.appendChild(t);
+    }
+    tilesEl.appendChild(ws);
+  }
+}
+/* Write letters into their blanks; the text only exists once revealed. */
+function writeLetters(tiles, cls){
+  tiles.forEach(t => { t.firstChild.textContent = t.dataset.ch; });
+  void tilesEl.offsetWidth;
+  tiles.forEach((t, i) => { t.firstChild.style.transitionDelay = (i * 55) + "ms"; t.classList.add("shown"); if (cls) t.classList.add(cls); });
 }
 
-function renderKeys(){
-  keysEl.innerHTML = "";
+function buildKeys(){
   for (let c = 65; c <= 90; c++) {
     const ch = String.fromCharCode(c);
     const b = document.createElement("button");
     b.className = "key"; b.textContent = ch; b.dataset.ch = ch;
     b.setAttribute("aria-label", "Guess " + ch);
-    if (G.guessed.includes(ch)) {
-      b.disabled = true;
-      b.classList.add(G.entry.w.includes(ch) ? "good" : "bad");
-    } else if (G.over) b.disabled = true;
     b.addEventListener("click", () => guess(ch));
     keysEl.appendChild(b);
   }
 }
+function syncKeys(){
+  for (const b of keysEl.children) {
+    const ch = b.dataset.ch, used = G.guessed.includes(ch);
+    b.classList.toggle("good", used && G.entry.w.includes(ch));
+    b.classList.toggle("bad", used && !G.entry.w.includes(ch));
+    b.disabled = used || G.over;
+  }
+  keysEl.classList.toggle("over", G.over);
+}
 
 function renderMeta(){
-  const cname = (CATS.find(c => c[0] === G.entry.c) || ["?", "?"])[1];
+  const cname = (CATS.find(c => c[0] === G.entry.c) || ["", ""])[1];
   catTag.textContent = cname;
   diffTag.textContent = G.entry.d;
   diffTag.className = "tag diff-" + G.entry.d;
   const left = settings.lives - G.misses;
-  livesLabel.textContent = left + (left === 1 ? " balloon" : " balloons");
-  missLabel.textContent = G.misses ? "Missed: " + G.guessed.filter(ch => !G.entry.w.includes(ch)).join(" · ") : "";
-  streakPill.textContent = "★ " + stats.streak;
+  livesLabel.textContent = `${left} of ${settings.lives} lives left`;
+  $("streakNum").textContent = stats.streak;
 }
-
-function loseBalloon(i){
-  const b = document.getElementById("bal" + i), st = document.getElementById("str" + i);
-  if (b) b.classList.add("away");
-  if (st) { st.style.transition = "opacity 700ms ease"; st.style.opacity = "0"; }
+function addMissed(ch){
+  const s = document.createElement("span");
+  s.className = "ml"; s.textContent = ch;
+  missedEl.appendChild(s);
+  if (!RM.matches) s.animate([{opacity: 0, transform: "translateY(-6px) scale(.8)"}, {opacity: 1, transform: "none"}], {duration: 300, easing: EASE_OUT});
 }
 
 function newRound(){
+  G.round++;
+  G.timers.forEach(clearTimeout); G.timers = [];
+  resetDrawing();
   G.list = filterEntries(ENTRIES, settings);
   emptyBox.hidden = G.list.length > 0;
   keysEl.style.display = G.list.length ? "" : "none";
-  if (!G.list.length) { G.entry = null; tilesEl.innerHTML = ""; missLabel.textContent = ""; livesLabel.textContent = ""; catTag.textContent = "—"; return; }
+  result.classList.remove("open");
+  missedEl.replaceChildren(missedEl.firstElementChild);
+  if (!G.list.length) {
+    G.entry = null; tilesEl.innerHTML = ""; livesLabel.textContent = ""; catTag.textContent = ""; diffTag.textContent = "";
+    clueBtn.hidden = true; clueText.hidden = true;
+    return;
+  }
   const r = pickEntry(G.list, Math.random, -1);
   G.entry = r.entry; G.lastIndex = r.index;
   G.guessed = []; G.misses = 0; G.over = false;
-  clueText.classList.remove("show"); clueText.textContent = "";
-  clueBtn.hidden = false; clueBtn.textContent = "Need a nudge? Show the clue";
-  result.classList.remove("open");
-  renderScene(); renderTiles(); renderKeys(); renderMeta();
-  requestAnimationFrame(() => document.body.classList.add("load"));
+  clueText.hidden = true; clueText.classList.remove("show"); clueText.textContent = "";
+  clueBtn.hidden = false;
+  buildTiles(); syncKeys(); renderMeta();
 }
 
 function guess(ch){
@@ -755,20 +902,25 @@ function guess(ch){
   G.guessed.push(ch);
   if (G.entry.w.includes(ch)) {
     sfx.good();
-    renderTiles(ch); renderKeys(); renderMeta();
+    writeLetters([...tilesEl.querySelectorAll(`.tile[data-ch="${ch}"]`)]);
+    syncKeys(); renderMeta();
     if (hasWon(G.entry.w, G.guessed)) endRound(true);
   } else {
     sfx.bad();
-    loseBalloon(G.misses);
     G.misses++;
-    renderKeys(); renderMeta();
+    const target = stagesShown(G.misses, settings.lives), strokes = [];
+    for (let i = G.drawn; i < target; i++) strokes.push(...STAGE_EL[i]);
+    G.drawn = target;
+    penDraw(strokes);
+    addMissed(ch);
+    syncKeys(); renderMeta();
     if (G.misses >= settings.lives) endRound(false);
   }
 }
 
 function endRound(won){
   G.over = true;
-  renderKeys();
+  syncKeys();
   const left = settings.lives - G.misses;
   stats.played++;
   if (won) {
@@ -777,31 +929,145 @@ function endRound(won){
     stats.winsPerCat[G.entry.c] = (stats.winsPerCat[G.entry.c] || 0) + 1;
     if (G.misses === 0) stats._flawless = true;
     if (left === 1) stats._closeCall = true;
-    sfx.win();
-    document.querySelectorAll("#scene .balloon:not(.away)").forEach((b, i) => {
-      b.style.animationDelay = (i * 0.25) + "s"; b.classList.add("bob");
-    });
-    document.querySelectorAll("#scene .star").forEach((s, i) => {
-      s.style.transitionDelay = (0.15 + i * 0.12) + "s";
-      requestAnimationFrame(() => s.classList.add("show"));
-    });
   } else {
     stats.streak = 0;
-    sfx.lose();
-    const bk = document.getElementById("basket");
-    if (bk) bk.classList.add("landed");
-    const sh = document.getElementById("landshadow");
-    if (sh) sh.classList.add("show");
   }
   saveStats();
   const fresh = checkBadges();
-  $("resTitle").textContent = won ? "Lovely — you got it!" : "The basket has landed";
+  $("resTitle").textContent = won ? (G.misses === 0 ? "Not a single stroke!" : "Off the hook!") : "Oh, so close";
   $("resWord").textContent = G.entry.w;
-  $("resClue").textContent = (CATS.find(c => c[0] === G.entry.c) || ["?","?"])[1] + " · " + G.entry.clue;
-  $("resStats").textContent = `Streak ${stats.streak} · best ${stats.best} · ${left}/${settings.lives} balloons left`;
-  result.classList.add("open");
+  $("resClue").textContent = (CATS.find(c => c[0] === G.entry.c) || ["", ""])[1] + " · " + G.entry.clue;
+  $("resStats").textContent = `Streak ${stats.streak} · best ${stats.best} · ${left} of ${settings.lives} lives left`;
   renderMeta();
-  fresh.forEach((n, i) => setTimeout(() => showToast("Badge unlocked: " + n), 600 + i * 2200));
+  const beat = won ? playWin() : playLoss();
+  later(beat, showResult);
+  fresh.forEach((n, i) => later(beat + 700 + i * 2300, () => showToast("★ Badge unlocked: " + n)));
+}
+function showResult(){ if (G.over) result.classList.add("open"); }
+
+/* ---------- win: the rope snaps, the figure drops to the grass, hops and waves ---------- */
+function playWin(){
+  const ropeAt = STAGE_IDS.indexOf("rope"), hanging = G.drawn > ropeAt, fig = $("fig");
+  if (!hanging) fig.style.transform = `translateY(${DROP}px)`; /* never strung up: sketch them standing on the grass */
+  const rest = [];
+  for (let i = Math.max(G.drawn, ropeAt + 1); i < STAGE_IDS.length; i++) rest.push(...STAGE_EL[i]);
+  G.drawn = STAGE_IDS.length;
+  const t = Math.max(penDraw(rest, true), 120) + 120;
+  if (RM.matches) {
+    later(t, () => {
+      if (hanging) {
+        play($("ropeB"), [{opacity: 1}, {opacity: 0}], {duration: 220});
+        play(fig, [{opacity: 1}, {opacity: 0}], {duration: 160}).onfinish = () => {
+          fig.getAnimations().forEach(a => a.cancel());
+          fig.style.transform = `translateY(${DROP}px)`;
+          play(fig, [{opacity: 0}, {opacity: 1}], {duration: 240});
+        };
+      }
+      faceSwap("grin", ["mouth"]);
+      play($("bubble"), [{opacity: 0}, {opacity: 1}], {duration: 260, delay: 300});
+      sfx.win(0.1);
+    });
+    return t + 700;
+  }
+  let land = t;
+  if (hanging) {
+    later(t, () => {
+      sfx.snap();
+      snapMarks();
+      play($("ropeB"), [{transform: "none", opacity: 1}, {transform: `translate(4px, ${DROP + 8}px) rotate(38deg)`, opacity: 0}], {duration: 520, easing: EASE_FALL});
+      play(STAGE_EL[ropeAt][0].el, [{transform: "translateY(0)"}, {transform: "translateY(-3px)", offset: .3}, {transform: "translateY(0)"}], {duration: 380, easing: EASE_OUT});
+      play(fig, [{transform: "translateY(0)"}, {transform: `translateY(${DROP}px)`}], {duration: 330, easing: EASE_FALL});
+    });
+    land = t + 330;
+  }
+  later(land, () => {
+    sfx.thud();
+    /* squash on landing, then a happy hop */
+    play(fig, [
+      {transform: `translateY(${DROP}px)`},
+      {transform: `translateY(${DROP}px) scale(1.1, .86)`, offset: .25, easing: EASE_OUT},
+      {transform: `translateY(${DROP - 16}px) scale(.96, 1.05)`, offset: .62, easing: "cubic-bezier(.5,0,.75,0)"},
+      {transform: `translateY(${DROP}px) scale(1.04, .96)`, offset: .86},
+      {transform: `translateY(${DROP}px)`}
+    ], {duration: 760});
+    faceSwap("grin", ["mouth"]);
+  });
+  later(land + 520, () => {
+    sfx.win();
+    play($("armR"), [
+      {transform: "rotate(0)", easing: EASE_OUT},
+      {transform: "rotate(-88deg)", offset: .24, easing: "ease-in-out"},
+      {transform: "rotate(-58deg)", offset: .4, easing: "ease-in-out"},
+      {transform: "rotate(-90deg)", offset: .56, easing: "ease-in-out"},
+      {transform: "rotate(-58deg)", offset: .72, easing: "ease-in-out"},
+      {transform: "rotate(-76deg)"}
+    ], {duration: 1350});
+    confetti();
+    play($("bubble"), [{opacity: 0, transform: "scale(.6) rotate(-8deg)"}, {opacity: 1, transform: "none"}], {duration: 420, delay: 160, easing: EASE_BACK});
+  });
+  return land + 1100;
+}
+function snapMarks(){
+  [[-8, -3], [8, -3], [-7, 4], [7, 4]].forEach(([dx, dy]) => {
+    const p = svgPath(`M${206 + dx * .5} ${51 + dy * .5} l${dx * .7} ${dy * .7}`, "ink thin");
+    p.style.cssText = "stroke:var(--accent);stroke-dashoffset:0;transform-box:view-box;transform-origin:206px 51px";
+    $("fx").appendChild(p);
+    p.animate([{opacity: 0, transform: "scale(.6)"}, {opacity: 1, transform: "scale(1)", offset: .3}, {opacity: 0, transform: "scale(1.25)"}],
+      {duration: 380, easing: EASE_OUT}).onfinish = () => p.remove();
+  });
+}
+function confetti(){
+  const cols = ["#e0457f", "#f59bbb", "#b0275e", "#f7c35f", "#c97fd8"];
+  const shapes = ["M0 3 C -6 -3, -3 -8, 0 -4 C 3 -8, 6 -3, 0 3 Z", "M0 -5 L1.5 -1.5 5 0 1.5 1.5 0 5 -1.5 1.5 -5 0 -1.5 -1.5 Z", "M-4 0 Q -2 -3, 0 0 T 4 0"];
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElementNS(SVGNS, "path"), k = i % 3;
+    p.setAttribute("d", shapes[k]);
+    if (k === 2) { p.setAttribute("fill", "none"); p.setAttribute("stroke", cols[i % 5]); p.setAttribute("stroke-width", "1.8"); p.setAttribute("stroke-linecap", "round"); }
+    else p.setAttribute("fill", cols[i % 5]);
+    $("fx").appendChild(p);
+    const a = -Math.PI * (0.08 + 0.84 * (i / 15)) + (Math.random() - .5) * .3, r = 46 + Math.random() * 44;
+    const x = 206 + Math.cos(a) * r, y = 112 + Math.sin(a) * r * .9, s = .9 + Math.random() * .7, rot = (Math.random() - .5) * 260;
+    p.animate([
+      {transform: "translate(206px, 116px) scale(.4)", opacity: 0},
+      {transform: `translate(${(206 + x) / 2}px, ${(116 + y) / 2}px) scale(${s})`, opacity: 1, offset: .2},
+      {transform: `translate(${x}px, ${y}px) rotate(${rot * .7}deg) scale(${s})`, opacity: 1, offset: .65},
+      {transform: `translate(${x}px, ${y + 22}px) rotate(${rot}deg) scale(${s * .8})`, opacity: 0}
+    ], {duration: 1500 + Math.random() * 500, delay: i * 14, easing: EASE_OUT, fill: "both"}).onfinish = () => p.remove();
+  }
+}
+/* Swap a face detail: the old line lifts away, the new one is drawn by pen. */
+function faceSwap(showId, hideIds){
+  for (const id of hideIds) play($(id), [{opacity: 1}, {opacity: 0}], {duration: 180});
+  const el = $(showId);
+  el.style.opacity = "1";
+  inkStroke(el, 260, 60);
+}
+
+/* ---------- loss: the face turns to crosses, the paper lets out a sigh ---------- */
+function playLoss(){
+  const t = Math.max(0, pen.freeAt - performance.now()) + 260;
+  later(t, () => {
+    faceSwap("xeyes", ["eyes"]);
+    later(260, () => faceSwap("sadMouth", ["mouth"]));
+    sfx.sigh(0.25);
+    if (!RM.matches) {
+      play(sceneSvg, [
+        {transform: "none", easing: "ease-in-out"},
+        {transform: "translateY(3px) scale(.988, .972)", offset: .42, easing: "ease-in-out"},
+        {transform: "none"}
+      ], {duration: 1500, delay: 120});
+      sighPuff();
+    }
+    writeLetters([...tilesEl.querySelectorAll(".tile:not(.shown)")], "late");
+  });
+  return t + 1100;
+}
+function sighPuff(){
+  const p = svgPath("M198 92 q-4 -3 -8 0 t-8 0", "ink thin");
+  p.style.cssText = "stroke:var(--ink-faint);stroke-dashoffset:0";
+  $("fx").appendChild(p);
+  p.animate([{opacity: 0, transform: "translate(0, 0)"}, {opacity: .9, transform: "translate(-6px, -6px)", offset: .3}, {opacity: 0, transform: "translate(-16px, -20px)"}],
+    {duration: 1500, delay: 500, easing: EASE_OUT, fill: "both"}).onfinish = () => p.remove();
 }
 
 /* ---------- toast ---------- */
@@ -810,7 +1076,7 @@ function showToast(msg){
   toast.textContent = msg;
   toast.classList.add("open");
   clearTimeout(toastT);
-  toastT = setTimeout(() => toast.classList.remove("open"), 2000);
+  toastT = setTimeout(() => toast.classList.remove("open"), 2100);
 }
 
 /* ---------- sheets ---------- */
@@ -826,6 +1092,8 @@ document.addEventListener("keydown", e => {
     guess(e.key.toUpperCase());
   } else if (e.key === "Enter" && result.classList.contains("open")) newRound();
 });
+/* tapping the drawing skips the end beat straight to the result */
+$("sceneCard").addEventListener("click", showResult);
 
 /* ---------- settings UI ---------- */
 function syncSettingsUI(){
@@ -875,7 +1143,7 @@ $("livesUp").addEventListener("click", () => {
   if (settings.lives < 10) { settings.lives++; saveSettings(); syncSettingsUI(); newRound(); }
 });
 $("settingsBtn").addEventListener("click", () => { syncSettingsUI(); openSheet(setSheet); });
-$("newWordBtn").addEventListener("click", () => { closeSheets(); newRound(); showToast("New word"); });
+$("newWordBtn").addEventListener("click", () => { closeSheets(); newRound(); showToast("Fresh page, new word"); });
 $("emptySettings").addEventListener("click", () => { syncSettingsUI(); openSheet(setSheet); });
 $("soundBtn").addEventListener("click", () => {
   settings.muted = !settings.muted; saveSettings(); syncSettingsUI();
@@ -887,8 +1155,8 @@ $("resNext").addEventListener("click", newRound);
 clueBtn.addEventListener("click", () => {
   sfx.tap();
   clueText.textContent = G.entry ? G.entry.clue : "";
-  clueText.classList.add("show");
   clueBtn.hidden = true;
+  clueText.hidden = false; clueText.classList.add("show");
 });
 
 /* ---------- stats UI ---------- */
@@ -897,13 +1165,18 @@ function syncStatsUI(){
   $("stBest").textContent = stats.best;
   $("stPlayed").textContent = stats.played;
   $("stWon").textContent = stats.won;
-  $("catWins").innerHTML = "Wins per category: " + CATS.map(([id, n]) =>
-    `<b>${n}</b> ${stats.winsPerCat[id] || 0}`).join(" · ");
+  const cw = $("catWins"); cw.innerHTML = "";
+  CATS.forEach(([id, n]) => {
+    const a = document.createElement("span"), b = document.createElement("b");
+    a.textContent = n; b.textContent = stats.winsPerCat[id] || 0;
+    cw.append(a, b);
+  });
   const g = $("badgeGrid"); g.innerHTML = "";
   BADGES.forEach(([id, name, desc]) => {
-    const d = document.createElement("div");
+    const d = document.createElement("div"), b = document.createElement("b");
     d.className = "badge " + (stats.badges.includes(id) ? "won" : "locked");
-    d.innerHTML = `<b>${stats.badges.includes(id) ? "★ " : "☆ "}${name}</b>${desc}`;
+    b.textContent = (stats.badges.includes(id) ? "★ " : "☆ ") + name;
+    d.append(b, desc);
     g.appendChild(d);
   });
 }
@@ -911,6 +1184,7 @@ $("statsBtn").addEventListener("click", () => { syncStatsUI(); openSheet(statsSh
 
 /* ---------- boot ---------- */
 document.body.classList.add("load");
+buildKeys();
 syncSettingsUI();
 syncStatsUI();
 newRound();
