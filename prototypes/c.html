@@ -139,6 +139,7 @@
     position:absolute; inset:0; pointer-events:none; opacity:0;
     background:radial-gradient(45% 60% at 93% 50%, rgba(255,255,255,.85), rgba(255,46,136,.5) 45%, transparent 72%);
   }
+  .flash.left{ background:radial-gradient(45% 60% at 7% 50%, rgba(255,255,255,.85), rgba(255,46,136,.5) 45%, transparent 72%); }
   .banner{
     position:absolute; left:50%; top:52%;
     transform:translate(-50%,-50%) scale(.9);
@@ -393,9 +394,9 @@
     </div>
   </header>
 
-  <section class="stadium" aria-label="Stadium: each miss moves Man City closer to the Arsenal goal">
+  <section class="stadium" aria-label="Stadium: correct letters push Arsenal forward, misses push Man City forward">
     <svg id="pitchBg" viewBox="0 0 400 266" aria-hidden="true"></svg>
-    <svg id="pitchFg" viewBox="0 0 400 266" role="img" aria-label="Man City in a 4-3-3 attacking Arsenal's 4-4-2"></svg>
+    <svg id="pitchFg" viewBox="0 0 400 266" role="img" aria-label="Man City in a 4-3-3 against Arsenal's 4-4-2"></svg>
     <div class="hud" aria-label="Run score">
       <div class="stat"><div class="k">SCORE</div><div class="v" id="scoreVal">0</div></div>
       <div class="stat"><div class="k">COMBO</div><div class="v" id="comboVal">×0</div></div>
@@ -613,47 +614,118 @@ function pointsFor(o){
   if (o.quick) bonus += 50;
   return base + bonus;
 }
-/* How far up the pitch City are after `misses`: 0 at kick-off, 1 (the
-   shooting chance) with one chance left; the final miss is the shot. */
-function stageProgress(misses, lives){
-  if (lives <= 1) return 1;
-  return clamp(misses / (lives - 1), 0, 1);
+/* Share of the word's distinct letters found so far. */
+function revealedFraction(text, guessed){
+  const need = new Set();
+  for (const ch of text) if (isLetter(ch)) need.add(ch);
+  let got = 0;
+  need.forEach(function(ch){ if (guessed.has(ch)) got++; });
+  return need.size ? got / need.size : 1;
+}
+/* Small seeded generator (mulberry32), so a word's choices replay exactly. */
+function seededRand(seed){
+  let a = seed >>> 0;
+  return function(){
+    a = (a + 0x6D2B79F5) >>> 0;
+    let q = Math.imul(a ^ (a >>> 15), a | 1);
+    q ^= q + Math.imul(q ^ (q >>> 7), q | 61);
+    return ((q ^ (q >>> 14)) >>> 0) / 4294967296;
+  };
+}
+/* The match as a pure function of the word: each correct letter swings play
+   towards the City goal (x=0), each miss towards the Arsenal goal (x=105).
+   Whoever is ahead on the swing has the ball; a dead level swing goes to the
+   word's seed. Play stays outside both penalty areas until the word ends:
+   the solving letter is Arsenal's shot, the final miss City's. */
+const SWING_REACH = 34;
+function matchState(revealed, misses, lives, seed){
+  const r = clamp(revealed, 0, 1), m = clamp(misses / lives, 0, 1);
+  const tilt = m - r;
+  const shot = r >= 1 ? "ars" : m >= 1 ? "city" : null;
+  const poss = shot || (Math.abs(tilt) < 1e-9 ? (seed & 1 ? "ars" : "city") : tilt > 0 ? "city" : "ars");
+  return {
+    poss:poss, shot:shot, lastLife: lives - misses === 1,
+    x: shot === "ars" ? 0 : shot === "city" ? 105 : 52.5 + SWING_REACH * tilt,
+    /* the point of play wanders across the width as the word goes on */
+    y: clamp(34 + 20 * Math.sin((seed % 628) / 100 + r * 4.1 + m * 3.3), 8, 60)
+  };
+}
+/* Goal-scoring moves and their captions, by the side that scores. */
+const FINISHES = {
+  ars: { longBall:"Long ball over the top", counter:"Counter-attack", throughBall:"Through ball, one-on-one", oneTwo:"One-two", cutBack:"Cut-back" },
+  city: { buildUp:"Patient build-up", turnover:"Turnover and counter", corner:"Header from a corner" }
+};
+/* Moves that suit where play was (`st`, the state before the deciding
+   guess), skipping the one played last time. */
+function pickFinish(side, st, last, rand){
+  let fits;
+  if (side === "ars"){
+    if (st.lastLife || st.x > 64) fits = ["counter", "longBall"];   /* City camped in Arsenal's half */
+    else if (st.x > 40) fits = ["throughBall", "longBall"];          /* even play */
+    else fits = ["oneTwo", "cutBack"];                               /* Arsenal in the final third */
+  } else {
+    if (st.x > 64) fits = ["buildUp", "corner"];                     /* City dominated */
+    else if (st.x < 40) fits = ["turnover", "corner"];               /* Arsenal pressing high */
+    else fits = ["corner", "turnover"];
+  }
+  fits = fits.filter(function(k){ return k !== last; });
+  return fits[Math.floor(rand() * fits.length)];
 }
 /* Pitch coordinates are metres: x 0-105 towards the Arsenal goal,
-   y 0-68 from the far touchline. Index 0 is always the goalkeeper. */
+   y 0-68 from the far touchline. Formations are written in each team's
+   own frame, x towards the goal it attacks. Index 0 is the goalkeeper. */
 /* Man City 4-3-3: GK, LB, LCB, RCB, RB, CDM, LCM, RCM, LW, ST, RW */
 const CITY_START = [[5,34],[22,9],[17,24],[17,44],[22,59],[30,34],[38,22],[38,46],[48,8],[50,34],[48,60]];
 const CITY_CHANCE = [[28,34],[68,10],[50,25],[50,43],[62,47],[66,33],[80,21],[83,44],[95,13],[88,33],[95,56]];
-function cityShape(p, flank){
-  const f = flank || 0;
-  return CITY_START.map(function(a, i){
-    const b = CITY_CHANCE[i];
-    let y = a[1] + (b[1] - a[1]) * p;
-    /* midfield and attack overload one flank mid-move, then converge */
-    if (i >= 6) y += f * 3 * Math.sin(Math.PI * p);
-    return [a[0] + (b[0] - a[0]) * p, clamp(y, 2, 66)];
+/* Arsenal 4-4-2: GK, back four, midfield four, two strikers */
+const ARS_START = [[2,34],[40.5,12],[39,27],[39,41],[40.5,56],[53,10],[52,26],[52,42],[53,58],[65,27],[65,41]];
+const ARS_CHANCE = [[26,34],[64,9],[52,25],[52,43],[64,59],[92,11],[78,27],[80,42],[92,57],[90,30],[87,40]];
+const FORMS = { city:{ start:CITY_START, chance:CITY_CHANCE }, ars:{ start:ARS_START, chance:ARS_CHANCE } };
+/* wide: far-side then near-side wide player */
+const ROLES = {
+  city: { st:[9], wide:[8,10], mid:[6,7,5], back:[2,3] },
+  ars:  { st:[9,10], wide:[5,8], mid:[6,7], back:[2,3] }
+};
+/* In possession: from the kick-off shape towards the chance shape; the
+   midfield and attack overload one flank mid-move, then converge. */
+function attackShape(f, a, flank){
+  return f.start.map(function(s, i){
+    const c = f.chance[i];
+    let y = s[1] + (c[1] - s[1]) * a;
+    if (i >= 6) y += (flank || 0) * 3 * Math.sin(Math.PI * a);
+    return [s[0] + (c[0] - s[0]) * a, clamp(y, 2, 66)];
   });
 }
-/* Arsenal 4-4-2 block: GK, back four, midfield four, two strikers.
-   Drops deeper and narrower as City advance, and slides towards the ball. */
-function arsenalShape(p, ballY){
-  const by = ballY == null ? 34 : ballY;
-  const xb = 66 + 29 * p, xm = xb - (13 - 4 * p), xf = xb - (26 - 9 * p);
-  const squeeze = 1 - 0.18 * p;
-  function lane(y, pull){ return clamp(34 + (y - 34) * squeeze + (by - 34) * pull, 3, 65); }
-  const out = [[103, clamp(34 + (by - 34) * 0.12, 31, 37)]];
-  [12,27,41,56].forEach(function(y, i){ out.push([xb - (i === 0 || i === 3 ? 1.5 : 0), lane(y, 0.22)]); });
-  [10,26,42,58].forEach(function(y, i){ out.push([xm - (i === 0 || i === 3 ? 1 : 0), lane(y, 0.34)]); });
-  [27,41].forEach(function(y){ out.push([xf, lane(y, 0.4)]); });
-  return out;
+/* Out of possession: drop deeper and narrower as the opponents advance
+   (p), each line sliding towards the ball. */
+function blockShape(f, p, ballY){
+  const by = ballY == null ? 34 : ballY, squeeze = 1 - 0.18 * p;
+  return f.start.map(function(s, i){
+    if (!i) return [s[0], clamp(34 + (by - 34) * 0.12, 31, 37)];
+    const pull = i <= 4 ? 0.22 : i <= 7 ? 0.34 : 0.4;
+    return [6 + (s[0] - 6) * (1 - 0.75 * p), clamp(34 + (s[1] - 34) * squeeze + (by - 34) * pull, 3, 65)];
+  });
 }
-/* Which City player should have the ball at progress p. */
-function carrierFor(p, alt){
-  if (p >= 1) return 9;
-  if (p <= 0) return alt ? 3 : 2;
-  if (p < 0.34) return alt ? 4 : 5;
-  if (p < 0.67) return alt ? 7 : 6;
-  return alt ? 10 : 8;
+/* How far the side in possession has pushed on, 0-1. */
+function advanceOf(st){
+  return clamp(((st.poss === "city" ? st.x : 105 - st.x) - 36) / 48, 0, 1);
+}
+/* A team's shape for a match state, in pitch coordinates. */
+function teamShape(team, st){
+  const a = advanceOf(st), f = FORMS[team];
+  const own = st.poss === team ? attackShape(f, a, st.y < 34 ? -1 : 1) : blockShape(f, a, st.y);
+  return team === "city" ? own : own.map(function(q){ return [105 - q[0], q[1]]; });
+}
+/* Who has the ball: the outfield player nearest the point of play,
+   strikers excepted (they make the runs for the finish). */
+function carrierFor(shape, st, strikers){
+  let best = 1, bd = Infinity;
+  for (let i = 1; i < shape.length; i++){
+    if (strikers.indexOf(i) !== -1) continue;
+    const d = Math.hypot(shape[i][0] - st.x, shape[i][1] - st.y);
+    if (d < bd){ bd = d; best = i; }
+  }
+  return best;
 }
 /* An outfield player positioned between the ball and the target to
    play the ball through; -1 when nobody fits. */
@@ -931,8 +1003,6 @@ function buildPitch(svg){
     const p = P(c[0], c[1]);
     s += '<ellipse cx="' + f1(p[0]) + '" cy="' + f1(p[1]) + '" rx="1.3" ry=".9" fill="#fff" fill-opacity=".8"/>';
   });
-  const g = goalSVG(0, -1);
-  s += g.back + g.frame;
   s += '<rect width="400" height="266" fill="url(#vig)"/>';
   svg.innerHTML = s;
 }
@@ -957,7 +1027,7 @@ function figureSVG(kit){
 }
 const scene = {
   actors:[], city:[], ars:[], cues:[], clockOffset:0, busyUntil:0,
-  mode:"home", stageN:0, p:0, netHit:-99, reduced:false
+  mode:"home", netHit:-99, nets:null, netNow:null, netLive:null, conceded:null, reduced:false
 };
 const B = { events:[], holder:null, el:null, shadow:null, ring:null, ringO:0, sy:0 };
 function now(){ return performance.now() / 1000 + scene.clockOffset; }
@@ -1002,16 +1072,26 @@ function ballAt(t){
   const e = ballEventAt(t);
   if (e.kind === "own"){
     const spot = ownedSpot(e.who, t);
-    const q = e.from ? (t - e.t) / 0.14 : 1;
+    /* a receiver who moved after the pass was struck: the ball rolls on to them */
+    const q = e.from ? (t - e.t) / Math.max(0.14, Math.hypot(e.from[0] - spot[0], e.from[1] - spot[1]) / 22) : 1;
     if (q < 1){ const k = q * q * (3 - 2 * q); return lerp3(e.from, spot, k); }
     return spot;
   }
+  /* a kick leaves from wherever the ball is when it is struck, fixed from then on */
+  let from = e.from;
+  if (e.src){
+    from = ballAt(e.t - 1e-4);
+    if (e.t <= now()){ e.from = from; e.src = null; }
+  }
   const u = clamp((t - e.t) / e.d, 0, 1);
-  const p = lerp3(e.from, e.to, EASE[e.ease](u));
+  const p = lerp3(from, e.to, EASE[e.ease](u));
   p[2] += e.arc * 4 * u * (1 - u);
   return p;
 }
 function cutBall(at){ B.events = B.events.filter(function(g){ return g.t < at; }); }
+/* Who has the ball at `at`: a kick leaves from their feet even if a later
+   play changes their run. */
+function ownerAt(at){ const e = ballEventAt(at); return e && e.kind === "own" ? e.who : null; }
 /* Play the ball to `rcv` at time `at`, aiming where they will be. */
 function passBall(rcv, at, o){
   o = o || {};
@@ -1025,32 +1105,71 @@ function passBall(rcv, at, o){
   }
   to = ownedSpot(rcv, at + d);
   cutBall(at);
-  B.events.push({ t:at, kind:"fly", from:from, to:to, d:d, arc: lofted ? Math.min(14, dist * 0.17) : 0, ease: lofted ? "lin" : "pass", sound:o.sound || "kick" });
+  B.events.push({ t:at, kind:"fly", from:from, src:ownerAt(at), to:to, d:d, arc: lofted ? Math.min(14, dist * 0.17) : 0, ease: lofted ? "lin" : "pass", sound:o.sound || "kick" });
   B.events.push({ t:at + d, kind:"own", who:rcv, from:to });
   B.holder = rcv;
   busy(at + d);
   return at + d;
 }
-function cityHolder(t){
-  return B.holder && B.holder.team === "city" ? B.holder : nearestTo(scene.city, ballAt(t), true);
+/* A dead ball: rolls or flies to a spot and stays there. */
+function ballTo(to, at, d, arc, sound, ease){
+  const from = ballAt(at);
+  cutBall(at);
+  B.events.push({ t:at, kind:"fly", from:from, src:ownerAt(at), to:to, d:d, arc:arc || 0, ease:ease || "out", sound:sound || "none" });
+  B.holder = null;
+  busy(at + d);
+  return at + d;
 }
-/* Arsenal slide across, drop off and send the nearest player to press. */
-function arsenalReact(p, ballPt, at, d){
-  const shape = arsenalShape(p, ballPt[1]);
-  let pi = 1, best = Infinity;
-  for (let i = 1; i < 11; i++){
-    const dd = Math.hypot(shape[i][0] - ballPt[0], shape[i][1] - ballPt[1]);
-    if (dd < best){ best = dd; pi = i; }
+/* Play the ball on unless `rcv` already has it. */
+function feed(rcv, at, o){ return B.holder === rcv ? at : passBall(rcv, at, o); }
+/* Run to a spot at about `speed` m/s; returns the arrival time. */
+function sprint(a, to, at, bulge, speed){
+  const s = actorAt(a, at);
+  const d = Math.max(0.5, Math.hypot(to[0] - s.x, to[1] - s.y) / (speed || 13));
+  moveTo(a, to, at, d, bulge);
+  return at + d;
+}
+/* ---- sides: each team seen from its own end ---- */
+function sideOf(name){
+  const me = name === "city" ? scene.city : scene.ars, dir = me[0].dir;
+  const S = {
+    name:name, me:me, opp: name === "city" ? scene.ars : scene.city, oppName: name === "city" ? "ars" : "city",
+    dir:dir, roles:ROLES[name],
+    /* own-frame point to pitch coordinates, and an actor's own-frame spot */
+    at: function(x, y){ return [dir > 0 ? x : 105 - x, y]; },
+    own: function(a, t){ const s = actorAt(a, t); return [dir > 0 ? s.x : 105 - s.x, s.y]; },
+    pick: function(role, not){
+      const list = ROLES[name][role].map(function(i){ return me[i]; });
+      return list.find(function(a){ return not.indexOf(a) === -1; }) || list[0];
+    },
+    /* the wide player on the ball's flank */
+    wide: function(fl){ return me[ROLES[name].wide[fl < 0 ? 0 : 1]]; }
+  };
+  return S;
+}
+/* The side gets the ball: kept if they have it already, otherwise the
+   nearest player steps in and takes it. Returns who has it, and when. */
+function winBall(S, t){
+  const h = B.holder, last = B.events[B.events.length - 1];
+  if (h && h.team === S.name) return { who:h, t:Math.max(t, last.t) };
+  let bp = ballAt(t + 0.4);
+  const tk = nearestTo(S.me, bp, true), s = actorAt(tk, t);
+  const d = clamp(Math.hypot(bp[0] - s.x, bp[1] - s.y) / 12, 0.4, 0.9), tt = t + d;
+  bp = ballAt(tt);
+  moveTo(tk, [bp[0] - tk.dir * 0.9, bp[1] - 0.35], t, d);
+  if (h){
+    const hs = actorAt(h, tt);
+    moveTo(h, [hs.x - h.dir * 1.4, hs.y - 0.6], tt, 0.7);
+    setFx(h, "stumble", tt, 0.8);
   }
-  const gx = 105 - ballPt[0], gy = 34 - ballPt[1], gl = Math.hypot(gx, gy) || 1;
-  shape[pi] = [ballPt[0] + gx / gl * 2.6, ballPt[1] + gy / gl * 2.6];
-  shape.forEach(function(pos, i){
-    moveTo(scene.ars[i], pos, at + (i === pi ? 0 : 0.04 + Math.random() * 0.12), i === pi ? d * 0.8 : d);
-  });
+  passBall(tk, tt - 0.04, { quick:true, sound: h ? "tackle" : "none" });
+  return { who:tk, t:tt + 0.12 };
 }
-function goHome(t, cityDelay, arsDelay){
-  cityShape(0, 0).forEach(function(pos, i){ moveTo(scene.city[i], pos, t + cityDelay + Math.random() * 0.15, 1.6 + Math.random() * 0.3); });
-  arsenalShape(0, 34).forEach(function(pos, i){ moveTo(scene.ars[i], pos, t + arsDelay + Math.random() * 0.15, 1.6 + Math.random() * 0.3); });
+/* The nearest defender steps out to press, goal-side of the ball. */
+function press(D, pt, at, d){
+  const pr = nearestTo(D.me, pt, true);
+  const gx = (D.dir > 0 ? 0 : 105) - pt[0], gy = 34 - pt[1], gl = Math.hypot(gx, gy) || 1;
+  moveTo(pr, [pt[0] + gx / gl * 2.6, pt[1] + gy / gl * 2.6], at, d * 0.8);
 }
 /* With reduced motion every script lands at once behind a calm fade. */
 function afterScript(){
@@ -1059,101 +1178,233 @@ function afterScript(){
   if (skip > 0) scene.clockOffset += skip;
   if (scene.fg.animate) scene.fg.animate([{ opacity:0.15 }, { opacity:1 }], { duration:320, easing:"ease" });
 }
-/* ---- choreography ---- */
+/* ---- choreography: the ebb and flow of a word ---- */
 const RUN_DELAY = [0.34, 0.22, 0.26, 0.26, 0.22, 0.14, 0.08, 0.08, 0, 0, 0];
-scene.passage = function(p){
+/* At least `d`, and no quicker than a 10 m/s run: the long way back from a celebration takes its time. */
+function runFor(a, to, at, d){ const s = actorAt(a, at); return Math.max(d, Math.hypot(to[0] - s.x, to[1] - s.y) / 10); }
+/* Both teams take the shape for `st` and the ball goes to the right player:
+   kept and worked forward, won back with a tackle, or, after a goal,
+   fetched from the net by the beaten keeper and sent long. */
+scene.play = function(st){
   const t = now();
-  scene.stageN++;
-  const alt = scene.stageN % 2 === 1;
-  const shape = cityShape(p, alt ? 1 : -1);
-  const holder = cityHolder(t);
+  scene.cues.length = 0;
+  if (scene.netHit > t) scene.netHit = -99;
+  const S = sideOf(st.poss), D = sideOf(S.oppName);
+  const sa = teamShape(S.name, st), sd = teamShape(D.name, st);
   /* off-ball runs first: forwards go early and bend their runs */
-  shape.forEach(function(pos, i){
+  sa.forEach(function(pos, i){
     const bulge = i >= 8 ? [0, (pos[1] < 34 ? -1 : 1) * 2.2] : null;
-    moveTo(scene.city[i], pos, t + RUN_DELAY[i] + Math.random() * 0.08, 1.9 + Math.random() * 0.35, bulge);
+    const at = t + RUN_DELAY[i] + Math.random() * 0.08;
+    moveTo(S.me[i], pos, at, runFor(S.me[i], pos, at, 1.9 + Math.random() * 0.35), bulge);
   });
-  const ti = carrierFor(p, alt);
-  const ri = pickRelay(scene.city.indexOf(holder), ti, shape, ballAt(t)[0], Math.random);
-  let tk = t + 0.22, last = holder;
-  if (ri >= 0){
-    const arr = passBall(scene.city[ri], tk);
-    arsenalReact(p, ownedSpot(scene.city[ri], arr), tk + 0.18, 1.0);
-    tk = arr + 0.3; last = scene.city[ri];
-  }
-  if (scene.city[ti] !== last){
-    const arr2 = passBall(scene.city[ti], tk);
-    arsenalReact(p, ownedSpot(scene.city[ti], arr2), tk + 0.18, 1.1);
+  sd.forEach(function(pos, i){ const at = t + 0.04 + Math.random() * 0.12; moveTo(D.me[i], pos, at, runFor(D.me[i], pos, at, 1.1 + Math.random() * 0.4)); });
+  const target = S.me[carrierFor(sa, st, S.roles.st)];
+  if (scene.mode === "goal" && scene.conceded){
+    const gk = scene.conceded[0], home = gk === S.me[0] ? sa[0] : sd[0];
+    moveTo(gk, [gk.dir > 0 ? 1.5 : 103.5, 34], t, 0.5);
+    const tk = passBall(gk, t + 0.05, { sound:"none" }) + 0.25;
+    moveTo(gk, home, tk + 0.3, 1.2);
+    passBall(target, tk, { lofted:true, sound:"clear" });
   } else {
-    arsenalReact(p, ballAt(tk), tk, 1.1);
+    const old = B.holder, w = winBall(S, t);
+    if (old && old !== w.who) moveTo(old, sd[old.i], w.t + 0.7, 1.4);
+    let tk = w.t + 0.22, last = w.who;
+    if (last !== target){
+      const ri = pickRelay(last.i, target.i, sa, ballAt(tk)[0], Math.random);
+      if (ri >= 0){
+        const arr = passBall(S.me[ri], tk);
+        press(D, ownedSpot(S.me[ri], arr), tk + 0.18, 1.0);
+        tk = arr + 0.3; last = S.me[ri];
+      }
+    }
+    if (last !== target){
+      const arr2 = passBall(target, tk);
+      press(D, ownedSpot(target, arr2), tk + 0.18, 1.1);
+    } else press(D, ballAt(tk), tk, 1.1);
+    if (w.who !== old && w.who !== target) moveTo(w.who, sa[w.who.i], tk + 0.3, 1.3);
   }
-  scene.mode = "attack"; scene.p = p;
+  scene.mode = "play";
   afterScript();
 };
-scene.goal = function(onNet){
-  const t = now();
-  const st = scene.city[9];
-  let tShot;
-  if (B.holder !== st){ tShot = passBall(st, t + 0.08) + 0.24; }
-  else {
-    const s = actorAt(st, t);
-    moveTo(st, [Math.min(s.x + 2.5, 95), s.y], t, 0.5);
-    tShot = t + 0.3;
-  }
-  const side = Math.random() < 0.5 ? -1 : 1;
-  const ty = 34 + side * 3.3, hit = tShot + 0.42;
+/* Before a finish the scorers flood forward and the defence scrambles back;
+   `lag` > 1 leaves defenders chasing a break. */
+function commit(S, t, fl, lag){
+  const go = attackShape(FORMS[S.name], 1, fl), back = blockShape(FORMS[S.oppName], 1, 34 + fl * 6);
+  S.me.forEach(function(a, i){
+    const to = S.at(go[i][0], go[i][1]), at = t + 0.1 + Math.random() * 0.25;
+    moveTo(a, to, at, runFor(a, to, at, 1.8 + Math.random() * 0.4));
+  });
+  S.opp.forEach(function(a, i){
+    const to = [S.dir > 0 ? 105 - back[i][0] : back[i][0], back[i][1]], at = t + 0.15 + Math.random() * 0.2;
+    moveTo(a, to, at, runFor(a, to, at, (1.6 + Math.random() * 0.5) * (lag || 1)));
+  });
+}
+/* Shot into the net S attacks: keeper beaten, ripple, celebration. */
+function shootGoal(S, shooter, tShot, o){
+  const side = o.side || (Math.random() < 0.5 ? -1 : 1), z = o.header ? 1.1 : 3.4;
+  const gx = S.at(105.4, 0)[0], ty = 34 + side * 3.3;
   const from = ballAt(tShot);
+  const d = 0.26 + Math.hypot(gx - from[0], ty - from[1]) * 0.012, hit = tShot + d;
   cutBall(tShot);
-  B.events.push({ t:tShot, kind:"fly", from:from, to:[105.4, ty, 3.4], d:0.42, arc:0.6, ease:"lin", sound:"shot" });
-  B.events.push({ t:hit, kind:"fly", from:[105.4, ty, 3.4], to:[107.3, ty + side * 0.6, 1.8], d:0.2, arc:0, ease:"out" });
-  B.events.push({ t:hit + 0.2, kind:"fly", from:[107.3, ty + side * 0.6, 1.8], to:[107, ty + side * 0.8, 0], d:0.34, arc:0, ease:"fall" });
+  B.events.push({ t:tShot, kind:"fly", from:from, src:ownerAt(tShot), to:[gx, ty, z], d:d, arc: o.header ? 0 : 0.6, ease:"lin", sound: o.header ? "kick" : "shot" });
+  const deep = [S.at(107.3, 0)[0], ty + side * 0.6, z * 0.53];
+  B.events.push({ t:hit, kind:"fly", from:[gx, ty, z], to:deep, d:0.2, arc:0, ease:"out" });
+  B.events.push({ t:hit + 0.2, kind:"fly", from:deep, to:[S.at(107, 0)[0], ty + side * 0.8, 0], d:0.34, arc:0, ease:"fall" });
   B.holder = null;
   scene.netHit = hit;
+  scene.netNow = scene.nets[S.oppName];
+  scene.conceded = S.opp;
   /* keeper reads it late: full stretch, beaten */
-  const gk = scene.ars[0];
-  moveTo(gk, [103.4, 34 + side * 2.3], tShot + 0.06, 0.34);
+  const gk = S.opp[0];
+  const gkx = S.own(gk, tShot)[0] > 96 ? S.at(103.4, 0)[0] : actorAt(gk, tShot).x;
+  moveTo(gk, [gkx, 34 + side * 2.3], tShot + 0.06, 0.34);
   setFx(gk, "dive", tShot + 0.06, 2.4, side);
-  /* the scorer wheels away to the corner, team-mates chase */
-  const flag = [100, side < 0 ? 5 : 63];
-  moveTo(st, flag, hit + 0.15, 1.7, [-3, 0]);
-  setFx(st, "celebrate", hit + 0.7, 1.6);
-  [8, 10, 7, 6].forEach(function(i, n){
-    moveTo(scene.city[i], [flag[0] - 3 - n * 1.6, flag[1] - side * (2 + n * 1.4)], hit + 0.35 + n * 0.08, 1.8);
-    setFx(scene.city[i], "celebrate", hit + 1.3 + n * 0.1, 1.2);
+  /* the scorer wheels away to the corner, the nearest team-mates chase */
+  const flag = S.at(100, side < 0 ? 5 : 63), sp = actorAt(shooter, hit);
+  moveTo(shooter, flag, hit + 0.15, runFor(shooter, flag, hit + 0.15, 1.7), [-3 * S.dir, 0]);
+  setFx(shooter, "celebrate", hit + 0.7, 1.6);
+  S.me.slice(1).filter(function(a){ return a !== shooter; }).sort(function(a, b){
+    const pa = actorAt(a, hit), pb = actorAt(b, hit);
+    return Math.hypot(pa.x - sp.x, pa.y - sp.y) - Math.hypot(pb.x - sp.x, pb.y - sp.y);
+  }).slice(0, 4).forEach(function(a, n){
+    const to = [flag[0] - S.dir * (3 + n * 1.6), flag[1] - side * (2 + n * 1.4)], at = hit + 0.35 + n * 0.08;
+    moveTo(a, to, at, runFor(a, to, at, 1.8));
+    setFx(a, "celebrate", hit + 1.3 + n * 0.1, 1.2);
   });
-  for (let i = 1; i < 11; i++) setFx(scene.ars[i], "dejected", hit + 0.2, 2.4);
-  if (onNet) scene.cues.push({ t:hit, fn:onNet });
+  for (let i = 1; i < 11; i++) setFx(S.opp[i], "dejected", hit + 0.2, 2.4);
+  if (o.onNet) scene.cues.push({ t:hit, fn:o.onNet });
   busy(hit + 0.6);
-  scene.mode = "goal"; scene.p = 1;
-  afterScript();
+  scene.mode = "goal";
+  return hit;
+}
+/* Each finish starts from wherever everyone is right now. Coordinates are
+   in the scoring side's own frame; `fl` is the flank the ball is on. */
+const FINISH_PLAYS = {
+  /* win it back, then one ball over the top for the striker to chase */
+  longBall: function(S, t, fl, o){
+    commit(S, t, fl, 1.9);
+    const w = winBall(S, t), st = S.pick("st", [w.who]), sp = S.own(st, w.t);
+    sprint(st, S.at(clamp(sp[0] + 28, 56, 80), 34 + fl * 8), w.t, [0, fl * 2], 15);
+    const arr = passBall(st, w.t + 0.3, { lofted:true, sound:"clear" });
+    const shotAt = sprint(st, S.at(91, 34 + fl * 3), arr, null, 14) - 0.2;
+    return shootGoal(S, st, shotAt, o);
+  },
+  /* win it back and break at speed: out to the flank, low ball across */
+  counter: function(S, t, fl, o){
+    commit(S, t, fl, 1.7);
+    const w = winBall(S, t), wing = S.wide(fl), st = S.pick("st", [w.who, wing]);
+    const wp = S.own(wing, w.t), sp = S.own(st, w.t);
+    sprint(wing, S.at(clamp(wp[0] + 26, 55, 82), fl < 0 ? 9 : 59), w.t, null, 15);
+    sprint(st, S.at(clamp(sp[0] + 22, 58, 80), 34 - fl * 4), w.t + 0.1, null, 14);
+    const a1 = feed(wing, w.t + 0.2);
+    const carried = sprint(wing, S.at(91, fl < 0 ? 15 : 53), a1, null, 13);
+    sprint(st, S.at(95, 34 - fl * 2), a1 + 0.2, [0, fl * 1.5], 13);
+    const a2 = passBall(st, carried - 0.2);
+    return shootGoal(S, st, a2 + 0.04, Object.assign({ side:-fl }, o));
+  },
+  /* a pass split between the centre-backs, the keeper rushes out and is beaten */
+  throughBall: function(S, t, fl, o){
+    commit(S, t, fl, 1.4);
+    const w = winBall(S, t), st = S.pick("st", [w.who]), sp = S.own(st, w.t);
+    sprint(st, S.at(clamp(sp[0] + 16, 74, 86), 34 + fl * 4), w.t, [0, -fl * 2], 14);
+    const arr = feed(st, w.t + 0.4);
+    moveTo(S.opp[0], S.at(97, 34 + fl * 2), arr - 0.15, 0.55);
+    const shotAt = sprint(st, S.at(95, 34 - fl * 3), arr, [0, -fl * 1.5], 12) - 0.1;
+    return shootGoal(S, st, shotAt, Object.assign({ side:-fl }, o));
+  },
+  /* give and go on the edge of the box */
+  oneTwo: function(S, t, fl, o){
+    commit(S, t, fl, 1);
+    const w = winBall(S, t), h = w.who, mate = S.pick("st", [h]), hp = S.own(h, w.t);
+    sprint(mate, S.at(clamp(hp[0] + 9, 74, 88), 34 + fl * 7), w.t, null, 12);
+    const a1 = passBall(mate, w.t + 0.35);
+    sprint(h, S.at(clamp(hp[0] + 18, 88, 94), 34 - fl * 2), w.t + 0.4, [0, fl * 2], 12);
+    const a2 = passBall(h, a1 + 0.05);
+    return shootGoal(S, h, a2 + 0.2, o);
+  },
+  /* to the byline, pulled back for a runner arriving at the penalty spot */
+  cutBack: function(S, t, fl, o){
+    commit(S, t, fl, 1);
+    const w = winBall(S, t), wing = S.wide(fl);
+    const runner = w.who === wing ? S.pick("mid", [wing]) : w.who;
+    sprint(wing, S.at(96, fl < 0 ? 12 : 56), w.t, null, 13);
+    const a1 = feed(wing, w.t + 0.2);
+    const byline = sprint(wing, S.at(102.5, fl < 0 ? 22 : 46), a1, null, 12);
+    sprint(runner, S.at(92, 34 + fl), a1 + 0.1, null, 12);
+    const a2 = passBall(runner, byline - 0.1);
+    return shootGoal(S, runner, a2 + 0.03, Object.assign({ side:-fl }, o));
+  },
+  /* keep it, work it across the edge of the box, then in to the striker */
+  buildUp: function(S, t, fl, o){
+    commit(S, t, fl, 1);
+    const w = winBall(S, t), st = S.pick("st", [w.who]);
+    const m0 = S.me[S.roles.mid[0]], m1 = S.me[S.roles.mid[1]];
+    const chain = [[m0, 80, 34 - fl * 10], [S.wide(fl), 88, fl < 0 ? 14 : 54], [m1, 84, 34 + fl * 6]];
+    let tk = w.t + 0.25;
+    chain.forEach(function(c, n){
+      const arrive = sprint(c[0], S.at(c[1], c[2]), w.t + n * 0.25, null, 9);
+      tk = feed(c[0], Math.max(tk, arrive - 0.4)) + 0.35;
+    });
+    sprint(st, S.at(94, 34 - fl * 2), tk - 0.6, [0, fl * 2], 12);
+    const last = passBall(st, tk);
+    return shootGoal(S, st, last + 0.06, o);
+  },
+  /* nick it off a high press and run straight at goal */
+  turnover: function(S, t, fl, o){
+    commit(S, t, fl, 1.8);
+    const w = winBall(S, t);
+    const st = S.me.slice(1).filter(function(a){ return a !== w.who; }).sort(function(a, b){ return S.own(b, w.t)[0] - S.own(a, w.t)[0]; })[0];
+    const sp = S.own(st, w.t);
+    sprint(st, S.at(clamp(sp[0] + 26, 60, 84), 34 + fl * 9), w.t, [0, fl * 2], 15);
+    const arr = passBall(st, w.t + 0.25);
+    const shotAt = sprint(st, S.at(92, 34 + fl * 4), arr, null, 14) - 0.2;
+    return shootGoal(S, st, shotAt, Object.assign({ side:-fl }, o));
+  },
+  /* a cross is blocked behind; the corner is met with a header */
+  corner: function(S, t, fl, o){
+    commit(S, t, fl, 1);
+    const w = winBall(S, t), wing = S.wide(fl), cy = fl < 0 ? 1.2 : 66.8;
+    const reach = sprint(wing, S.at(95, fl < 0 ? 10 : 58), w.t, null, 13);
+    const a1 = feed(wing, w.t + 0.2);
+    const bl = nearestTo(S.opp, S.at(97, fl < 0 ? 12 : 56), true);
+    sprint(bl, S.at(98, fl < 0 ? 13 : 55), w.t + 0.1, null, 12);
+    const tb = Math.max(a1, reach) + 0.1;
+    ballTo(S.at(106, fl < 0 ? 7 : 61).concat(0.6), tb, 0.45, 0.8, "tackle");
+    setFx(bl, "celebrate", tb, 0.5);
+    /* taker to the flag, ball placed in the quadrant, the box fills */
+    const tq = tb + 0.5;
+    let ready = sprint(wing, S.at(105.8, fl < 0 ? 1 : 67), tq, null, 7);
+    ballTo(S.at(105, cy).concat(0), tq + 0.15, 0.7, 0, "none");
+    const runners = S.me.slice(1).filter(function(a){ return a !== wing; })
+      .sort(function(a, b){ return S.own(b, tq)[0] - S.own(a, tq)[0]; }).slice(0, 4);
+    const spots = [[96, 34 + fl * 4], [95, 30 - fl], [97, 40 + fl], [90, 34]];
+    const marked = [];
+    runners.forEach(function(a, n){
+      ready = Math.max(ready, sprint(a, S.at(spots[n][0], spots[n][1]), tq + n * 0.1, null, 11));
+      const mk = S.opp.slice(1).filter(function(d){ return d !== bl && marked.indexOf(d) === -1; })
+        .sort(function(p, q){
+          const pp = actorAt(p, tq), qq = actorAt(q, tq), s = S.at(spots[n][0], spots[n][1]);
+          return Math.hypot(pp.x - s[0], pp.y - s[1]) - Math.hypot(qq.x - s[0], qq.y - s[1]);
+        })[0];
+      marked.push(mk);
+      sprint(mk, S.at(spots[n][0] + 1.4, spots[n][1] + 0.8), tq + 0.2 + n * 0.1, null, 10);
+    });
+    /* whipped in to the near post, met by the first runner */
+    const tk = ready + 0.35, head = runners[0], hp = S.at(99.5, 34 + fl * 2.5);
+    ballTo(hp.concat(2.5), tk, 0.85, 5, "kick", "lin");
+    sprint(head, hp, tk + 0.3, null, 9);
+    setFx(head, "jump", tk + 0.55, 0.6);
+    return shootGoal(S, head, tk + 0.85, Object.assign({ header:true, side:-fl }, o));
+  }
 };
-scene.clearance = function(){
-  const t = now();
-  const carrier = cityHolder(t);
-  const tt = t + 0.4;
-  const cp = actorAt(carrier, tt);
-  const tackler = nearestTo(scene.ars, [cp.x, cp.y], true);
-  moveTo(tackler, [cp.x + 1.4, cp.y + 0.4], t, 0.4);
-  moveTo(carrier, [cp.x - 1.4, cp.y - 0.6], tt, 0.7);
-  setFx(carrier, "stumble", tt, 0.8);
-  const tc = tt + 0.3;
-  goHome(tc, 0.1, 0.25);
-  passBall(tackler, tt - 0.04, { quick:true, sound:"tackle" });
-  passBall(scene.city[2], tc, { lofted:true, sound:"clear" });
-  setFx(tackler, "celebrate", tc + 0.1, 0.9);
-  scene.mode = "home"; scene.p = 0;
+/* A word is over: the side that won it scores with `kind`.
+   Returns the time the ball hits the net. */
+scene.finish = function(side, kind, onNet){
+  const t = now(), S = sideOf(side);
+  scene.cues.length = 0;
+  const hit = FINISH_PLAYS[kind](S, t, ballAt(t)[1] < 34 ? -1 : 1, { onNet:onNet });
   afterScript();
-};
-scene.reset = function(){
-  const t = now();
-  goHome(t, 0, 0.1);
-  if (scene.mode === "goal"){
-    /* keeper fishes the ball out of the net and sends it long */
-    const gk = scene.ars[0];
-    moveTo(gk, [104.2, 34], t, 0.5);
-    passBall(scene.city[2], passBall(gk, t + 0.05, { sound:"none" }) + 0.25, { lofted:true, sound:"clear" });
-  } else if (B.holder !== scene.city[2]) passBall(scene.city[2], t + 0.2);
-  scene.mode = "home"; scene.p = 0;
-  afterScript();
+  return hit;
 };
 /* ---- rendering: one requestAnimationFrame loop for 22 players + ball ---- */
 function makeActor(team, i, kit, dir, pos){
@@ -1165,25 +1416,29 @@ function makeActor(team, i, kit, dir, pos){
 }
 function buildScene(){
   const fg = scene.fg = document.getElementById("pitchFg");
-  const g = goalSVG(105, 1);
+  const gc = goalSVG(0, -1), ga = goalSVG(105, 1);
   fg.innerHTML =
     '<defs><radialGradient id="ballGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff7ab8" stop-opacity=".7"/><stop offset="1" stop-color="#ff2e88" stop-opacity="0"/></radialGradient></defs>' +
-    '<g id="netBack">' + g.back + '</g>' + g.frame +
+    '<g id="netCity">' + gc.back + '</g>' + gc.frame + '<g id="netArs">' + ga.back + '</g>' + ga.frame +
     '<g id="under"><ellipse id="ring" rx="6.5" ry="2" fill="none" stroke="#ff7ab8" stroke-width=".9" opacity="0"/>' +
     '<ellipse id="ballShadow" rx="2.3" ry=".8" fill="#04000c" fill-opacity=".55"/></g>' +
     '<g id="actors"></g>';
-  scene.net = document.getElementById("netBack");
-  scene.netX = P(105, 34)[0];
+  /* nets keyed by the team defending them */
+  scene.nets = {
+    city: { el:document.getElementById("netCity"), x:P(0, 34)[0] },
+    ars: { el:document.getElementById("netArs"), x:P(105, 34)[0] }
+  };
   scene.layer = document.getElementById("actors");
   B.shadow = document.getElementById("ballShadow");
   B.ring = document.getElementById("ring");
   B.el = document.createElementNS("http://www.w3.org/2000/svg", "g");
   B.el.innerHTML = '<circle r="6" fill="url(#ballGlow)"/><circle r="2.3" fill="#fff" stroke="#ff2e88" stroke-width=".8"/><circle cx="-.6" cy="-.5" r=".8" fill="#2b0a1e"/>';
-  const home = cityShape(0, 0), away = arsenalShape(0, 34);
+  const home = CITY_START, away = ARS_START.map(function(q){ return [105 - q[0], q[1]]; });
   for (let i = 0; i < 11; i++) scene.city.push(makeActor("city", i, i ? KITS.city : KITS.cityGk, 1, home[i]));
   for (let i = 0; i < 11; i++) scene.ars.push(makeActor("ars", i, i ? KITS.ars : KITS.arsGk, -1, away[i]));
-  B.events = [{ t:-1e9, kind:"own", who:scene.city[2], from:null }];
-  B.holder = scene.city[2];
+  /* the ball waits on the centre spot for the first word */
+  B.events = [{ t:-1e9, kind:"fly", from:[52.5, 34, 0], to:[52.5, 34, 0], d:1, arc:0, ease:"lin" }];
+  B.holder = null;
   scene.order = scene.actors.concat([B]);
   scene.order.forEach(function(a){ scene.layer.appendChild(a.root || B.el); });
   const mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
@@ -1208,6 +1463,8 @@ function fxPose(a, t, pose){
     pose.rot += Math.sin(q * 14) * 6 * fade;
   } else if (fx.kind === "dejected"){
     pose.rot += a.dir * 10 * Math.sin(Math.PI * q / fx.d);
+  } else if (fx.kind === "jump"){
+    pose.hop += 7 * Math.sin(Math.PI * Math.min(1, q / fx.d));
   } else if (fx.kind === "stumble"){
     pose.rot += Math.sin(q * 22) * 16 * Math.exp(-q * 4);
   }
@@ -1254,12 +1511,12 @@ function frame(ms){
   }
   B.ring.setAttribute("opacity", B.ringO.toFixed(2));
   /* net ripple after a goal */
-  const nq = t - scene.netHit;
-  if (nq >= 0 && nq < 1.6){
+  const nq = t - scene.netHit, net = scene.netNow;
+  if (net && nq >= 0 && nq < 1.6){
     const amp = 0.22 * Math.exp(-nq * 3.2) * Math.sin(nq * 22);
-    scene.net.setAttribute("transform", "translate(" + f1(scene.netX) + " 0) scale(" + (1 + amp).toFixed(3) + " " + (1 + amp * 0.15).toFixed(3) + ") translate(" + f1(-scene.netX) + " 0)");
-    scene.netLive = true;
-  } else if (scene.netLive){ scene.net.removeAttribute("transform"); scene.netLive = false; }
+    net.el.setAttribute("transform", "translate(" + f1(net.x) + " 0) scale(" + (1 + amp).toFixed(3) + " " + (1 + amp * 0.15).toFixed(3) + ") translate(" + f1(-net.x) + " 0)");
+    scene.netLive = net;
+  } else if (scene.netLive){ scene.netLive.el.removeAttribute("transform"); scene.netLive = null; }
   /* paint nearer players over farther ones */
   if (++sortTick % 6 === 0){
     const sorted = scene.order.slice().sort(function(x, y){ return x.sy - y.sy; });
@@ -1285,8 +1542,9 @@ function idleShuffle(t){
 
 /* ================= game state ================= */
 let run = { score:0, combo:0 };
-let cur = null; /* {entry, guessed:Set, misses, hintUsed, startTime, over} */
+let cur = null; /* {entry, guessed:Set, misses, hintUsed, startTime, over, seed, state} */
 let lastText = "";
+let lastFinish = "";
 let nextTimer = 0;
 let cellEls = [], keyEls = {};
 
@@ -1475,7 +1733,6 @@ function startWord(){
   clearTimeout(nextTimer);
   const list = eligibleEntries(CATEGORIES, settings);
   const empty = $("emptyState");
-  if (scene.mode !== "home") scene.reset();
   if (!list.length){
     cur = null;
     empty.hidden = false;
@@ -1490,13 +1747,27 @@ function startWord(){
   $("clueRow").hidden = false;
   const entry = pickEntry(list, lastText);
   lastText = entry.text;
-  cur = { entry:entry, guessed:new Set(), misses:0, hintUsed:false, startTime:Date.now(), over:false };
+  /* after a goal the side that conceded kicks off */
+  let seed = Math.floor(Math.random() * 0x7fffffff);
+  if (scene.mode === "goal") seed = (seed & ~1) | (scene.conceded === scene.ars ? 1 : 0);
+  cur = { entry:entry, guessed:new Set(), misses:0, hintUsed:false, startTime:Date.now(), over:false, seed:seed, state:null };
+  cur.state = stateNow();
+  scene.play(cur.state);
   $("clueText").textContent = "";
   $("clueText").classList.remove("show");
   $("clueBtn").hidden = false;
   $("clueBtn").disabled = false;
   $("hintCost").hidden = false;
   renderAll();
+}
+/* The match for the word in play; a lives setting lowered mid-word cannot
+   end it before the next miss. */
+function stateNow(){
+  return matchState(revealedFraction(cur.entry.text, cur.guessed), Math.min(cur.misses, settings.lives - 1), settings.lives, cur.seed);
+}
+function swing(){
+  cur.state = stateNow();
+  scene.play(cur.state);
 }
 function guess(ch){
   ensureAudio();
@@ -1509,6 +1780,7 @@ function guess(ch){
     if (key) key.classList.add("right");
     revealLetter(ch);
     if (isSolved(cur.entry.text, cur.guessed)){ onWin(); return; }
+    swing();
   } else {
     cur.misses++;
     SFX.bad();
@@ -1516,7 +1788,7 @@ function guess(ch){
     updateDots(); renderLives();
     pulse($("edge"), 1, 600);
     if (cur.misses >= settings.lives){ onLoss(); return; }
-    scene.passage(stageProgress(cur.misses, settings.lives));
+    swing();
   }
 }
 function onWin(){
@@ -1534,16 +1806,20 @@ function onWin(){
   if (run.score > stats.best) stats.best = run.score;
   checkBadges({ solved:true, misses:cur.misses, diff:cur.entry.diff, hintUsed:cur.hintUsed, quickBonus:quickBonus });
   saveStats();
-  /* Arsenal win it back and clear it upfield */
-  scene.clearance();
-  SFX.cheer();
+  /* Arsenal score, with a move that suits where play was before this letter */
+  const kind = lastFinish = pickFinish("ars", cur.state, lastFinish, seededRand(cur.seed));
+  const hit = scene.finish("ars", kind, function(){
+    flashEl.classList.add("left");
+    pulse(flashEl, 1, 900);
+    SFX.cheer();
+    confetti(tilesEl);
+    showBanner("GOAL!", FINISHES.ars[kind] + " · +" + pts + (flawless ? " · flawless" : ""), false, 1700);
+  });
   lockKeys();
   cellEls.forEach(function(el){ if (el) el.classList.add("win"); });
-  confetti(tilesEl);
-  showBanner("CLEARED!", "+" + pts + (flawless ? " · flawless" : ""), false, 1500);
   renderScore(true);
   bump($("scoreVal"));
-  nextTimer = setTimeout(function(){ if (cur && cur.over) startWord(); }, 1700);
+  nextTimer = setTimeout(function(){ if (cur && cur.over) startWord(); }, Math.max(1700, (hit - now() + 1.6) * 1000));
 }
 function onLoss(){
   cur.over = true;
@@ -1555,16 +1831,18 @@ function onLoss(){
   lockKeys();
   revealMissed();
   renderScore(false);
-  /* The final pass is a goal: shot, dive, ripple, groan */
-  scene.goal(function(){
+  /* City score, with a move that suits where play was before this miss */
+  const kind = lastFinish = pickFinish("city", cur.state, lastFinish, seededRand(cur.seed));
+  const hit = scene.finish("city", kind, function(){
+    flashEl.classList.remove("left");
     pulse(flashEl, 1, 900);
     SFX.groan();
-    showBanner("GOAL", "Man City score", true, 1700);
+    showBanner("GOAL", "Man City · " + FINISHES.city[kind], true, 1700);
   });
   nextTimer = setTimeout(function(){
     startRun();
     toast("Full time on that run. New attack under way — score: 0");
-  }, 3200);
+  }, Math.max(3200, (hit - now() + 2) * 1000));
 }
 
 /* ================= settings UI ================= */
@@ -1642,8 +1920,8 @@ $("setDone").addEventListener("click", function(){
   SFX.click(); readSettingsUI(); closeSheet($("settingsSheet"));
   if (cur && !cur.over){
     renderDots(); renderLives();
-    const p = stageProgress(cur.misses, settings.lives);
-    if (cur.misses > 0 && p !== scene.p) scene.passage(p);
+    const st = stateNow();
+    if (st.poss !== cur.state.poss || st.x !== cur.state.x) swing();
   }
   else { startWord(); }
   toast("Settings saved");
@@ -1797,31 +2075,88 @@ function runSelfTests(){
   t("settings keep category off by id", sanitizeSettings({ cats:{ birds:false } }, cats2).cats, { "food-and-drink":true, birds:false });
   t("settings migrate legacy name key", sanitizeSettings({ cats:{ "food and drink":false } }, cats2).cats, { "food-and-drink":false, birds:true });
   t("stats migrate legacy wins", sanitizeStats({ wins:{ "food and drink":3, birds:2 } }, cats2).wins, { birds:2, "food-and-drink":3 });
-  /* stage mapping: kick-off at 0, shooting chance with one chance left */
-  function stages(lives){ const out = []; for (let k = 0; k <= lives; k++) out.push(Math.round(stageProgress(k, lives) * 1000) / 1000); return out; }
-  t("stages 4 lives", stages(4), [0, 0.333, 0.667, 1, 1]);
-  t("stages 6 lives", stages(6), [0, 0.2, 0.4, 0.6, 0.8, 1, 1]);
-  t("stages 10 lives", stages(10), [0, 0.111, 0.222, 0.333, 0.444, 0.556, 0.667, 0.778, 0.889, 1, 1]);
-  t("stage clamps past the end", stageProgress(12, 6), 1);
-  /* formations: eleven a side, keeper first, everyone on the pitch */
+  /* revealed fraction counts distinct letters, ignoring digits and punctuation */
+  t("revealed none", revealedFraction("MAMBO NO 5", new Set()), 0);
+  t("revealed by distinct letter", revealedFraction("MAMBO NO 5", new Set(["M","Z"])), 0.2);
+  t("revealed all", revealedFraction("MAMBO NO 5", new Set(["M","A","B","O","N"])), 1);
+  /* match state: correct letters push Arsenal to x=0, misses push City to x=105 */
+  function ms(r, m, l, seed){ const s = matchState(r, m, l, seed || 0); return [s.poss, Math.round(s.x * 10) / 10, s.shot]; }
+  t("kick-off is level at halfway", ms(0, 0, 6).slice(1), [52.5, null]);
+  t("kick-off possession comes from the word seed", [ms(0, 0, 6, 2)[0], ms(0, 0, 6, 3)[0]], ["city", "ars"]);
+  t("a correct letter gives Arsenal the ball in City's half", ms(0.25, 0, 6), ["ars", 44, null]);
+  t("a miss gives City the ball in Arsenal's half", ms(0, 1, 4), ["city", 61, null]);
+  t("letters and misses ebb and flow", [ms(0.5, 1, 6)[0], ms(0.5, 4, 6)[0], ms(0.75, 4, 6)[0]], ["ars", "city", "ars"]);
+  t("full word is Arsenal's shot", ms(1, 0, 6), ["ars", 0, "ars"]);
+  t("full word on the last life is still Arsenal's shot", ms(1, 9, 10), ["ars", 0, "ars"]);
+  t("final miss is City's shot (4 lives)", ms(0, 4, 4), ["city", 105, "city"]);
+  t("final miss is City's shot (10 lives)", ms(0.9, 10, 10), ["city", 105, "city"]);
+  t("last life with nothing revealed: City camped, 10 lives", ms(0, 9, 10), ["city", 83.1, null]);
+  t("last life flagged", [matchState(0.5, 3, 4, 0).lastLife, matchState(0.5, 2, 4, 0).lastLife], [true, false]);
+  t("same inputs, same state", JSON.stringify(matchState(0.4, 2, 7, 99)), JSON.stringify(matchState(0.4, 2, 7, 99)));
+  /* a shot only at the end of a word; until then play stays outside both penalty areas */
+  const shotBad = [];
+  for (let lives = 4; lives <= 10; lives++){
+    for (let n = 1; n <= 14; n++){
+      for (let k = 0; k <= n; k++){
+        for (let m = 0; m <= lives; m++){
+          if (k === n && m === lives) continue; /* unreachable: the solving guess is never a miss */
+          const s = matchState(k / n, m, lives, k * 31 + m);
+          const end = k === n || m >= lives;
+          if ((s.shot !== null) !== end || (!end && !(s.x > 16.5 && s.x < 88.5))) shotBad.push([lives, n, k, m]);
+        }
+      }
+    }
+  }
+  t("shot only at terminal states, lives 4-10", shotBad, []);
+  /* finishes fit where play was when the word ended, and never repeat back to back */
+  function fits(side, st){
+    const seen = new Set();
+    for (let i = 0; i < 40; i++) seen.add(pickFinish(side, st, "", seededRand(i)));
+    return Array.from(seen).sort();
+  }
+  const lastLifeLevel = matchState(0.8, 5, 6, 0), cityCamped = matchState(0, 3, 4, 0);
+  const level = matchState(0.2, 1, 6, 0), arsHigh = matchState(0.8, 0, 6, 0);
+  t("Arsenal win on the last life: counter or long ball", fits("ars", lastLifeLevel), ["counter", "longBall"]);
+  t("Arsenal win with City camped: counter or long ball", fits("ars", cityCamped), ["counter", "longBall"]);
+  t("Arsenal win from even play: through ball or long ball", fits("ars", level), ["longBall", "throughBall"]);
+  t("Arsenal win in the final third: one-two or cut-back", fits("ars", arsHigh), ["cutBack", "oneTwo"]);
+  t("City win after dominating: build-up or corner", fits("city", cityCamped), ["buildUp", "corner"]);
+  t("City win while Arsenal press high: turnover or corner", fits("city", arsHigh), ["corner", "turnover"]);
+  t("City win from even play: corner or turnover", fits("city", level), ["corner", "turnover"]);
+  t("finish never repeats", [0, 0.5, 0.99].map(function(r){ return pickFinish("ars", cityCamped, "counter", function(){ return r; }); }), ["longBall", "longBall", "longBall"]);
+  t("finish never repeats (City)", [0, 0.99].map(function(r){ return pickFinish("city", arsHigh, "turnover", function(){ return r; }); }), ["corner", "corner"]);
+  t("every finish has a play and a caption", ["ars", "city"].every(function(side){
+    return Object.keys(FINISHES[side]).length >= 3 && Object.keys(FINISHES[side]).every(function(k){ return typeof FINISH_PLAYS[k] === "function" && FINISHES[side][k].length > 0; });
+  }), true);
+  /* formations: eleven a side, keeper first, everyone on the pitch, for every state */
   function onPitch(shape){ return shape.every(function(p){ return p[0] >= 0 && p[0] <= 105 && p[1] >= 0 && p[1] <= 68; }); }
   function meanX(shape){ return shape.reduce(function(s, p){ return s + p[0]; }, 0) / shape.length; }
-  const okShapes = [0, 0.25, 0.5, 0.75, 1].every(function(p){
-    const c = cityShape(p, 1), a = arsenalShape(p, 10);
+  function at6(r, m){ return matchState(r, m, 6, 0); }
+  const grid = [];
+  [0, 0.2, 0.5, 0.8, 0.95].forEach(function(r){ for (let m = 0; m < 6; m++) grid.push(at6(r, m)); });
+  t("11 v 11, keepers deepest, all on the pitch", grid.every(function(st){
+    const c = teamShape("city", st), a = teamShape("ars", st);
     return c.length === 11 && a.length === 11 && onPitch(c) && onPitch(a) &&
       c.slice(1).every(function(q){ return q[0] > c[0][0]; }) &&
       a.slice(1).every(function(q){ return q[0] < a[0][0]; });
-  });
-  t("11 v 11, keepers deepest, all on the pitch", okShapes, true);
-  t("City advance as progress grows", meanX(cityShape(0, 0)) < meanX(cityShape(0.5, 0)) && meanX(cityShape(0.5, 0)) < meanX(cityShape(1, 0)), true);
-  t("Arsenal drop deeper as City advance", meanX(arsenalShape(0, 34)) < meanX(arsenalShape(1, 34)), true);
-  t("City 4-3-3 lines at kick-off", cityShape(0, 0).map(function(p){ return p[0]; }), [5, 22, 17, 17, 22, 30, 38, 38, 48, 50, 48]);
-  t("Arsenal 4-4-2 lines", arsenalShape(0, 34).map(function(p){ return p[0]; }), [103, 64.5, 66, 66, 64.5, 52, 53, 53, 52, 40, 40]);
-  t("striker inside 20m at the shooting chance", 105 - cityShape(1, 0)[9][0] <= 20, true);
-  t("Arsenal slide towards the ball", arsenalShape(0.5, 10)[2][1] < arsenalShape(0.5, 58)[2][1], true);
-  t("carrier is the striker at the chance", carrierFor(1, false), 9);
-  t("carrier is a centre-back at kick-off", [carrierFor(0, false), carrierFor(0, true)], [2, 3]);
-  const sh = cityShape(0.5, 0);
+  }), true);
+  t("defending back four stays goal-side of the ball", grid.every(function(st){
+    const d = teamShape(st.poss === "city" ? "ars" : "city", st).slice(1, 5);
+    return d.every(function(q){ return st.poss === "city" ? q[0] > st.x : q[0] < st.x; });
+  }), true);
+  t("misses push City up the pitch", meanX(teamShape("city", at6(0, 1))) < meanX(teamShape("city", at6(0, 3))) && meanX(teamShape("city", at6(0, 3))) < meanX(teamShape("city", at6(0, 5))), true);
+  t("letters push Arsenal up the pitch", meanX(teamShape("ars", at6(0.2, 0))) > meanX(teamShape("ars", at6(0.5, 0))) && meanX(teamShape("ars", at6(0.5, 0))) > meanX(teamShape("ars", at6(0.8, 0))), true);
+  t("City drop back when Arsenal win the ball", meanX(teamShape("city", at6(0.5, 2))) < meanX(teamShape("city", at6(0, 2))), true);
+  t("City 4-3-3 kick-off lines", CITY_START.map(function(p){ return p[0]; }), [5, 22, 17, 17, 22, 30, 38, 38, 48, 50, 48]);
+  t("Arsenal 4-4-2 kick-off lines", ARS_START.map(function(p){ return 105 - p[0]; }), [103, 64.5, 66, 66, 64.5, 52, 53, 53, 52, 40, 40]);
+  const near = matchState(0.5, 0, 6, 0), far = Object.assign({}, near, { y:58 });
+  near.y = 10;
+  t("defending side slides towards the ball", teamShape("city", near)[2][1] < teamShape("city", far)[2][1], true);
+  t("carrier is an outfield non-striker of the side in possession", grid.every(function(st){
+    const i = carrierFor(teamShape(st.poss, st), st, ROLES[st.poss].st);
+    return i > 0 && ROLES[st.poss].st.indexOf(i) === -1;
+  }), true);
+  const sh = teamShape("city", at6(0, 3));
   const relays = [0, 0.3, 0.6, 0.99].map(function(r){ return pickRelay(5, 6, sh, sh[5][0], function(){ return r; }); });
   t("relay never the keeper, passer or receiver", relays.every(function(i){ return i > 0 && i !== 5 && i !== 6; }), true);
   t("relay -1 when nobody fits", pickRelay(1, 2, [[0,0],[10,0],[12,0]], 10, Math.random), -1);
@@ -1835,6 +2170,15 @@ function runSelfTests(){
   t("segment caps runaway velocity", makeSeg(0, 1, { x:0, y:0, vx:100, vy:0 }, [1, 0]).v0[0], 3.2);
   const a1 = evalSeg(seg, 1.999), a2 = evalSeg(seg, 2.001);
   t("segment is continuous", Math.abs(a1.x - a2.x) < 0.05 && Math.abs(a1.y - a2.y) < 0.05, true);
+  /* ball: a pass scheduled before the passer's run changes still leaves from their feet */
+  const saved = [B.events, B.holder, scene.busyUntil], tp = now() + 5;
+  const pa = { dir:1, segs:[restSeg([30, 30])] }, pr = { dir:1, segs:[restSeg([50, 30])] };
+  B.events = [{ t:-1e9, kind:"own", who:pa }];
+  passBall(pr, tp);
+  moveTo(pa, [36, 38], tp - 2, 1, null, true);
+  const kb = ballAt(tp - 1e-3), ka = ballAt(tp + 1e-3);
+  t("kick leaves from the passer's new spot", Math.hypot(kb[0] - ka[0], kb[1] - ka[1]) < 0.1, true);
+  B.events = saved[0]; B.holder = saved[1]; scene.busyUntil = saved[2];
   if (failures.length){
     console.error("SELFTEST FAIL (" + failures.length + "/" + n + "):\n" + failures.join("\n"));
   } else {
