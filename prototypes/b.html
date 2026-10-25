@@ -31,7 +31,9 @@ body{
 }
 button{font:inherit;color:inherit;touch-action:manipulation}
 button:focus-visible{outline:3px solid var(--pink-500);outline-offset:2px}
-#app{max-width:480px;margin:0 auto;padding:8px 14px 12px;min-height:calc(100dvh - var(--sat) - var(--sab));display:flex;flex-direction:column}
+/* one portrait screen: everything keeps its size and the scene shrinks to fit what is left */
+#app{max-width:480px;margin:0 auto;padding:6px 14px 8px;height:calc(100vh - var(--sat) - var(--sab));height:calc(100dvh - var(--sat) - var(--sab));display:flex;flex-direction:column}
+#app>*{flex-shrink:0}
 /* ---------- header ---------- */
 header.top{display:flex;align-items:center;gap:6px;min-height:44px}
 .logo{display:flex;align-items:center;gap:8px;margin-right:auto;font-size:19px;font-weight:800;letter-spacing:-0.02em;line-height:1.05}
@@ -46,7 +48,7 @@ header.top{display:flex;align-items:center;gap:6px;min-height:44px}
 .iconbtn .off,.iconbtn[aria-pressed="false"] .on{display:none}
 .iconbtn[aria-pressed="false"] .off{display:block}
 /* ---------- mode tabs: segmented control with a sliding pill ---------- */
-.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;margin-top:8px;padding:4px;border-radius:16px;background:#f7d8e5}
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;margin-top:6px;padding:4px;border-radius:16px;background:#f7d8e5}
 .seg .pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:12px;background:var(--card);box-shadow:var(--lift);transition:transform 280ms var(--ease-out)}
 .seg[data-mode="daily"] .pill{transform:translateX(100%)}
 .tab{
@@ -57,8 +59,10 @@ header.top{display:flex;align-items:center;gap:6px;min-height:44px}
 .tab[aria-selected="true"]{color:var(--ink)}
 .tab .sub{display:block;font-size:11px;font-weight:700;color:var(--ink-soft)}
 /* ---------- stage: a window onto one tall world the camera can pan ---------- */
+#stagebox{flex:0 1 calc((min(100vw - var(--sal) - var(--sar),480px) - 28px)*0.65);min-height:0;margin-top:8px;container-type:size;display:flex;justify-content:center}
+#app>#stagebox{flex-shrink:1}
 #stage{
-  position:relative;margin-top:10px;aspect-ratio:400/260;border-radius:24px;overflow:hidden;isolation:isolate;
+  position:relative;width:min(100cqw,100cqh*400/260);aspect-ratio:400/260;border-radius:24px;overflow:hidden;isolation:isolate;
   background:#ffe9f1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 12px 28px -16px rgba(140,42,81,.5);
 }
 #cam{position:absolute;inset:0}
@@ -72,12 +76,12 @@ header.top{display:flex;align-items:center;gap:6px;min-height:44px}
 .pip.used{opacity:.2;transform:scale(0.7)}
 #treatchip{gap:4px;padding:4px 11px 4px 8px;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
 /* ---------- word ---------- */
-#meta{display:flex;align-items:center;gap:6px;margin:12px 2px 0;min-height:26px}
+#meta{display:flex;align-items:center;gap:6px;margin:8px 2px 0;min-height:26px}
 .chip{font-size:12px;font-weight:800;border-radius:999px;padding:5px 11px;letter-spacing:.01em}
 #catpill{background:var(--pink-600);color:#fff}
 #diffpill{background:var(--card);color:var(--ink-soft);box-shadow:inset 0 0 0 1.5px var(--pink-200)}
 #streakpill{margin-left:auto;font-size:13px;font-weight:800;color:var(--pink-700);font-variant-numeric:tabular-nums}
-#word{--tile:38px;--gap:5px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 14px;margin-top:12px;min-height:calc(var(--tile)*1.22)}
+#word{--tile:38px;--gap:5px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 14px;margin-top:10px;min-height:calc(var(--tile)*1.22)}
 .wgrp{display:flex;gap:var(--gap)}
 .tile{
   position:relative;width:var(--tile);height:calc(var(--tile)*1.22);border-radius:calc(var(--tile)*.28);
@@ -89,14 +93,15 @@ header.top{display:flex;align-items:center;gap:6px;min-height:44px}
 .tile .ch{position:relative;z-index:1}
 .tile.miss .ch{color:var(--pink-600)}
 .tile.punct{background:transparent;box-shadow:none;color:var(--ink-soft)}
-#hinttext{min-height:20px;margin:8px 4px 0;text-align:center;font-size:14px;font-style:italic;color:var(--ink-soft);opacity:0;transform:translateY(4px);transition:opacity 220ms ease,transform 220ms var(--ease-out)}
+#hinttext{position:absolute;left:0;right:0;bottom:10px;width:fit-content;max-width:calc(100% - 20px);margin:0 auto;padding:6px 12px;border-radius:14px;background:rgba(255,255,255,.92);box-shadow:var(--lift);pointer-events:none;
+  text-align:center;font-size:13.5px;line-height:1.3;font-style:italic;color:var(--ink-soft);opacity:0;transform:translateY(4px);transition:opacity 220ms ease,transform 220ms var(--ease-out)}
 #hinttext.show{opacity:1;transform:none}
 #empty{padding:14px 10px 0;text-align:center;color:var(--ink-soft);font-weight:700}
 /* ---------- keyboard: raised keys, the face presses into its base ---------- */
 .bottom{margin-top:auto;padding-top:8px}
 #kbd{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 #kbd .key:nth-child(22){grid-column-start:2}
-.key{position:relative;height:47px;border:0;padding:0;border-radius:12px;background:var(--pink-300);cursor:pointer}
+.key{position:relative;height:clamp(40px,6.2dvh,52px);border:0;padding:0;border-radius:12px;background:var(--pink-300);cursor:pointer}
 .key span{
   position:absolute;inset:0 0 4px;display:grid;place-items:center;border-radius:12px;background:var(--card);
   font-size:19px;font-weight:800;color:var(--ink);transition:transform 110ms var(--ease-out);
@@ -108,7 +113,7 @@ header.top{display:flex;align-items:center;gap:6px;min-height:44px}
 .key.wrong span{background:#f8e9ef;color:#865069;transform:translateY(3px)}
 .key:disabled{cursor:default}
 .key:disabled:not(.right):not(.wrong) span{opacity:.5}
-.actions{display:flex;gap:8px;margin-top:10px}
+.actions{display:flex;gap:8px;margin-top:8px}
 .btn{
   flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:16px;min-height:48px;
   font-size:15px;font-weight:800;cursor:pointer;transition:transform 140ms var(--ease-out);
@@ -178,12 +183,14 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
 .pig .m-happy,.pig .m-worried,.pig .m-scared,.pig .m-joy,.pig .hz,.pig .sw,.pig .hb{opacity:0;transition:opacity 180ms ease}
 .pig[data-mood="happy"] .m-happy,.pig[data-mood="worried"] .m-worried,.pig[data-mood="scared"] .m-scared,.pig[data-mood="joy"] .m-joy,
 .pig[data-harness="on"] .hz,.pig[data-sweat="on"] .sw,.pig[data-hay="on"] .hb{opacity:1}
-.pig .hat{opacity:0;transform:translateY(-10px);transition:opacity 200ms ease,transform 380ms var(--ease-back)}
-.pig[data-hat="on"] .hat{opacity:1;transform:translateY(0)}
+.pig .prop{opacity:0;transform:translateY(-10px);transition:opacity 200ms ease,transform 380ms var(--ease-back)}
+.pig .p-carrot,.pig .p-dandelion{transform:translateY(6px)}
+.pig .p-bird{transform:translate(64px,-56px) rotate(16deg);transition:opacity 160ms ease,transform 680ms var(--ease-out)}
+.pig[data-prop="hat"] .p-hat,.pig[data-prop="shades"] .p-shades,.pig[data-prop="carrot"] .p-carrot,.pig[data-prop="dandelion"] .p-dandelion,.pig[data-prop="bird"] .p-bird{opacity:1;transform:none}
 .pig[data-dangle="on"] .feet{animation:dangle 900ms ease-in-out infinite alternate}
 @keyframes dangle{from{transform:translateY(0)}to{transform:translateY(1.6px)}}
 .blink{transform-box:fill-box;transform-origin:center;animation:blink 5.2s infinite}
-#pixieArt .blink{animation-delay:-2.4s}
+#buddyArt .blink{animation-delay:-2.4s}
 @keyframes blink{0%,95%,100%{transform:scaleY(1)}97.5%{transform:scaleY(0.12)}}
 .tremble{animation:tremble 130ms linear infinite}
 @keyframes tremble{0%,100%{transform:translateX(0)}25%{transform:translateX(-0.8px)}75%{transform:translateX(0.8px)}}
@@ -197,7 +204,7 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
 }
 @media (prefers-reduced-motion:reduce){
   .blink,.tremble,.drip,.cloud,.pig[data-dangle="on"] .feet{animation:none}
-  .pig .hat,#hinttext{transform:none}
+  .pig .prop,#hinttext{transform:none}
   .seg .pill{transition:none}
   .card{transform:none;opacity:0;transition:opacity 220ms ease}
   .sheet.open .card{opacity:1;transition-duration:220ms}
@@ -223,7 +230,7 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
     <button class="tab" id="tabDaily" role="tab" aria-selected="false">Daily puzzle<span class="sub" id="dailySub">one a day</span></button>
   </div>
 
-  <section id="stage" aria-label="Guinea pig scene">
+  <div id="stagebox"><section id="stage" aria-label="Guinea pig scene">
     <div id="cam">
       <svg id="bg" viewBox="0 0 400 420" aria-hidden="true">
         <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd2e3"/><stop offset=".5" stop-color="#ffe9f0"/><stop offset="1" stop-color="#e4f1fb"/></linearGradient></defs>
@@ -255,9 +262,9 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
         <path d="M0 642C90 634 210 648 400 636V700H0z" fill="#93d495"/>
         <g stroke="#b88355" stroke-linecap="round" fill="none"><path d="M28 616V644M76 614V644M124 616V644" stroke-width="5"/><path d="M24 624H130M24 636H130" stroke-width="4"/></g>
         <g fill="#ff9fc3"><circle cx="160" cy="652" r="3"/><circle cx="214" cy="660" r="2.6"/></g>
-        <!-- Pixie's log hide -->
+        <!-- the onlooker's log hide -->
         <ellipse cx="80" cy="190" rx="7" ry="20" fill="#4f3220"/>
-        <g transform="translate(0 212)"><g id="pixie" style="transform:translateX(70px)"><g id="pixieHop"><g id="pixieSquash"><g id="pixieArt" class="pig" data-mood="happy" transform="scale(0.72)"></g></g></g></g></g>
+        <g transform="translate(0 212)"><g id="buddy" style="transform:translateX(56px)"><g id="buddyHop"><g id="buddySquash"><g id="buddyArt" class="pig" data-mood="happy" transform="scale(0.78)"></g></g></g></g></g>
         <path d="M10 168H80V212H10A9 22 0 0 1 10 168z" fill="#b57f55"/>
         <path d="M16 179H70M22 191H62M16 202H72" stroke="#93613d" stroke-width="2" stroke-linecap="round" opacity=".6"/>
         <ellipse cx="80" cy="190" rx="7.5" ry="21" fill="none" stroke="#cf9f70" stroke-width="3"/>
@@ -265,7 +272,7 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
         <!-- hay pile: hidden until the first landing -->
         <g id="hayBack" style="opacity:0">
           <g transform="translate(335 700)"><g id="hayBackSq"><path d="M-72 2C-68-62-40-90 0-98S68-60 70 2z" fill="#e7bd57"/><path d="M-40-70l-8-10M-10-88l-2-12M22-84l8-10M48-60l10-6" stroke="#c99a3a" stroke-width="2.4" stroke-linecap="round"/></g></g>
-          <g transform="translate(282 740)"><g id="pixieHay"><g class="pig" data-mood="joy" id="pixieHayArt" transform="scale(0.72)"></g></g></g>
+          <g transform="translate(282 740)"><g id="hayBuddy"><g class="pig" data-mood="joy" id="hayBuddyArt" transform="scale(0.72)"></g></g></g>
         </g>
         <!-- gallows, built piece by piece -->
         <g id="pDeckBack" style="opacity:0">
@@ -283,7 +290,7 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
           </g>
           <g id="pigPos" style="transform:translate(168px,212px)">
             <ellipse id="pigShadow" rx="24" ry="4" fill="#4a2436" fill-opacity=".14"/>
-            <g id="pigHoist"><g id="pigHop"><g id="pigSquash"><g id="pigShake"><g id="pepperArt" class="pig" data-mood="happy"></g></g></g></g></g>
+            <g id="pigHoist"><g id="pigHop"><g id="pigSquash"><g id="pigShake"><g id="heroArt" class="pig" data-mood="happy"></g></g></g></g></g>
           </g>
         </g></g></g>
         <g id="pDeckFront" style="opacity:0">
@@ -301,14 +308,14 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
       <div id="pips" role="img" aria-label="chances left"></div>
       <div id="treatchip" aria-label="Treats this game"><span aria-hidden="true">🥕</span><b id="treatN">0</b></div>
     </div>
-  </section>
+    <div id="hinttext"></div>
+  </section></div>
 
   <div id="meta">
     <span class="chip" id="catpill">animals</span><span class="chip" id="diffpill">easy</span>
     <span id="streakpill">streak 0</span>
   </div>
   <div id="word" role="img" aria-label="Word"></div>
-  <div id="hinttext"></div>
   <div id="empty" hidden></div>
 
   <div class="bottom">
@@ -366,6 +373,10 @@ const STORE_HAY = "hangman-b:hayseen";
 
 /* Word data lives in the shared #hangman-words JSON block; the page reads words only from it. */
 const WORD_DATA=(()=>{ try{ return JSON.parse(document.getElementById("hangman-words").textContent); }catch(e){ return {version:1,categories:[]}; } })();
+
+/* hay landings after the first reveal; never the same one twice running */
+const LANDINGS=["bounce","hat","friend","carrot","dandelion","shades","bird","veg","sneeze","heart"];
+const NAMES={pepper:"Pepper",pixie:"Pixie"};
 
 /* ============ pure logic (tested by ?selftest) ============ */
 const PigLogic = {
@@ -436,7 +447,13 @@ const PigLogic = {
   /* gallows stage 0..10 for a miss count: 1-9 build and lead up, 10 is the drop; every miss advances at least one step */
   stageFor(m,lives){ return m>=lives?10:Math.round(m*9/(lives-1)); },
   /* which hay landing to play: the first reveal is the classic, later ones vary */
-  landingVariant(seen,rand){ return seen>0?["bounce","hat","pixie"][Math.min(2,Math.floor((rand?rand():Math.random())*3))]:"first"; },
+  landingVariant(seen,last,rand){
+    if(!(seen>0)) return "first";
+    const pool=LANDINGS.filter(v=>v!==last);
+    return pool[Math.min(pool.length-1,Math.floor((rand?rand():Math.random())*pool.length))];
+  },
+  /* who stars this word: the hero is in the gallows scene, the buddy watches from the log */
+  castFor(rand){ const hero=(rand?rand():Math.random())<0.5?"pepper":"pixie"; return {hero,buddy:hero==="pepper"?"pixie":"pepper"}; },
   /* largest tile (20-42px) that fits every word on one line and the whole answer within maxH; words wrap 14px apart, rows 8px apart */
   tileSize(lens,room,gap,maxH){
     for(let t=42;t>20;t--){
@@ -546,6 +563,8 @@ const Snd={
   ping(){ tone(1760,0.3,0,"sine",0.035); tone(2637,0.25,0.02,"sine",0.018); },
   whoosh(){ sweep(900,160,0.85,0,"sine",0.022); },
   flump(){ tone(110,0.22,0,"triangle",0.09); tone(70,0.28,0.02,"sine",0.08); },
+  chirp(){ sweep(2300,3300,0.07,0,"sine",0.025); sweep(2500,3500,0.07,0.11,"sine",0.025); },
+  sneeze(){ sweep(500,1100,0.22,0,"sine",0.02); sweep(1700,260,0.16,0.26,"triangle",0.03); },
   wheek(p){ p=p||1; sweep(900*p,1500*p,0.12,0,"sine",0.045); sweep(1400*p,1100*p,0.14,0.12,"sine",0.045); sweep(950*p,1600*p,0.12,0.3,"sine",0.04); }
 };
 function syncSoundBtn(){
@@ -571,7 +590,7 @@ function todaysEntry(){
 
 function newRound(instant){
   guessed=new Set(); wrongSet=new Set(); wrongCount=0; hintUsed=false; treatsThisGame=0; over=false;
-  sceneReset(instant);
+  sceneReset(instant,PigLogic.castFor());
   const pool=PigLogic.filterEntries(allEntries(),settings);
   const empty=$("empty");
   if(mode==="daily") entry=todaysEntry();
@@ -626,23 +645,37 @@ function pigArt(kind){
   <g class="m-joy"><path d="M-14-29q4-6 8 0M6-29q4-6 8 0" stroke="#2a1520" stroke-width="2.3" fill="none" stroke-linecap="round"/><path d="M-6-18.5q6 8 12 0z" fill="#7a2f48"/><path d="M-3.2-15q3.2 2.6 6.4 0" fill="#f58fab"/></g>
   <g class="sw"><path class="drip" d="M25-47q3.4 5.4 0 7.6q-3.4-2.2 0-7.6z" fill="#b6e2f7" stroke="#78bde0" stroke-width=".8"/></g>
   <g class="hb"><path d="M-9-49l-6-7M1-50l2-9M9-48l7-5" stroke="#d6a640" stroke-width="2" stroke-linecap="round"/></g>
-  <g class="hat"><ellipse cx="0" cy="-47" rx="24" ry="5.5" fill="#efcd70" stroke="#c99a3a" stroke-width="1.2"/><path d="M-12-48C-12-62 12-62 12-48z" fill="#f4d985" stroke="#c99a3a" stroke-width="1.2"/><rect x="-12" y="-52" width="24" height="3.4" fill="#e14e87"/></g>`;
+  <g class="prop p-hat"><ellipse cx="0" cy="-47" rx="24" ry="5.5" fill="#efcd70" stroke="#c99a3a" stroke-width="1.2"/><path d="M-12-48C-12-62 12-62 12-48z" fill="#f4d985" stroke="#c99a3a" stroke-width="1.2"/><rect x="-12" y="-52" width="24" height="3.4" fill="#e14e87"/></g>
+  <g class="prop p-shades"><path d="M-10-23C-21-30-19-40-10-35.5C-1-40 1-30-10-23zM10-23C-1-30 1-40 10-35.5C19-40 21-30 10-23z" fill="#3a1d2b" stroke="#e14e87" stroke-width="2.2" stroke-linejoin="round"/><path d="M-2.5-33h5" stroke="#e14e87" stroke-width="2.2"/><path d="M-15-33q2-2 4-1M5-33q2-2 4-1" stroke="#fff" stroke-width="1.3" opacity=".6" fill="none" stroke-linecap="round"/></g>
+  <g class="prop p-carrot"><path d="M3-17L23.4-39.1Q27.5-38 28.6-32.9z" fill="#f28c28" stroke="#d06a14" stroke-width="1.2" stroke-linejoin="round"/><path d="M12-26l3 2M18-31l3 2" stroke="#d06a14" stroke-width="1.2" stroke-linecap="round"/><path d="M26-36l1-9M26-36l7-5M26-36l-4-7" stroke="#5da271" stroke-width="2.4" stroke-linecap="round"/></g>
+  <g class="prop p-dandelion"><path d="M-3-17Q-16-26-22-44" stroke="#5da271" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M-11-24q-9-3-12 3q7 2 12-3z" fill="#7cc47f"/><g transform="translate(-22 -48)"><circle r="7.5" fill="#ffd23f"/><circle r="7.5" fill="none" stroke="#f5b400" stroke-width="2.2" stroke-dasharray="2 2"/><circle r="3" fill="#f5b400"/></g></g>
+  <g class="prop p-bird"><g transform="translate(5 -50)"><path d="M-2 0l-1.5 3M2 0l1 3" stroke="#e8a93d" stroke-width="1.4" stroke-linecap="round"/><path d="M-8-7l-6-3 1 6z" fill="#6aaee0"/><ellipse cy="-6" rx="8" ry="6.5" fill="#8fc8f0"/><path d="M-4-6q3.5 4 7 0" fill="#6aaee0"/><circle cx="3" cy="-8.5" r="1.3" fill="#2a1520"/><path d="M7.5-8.5l4 1.2-4 1.4z" fill="#e8a93d"/><ellipse cx="4" cy="-4.5" rx="1.8" ry="1.1" fill="#f7a8bf"/></g></g>`;
 }
 
 /* ============ scene: one continuous world moved with WAAPI, transform and opacity only ============ */
-const HOME={x:168,y:212}, TRAP={x:332,y:188}, ROPE=40, HOIST=12, POP_Y=654, PIXIE0=70;
+const HOME={x:168,y:212}, TRAP={x:332,y:188}, ROPE=40, HOIST=12, POP_Y=654;
+const BUDDY={hide:56,peek:94,out:112}; /* translateX into, at and beyond the log mouth */
 const CAM_DOWN="translateY(-62.857%)", BG_DOWN="translateY(-36.667%)"; /* 440 of 700 world units; the sky follows at 0.35x */
 /* each piece's hidden pose: building animates from here to rest, dismantling animates back */
 const HIDDEN={pDeckBack:"translateY(-28px)",pDeckFront:"translateY(-28px)",pPost:"scaleY(0.2)",pBeam:"translateX(-30px) rotate(-8deg)",
   pBrace:"rotate(-60deg)",rope:"scaleY(0.08)",bow:"translateY(3px)",gulp:"scale(0.85)"};
-const MOVERS=["cam","world","bg","pigPos","pigHoist","pigHop","pigSquash","pigShadow","swing","tdL","tdR","pixie","pixieHop","pixieSquash",
-  "pixieHay","hayBack","hayFront","hayBackSq","hayFrontSq"].concat(Object.keys(HIDDEN));
+const MOVERS=["cam","world","bg","pigPos","pigHoist","pigHop","pigSquash","pigShadow","swing","tdL","tdR","buddy","buddyHop","buddySquash",
+  "hayBuddy","hayBack","hayFront","hayBackSq","hayFrontSq"].concat(Object.keys(HIDDEN));
 const SC={stage:0,target:0,queue:[],busy:false,gen:0,speed:1,timers:new Set(),sway:null,down:false,pigHome:true,onLanded:null,moodT:0};
 const pt=(x,y)=>`translate(${x}px,${y}px)`;
 const hopT=(y,r)=>`translate(0px,${y}px) translate(0px,-26px) rotate(${r}deg) translate(0px,26px)`; /* turns about the body, not the feet */
 const moodFor=s=>s>=8?"scared":s>=2?"worried":"happy";
 const D=ms=>Math.round(ms*SC.speed);
-const pepper=()=>$("pepperArt");
+const hero=()=>$("heroArt");
+let cast={hero:"pepper",buddy:"pixie"}, lastLanding="", buddyT=0;
+/* draws whichever pig plays each part; art is only swapped while that part is out of sight */
+function applyCast(c){
+  cast=c;
+  for(const [id,kind] of [["heroArt",c.hero],["buddyArt",c.buddy],["hayBuddyArt",c.buddy]]){
+    const el=$(id); if(el.dataset.kind!==kind){ el.innerHTML=pigArt(kind); el.dataset.kind=kind; }
+  }
+  $("stage").setAttribute("aria-label","Guinea pig scene: "+NAMES[c.hero]+" in the middle, "+NAMES[c.buddy]+" peeking from her log");
+}
 
 function freeze(el){
   const list=el.getAnimations(); if(!list.length) return;
@@ -693,13 +726,13 @@ async function pump(){
 }
 function cancelScene(){
   SC.gen++; SC.queue=[]; SC.busy=false; SC.sway=null;
-  SC.timers.forEach(clearTimeout); SC.timers.clear();
+  SC.timers.forEach(clearTimeout); SC.timers.clear(); clearTimeout(buddyT);
   MOVERS.forEach(id=>freeze($(id)));
   ["strawFx","hearts","dust"].forEach(id=>{ $(id).textContent=""; });
 }
-function setMood(m){ clearTimeout(SC.moodT); pepper().dataset.mood=m; }
+function setMood(m){ clearTimeout(SC.moodT); hero().dataset.mood=m; }
 function flashJoy(){
-  const art=pepper(); if(art.dataset.mood==="joy") return;
+  const art=hero(); if(art.dataset.mood==="joy") return;
   art.dataset.mood="joy"; clearTimeout(SC.moodT);
   SC.moodT=setTimeout(()=>{ if(!over) art.dataset.mood=moodFor(SC.stage); },650);
 }
@@ -707,12 +740,12 @@ function initScene(away){
   for(const id in HIDDEN) pose(id,HIDDEN[id],0);
   pose("tdL","rotate(0deg)"); pose("tdR","rotate(0deg)"); pose("swing","rotate(0deg)");
   pose("pigPos",pt(away?-40:HOME.x,HOME.y),1); pose("pigHoist","translateY(0px)"); pose("pigHop",hopT(0,0)); pose("pigSquash","scale(1,1)"); pose("pigShadow","scale(1)",1);
-  pose("hayBack",null,0); pose("hayFront",null,0); pose("hayBackSq","scale(1,1)"); pose("hayFrontSq","scale(1,1)"); pose("pixieHay","translateY(0px)");
+  pose("hayBack",null,0); pose("hayFront",null,0); pose("hayBackSq","scale(1,1)"); pose("hayFrontSq","scale(1,1)"); pose("hayBuddy","translateY(0px)");
   pose("world","translateY(0%)"); pose("bg","translateY(0%)"); pose("cam","translate(0px,0px)",1);
-  pose("pixie",`translateX(${PIXIE0}px)`); pose("pixieHop",hopT(0,0)); pose("pixieSquash","scale(1,1)");
-  const art=pepper(); Object.assign(art.dataset,{mood:"happy",harness:"",sweat:"",hat:"",hay:"",dangle:""});
+  pose("buddy",`translateX(${BUDDY.hide}px)`); pose("buddyHop",hopT(0,0)); pose("buddySquash","scale(1,1)");
+  const art=hero(); Object.assign(art.dataset,{mood:"happy",harness:"",sweat:"",prop:"",hay:"",dangle:""});
   const p=art.querySelector(".pupils"); p.getAnimations().forEach(a=>a.cancel()); p.style.transform="";
-  $("pixieArt").dataset.mood="happy";
+  Object.assign($("buddyArt").dataset,{mood:"happy",sweat:""});
   $("pigShake").classList.remove("tremble");
   ["strawFx","hearts","dust"].forEach(id=>{ $(id).textContent=""; });
   SC.down=false; SC.pigHome=true; SC.sway=null;
@@ -755,8 +788,31 @@ function hearts(x,y){
     const k=svgEl("g",{},h.parentNode); k.appendChild(h);
     spark(k,[{transform:"translate(0px,6px) scale(0.6)",opacity:0},{transform:`translate(${dx*.3}px,-8px) scale(1.1)`,opacity:1,offset:.3},{transform:`translate(${dx*.6}px,-34px) scale(1)`,opacity:0}],{duration:1300,delay:i*120,easing:EASE.out,fill:"both"});
   });
-  const t=svgEl("text",{x:x+34,y:y-2,"font-size":12,"font-weight":800,fill:"#b93a6c","text-anchor":"middle"},$("hearts")); t.textContent="wheek!";
-  spark(t,[{transform:"translate(0px,6px)",opacity:0},{transform:"translate(0px,0px)",opacity:1,offset:.25},{transform:"translate(0px,-14px)",opacity:0}],{duration:1500,easing:EASE.out});
+  bubble("wheek!",x+34,y-2);
+}
+function bubble(txt,x,y){
+  const t=svgEl("text",{x,y,"font-size":12,"font-weight":800,fill:"#b93a6c","text-anchor":"middle"},$("hearts")); t.textContent=txt;
+  spark(t,reduced()?[{opacity:0},{opacity:1,offset:.25},{opacity:0}]
+    :[{transform:"translate(0px,6px)",opacity:0},{transform:"translate(0px,0px)",opacity:1,offset:.25},{transform:"translate(0px,-14px)",opacity:0}],{duration:1500,easing:EASE.out});
+}
+function bigHeart(x,y){
+  const g=svgEl("g",{transform:`translate(${x} ${y})`},$("hearts"));
+  const h=svgEl("path",{d:"M0 9C-18-6-12-21 0-12C12-21 18-6 0 9z",fill:"#e14e87",stroke:"#fff","stroke-width":2},g);
+  spark(h,reduced()?[{opacity:0},{opacity:1,offset:.15},{opacity:1,offset:.8},{opacity:0}]
+    :[{transform:"translateY(10px) scale(0.3)",opacity:0,easing:EASE.back},{transform:"translateY(-4px) scale(1.15)",opacity:1,offset:.22},{transform:"translateY(-8px) scale(1)",offset:.36},
+      {transform:"translateY(-10px) scale(1.12)",offset:.46},{transform:"translateY(-12px) scale(1)",opacity:1,offset:.58},{transform:"translateY(-44px) scale(0.9)",opacity:0}],{duration:2300});
+  bubble("wheek!",x+34,y+6);
+}
+/* a little pile of veg tumbles out of the hay and stays put */
+function tumble(x,y){
+  VEG.slice(0,6).forEach((em,i)=>{
+    const dx=(i%2?0.7:-1)*(22+i*6), g=svgEl("g",{transform:`translate(${x} ${y})`},$("strawFx"));
+    const t=svgEl("text",{"font-size":17,"text-anchor":"middle"},g); t.textContent=em;
+    const end=`translate(${dx}px,${36-i}px) rotate(${dx*2}deg)`;
+    t.animate(reduced()?[{opacity:0,transform:end},{opacity:1,transform:end}]
+      :[{transform:"translate(0px,0px) rotate(0deg)",opacity:0,easing:EASE.out},{transform:`translate(${dx*.5}px,-38px) rotate(${dx}deg)`,opacity:1,offset:.4,easing:EASE.fall},{transform:end,opacity:1}],
+      {duration:reduced()?240:780,delay:i*80,fill:"both"});
+  });
 }
 
 /* --- pig moves --- */
@@ -803,7 +859,30 @@ function dismantle(){
   });
   return last;
 }
-function pixiePeek(n){ anim($("pixie"),[{transform:`translateX(${PIXIE0+Math.min(n,6)*6}px)`}],{duration:520,easing:EASE.out}); }
+/* --- the onlooker: peeks from the log, ducks back now and then, cheers hits and frets at misses --- */
+const buddyTo=(x,ms,ease)=>anim($("buddy"),[{transform:`translateX(${x}px)`}],{duration:ms,easing:ease||EASE.out});
+function buddyRest(ms){
+  clearTimeout(buddyT);
+  buddyT=setTimeout(()=>{
+    if(over||SC.down) return;
+    Object.assign($("buddyArt").dataset,{mood:moodFor(SC.target),sweat:""});
+    buddyTo(BUDDY.peek,520,EASE.back); buddyIdle();
+  },ms);
+}
+function buddyIdle(){
+  if(reduced()) return;
+  buddyT=setTimeout(()=>{ if(over||SC.down) return; buddyTo(BUDDY.hide+6,340,EASE.inOut); buddyRest(800+Math.random()*900); },5000+Math.random()*5000);
+}
+function buddyCheer(){
+  $("buddyArt").dataset.mood="joy";
+  buddyTo(BUDDY.out,360); popcorn("buddy"); buddyRest(1100);
+}
+function buddyWorry(){
+  Object.assign($("buddyArt").dataset,{mood:SC.target>=8?"scared":"worried",sweat:"on"});
+  buddyTo(BUDDY.peek-6,260,EASE.out);
+  anim($("buddySquash"),[{transform:"scale(1,1)"},{transform:"scale(1.06,0.92)",offset:.3},{transform:"scale(1,1)"}],{duration:420,easing:"ease-in-out"});
+  buddyRest(1300);
+}
 
 /* --- the miss sequence: 1-5 build the gallows, 6-9 lead the pig up, 10 is the drop --- */
 const STEP=[null,
@@ -846,7 +925,7 @@ const STEP=[null,
     await done(walk(252,188,TRAP.x,TRAP.y,D(620)));
   },
   async()=>{ /* 7 padded harness on; the bow clips to its ring, well clear of the neck */
-    pepper().dataset.harness="on";
+    hero().dataset.harness="on";
     await wait(D(240));
     anim($("bow"),[{transform:`translateY(${ROPE}px) scale(1.3)`},{transform:`translateY(${ROPE}px) scale(1)`}],{duration:D(280),easing:EASE.back});
     Snd.click(); $("pigShake").classList.add("tremble");
@@ -858,19 +937,19 @@ const STEP=[null,
     anim($("rope"),[{transform:"scaleY(1)"},{transform:`scaleY(${(ROPE-HOIST)/ROPE})`}],o);
     anim($("bow"),[{transform:`translateY(${ROPE}px)`},{transform:`translateY(${ROPE-HOIST}px)`}],o);
     anim($("pigShadow"),[{transform:"scale(1)",opacity:1},{transform:"scale(0.7)",opacity:.55}],o);
-    Snd.creak(); pepper().dataset.dangle="on";
+    Snd.creak(); hero().dataset.dangle="on";
     await done(anim($("pigHoist"),[{transform:"translateY(0px)"},{transform:`translateY(${-HOIST}px)`}],o));
     startSway();
   },
   async()=>{ /* 9 gulp */
-    pepper().dataset.sweat="on"; Snd.gulp();
+    hero().dataset.sweat="on"; Snd.gulp();
     anim($("gulp"),[{transform:HIDDEN.gulp,opacity:0},{transform:"scale(1)",opacity:1}],{duration:D(260),easing:EASE.back});
     anim($("pigSquash"),[{transform:"scale(1,1)"},{transform:"scale(1.04,0.95)",offset:.4},{transform:"scale(1,1)"}],{duration:D(360)});
     later(1500,()=>anim($("gulp"),[{transform:"scale(0.95)",opacity:0}],{duration:220,easing:"ease"}));
     await wait(D(520));
   },
   async()=>{ /* 10 the drop */
-    const v=PigLogic.landingVariant(hayCount()), art=pepper(), pos=$("pigPos"), sq=$("pigSquash"), hop=$("pigHop");
+    const v=lastLanding=PigLogic.landingVariant(hayCount(),lastLanding), art=hero(), pos=$("pigPos"), sq=$("pigSquash"), hop=$("pigHop");
     if(reduced()) return landQuietly(v);
     await done(stopSway());
     art.dataset.dangle=""; setMood("scared");
@@ -917,15 +996,30 @@ const STEP=[null,
     anim($("cam"),[0,3,-2,1,0].map(y=>({transform:`translate(0px,${y}px)`})),{duration:280});
     if(bounce) later(680,()=>{ anim($("hayBackSq"),squash(.5),{duration:480,easing:EASE.out}); anim($("hayFrontSq"),squash(.5),{duration:480,easing:EASE.out}); straws(335,634,6); Snd.flump(); });
     await wait(bounce?1000:780);
-    Object.assign(art.dataset,{hay:"on",sweat:"",hat:v==="hat"?"on":""}); /* changed while buried in the hay */
+    Object.assign(art.dataset,{hay:"on",sweat:"",prop:BURIED.includes(v)?v:""}); /* changed while buried in the hay */
     setMood("joy");
     const pop=anim(pos,[{transform:pt(335,714)},{transform:pt(335,POP_Y)}],{duration:460,easing:EASE.back});
-    Snd.wheek(); hearts(335,POP_Y-60);
-    if(v==="pixie") later(420,()=>{ anim($("pixieHay"),[{transform:"translateY(0px)"},{transform:"translateY(-66px)"}],{duration:460,easing:EASE.back}); Snd.wheek(1.2); });
+    Snd.wheek(); if(v!=="heart") hearts(335,POP_Y-60);
+    flourish(v);
     await done(pop);
     landed();
   }
 ];
+/* what follows the pop for each landing; also runs, calmly, under reduced motion */
+const BURIED=["hat","carrot","dandelion"]; /* props she pops up already holding or wearing */
+function flourish(v){
+  const art=hero(), sq=$("pigSquash"), nudge=k=>[{transform:"scale(1,1)"},{transform:`scale(${1+.05*k},${1-.06*k})`},{transform:"scale(1,1)"}];
+  if(v==="friend") later(420,()=>{ anim($("hayBuddy"),[{transform:"translateY(0px)"},{transform:"translateY(-66px)"}],{duration:460,easing:EASE.back}); Snd.wheek(1.2); });
+  if(v==="shades") later(560,()=>{ art.dataset.prop=v; later(300,Snd.ping); });
+  if(v==="bird") later(420,()=>{ art.dataset.prop=v; later(600,()=>{ Snd.chirp(); anim(sq,nudge(1),{duration:260}); }); });
+  if(v==="carrot"||v==="dandelion") for(let i=0;i<4;i++) later(600+i*240,()=>{ Snd.crunch(); anim(sq,nudge(.7),{duration:200}); });
+  if(v==="veg") later(380,()=>{ tumble(335,646); Snd.flump(); });
+  if(v==="sneeze") later(640,()=>{
+    anim(sq,[{transform:"scale(1,1)"},{transform:"scale(0.94,1.08)",offset:.55},{transform:"scale(1.14,0.86)",offset:.7},{transform:"scale(1,1)"}],{duration:760,easing:EASE.out});
+    later(500,()=>{ straws(335,612,18); bubble("atchoo!",372,596); Snd.sneeze(); });
+  });
+  if(v==="heart") later(320,()=>{ bigHeart(335,POP_Y-64); Snd.wheek(1.1); });
+}
 function landed(cut){ if(SC.onLanded){ const f=SC.onLanded; SC.onLanded=null; f(!cut); } }
 function hayCount(){ try{ return Math.max(0,parseInt(localStorage.getItem(STORE_HAY),10)||0); }catch(e){ return 0; } }
 function hayBump(){ try{ localStorage.setItem(STORE_HAY,String(hayCount()+1)); }catch(e){} }
@@ -936,43 +1030,43 @@ async function landQuietly(v){
   pose("swing","rotate(0deg)"); pose("tdL","rotate(90deg)"); pose("tdR","rotate(-90deg)");
   pose("pigPos",pt(335,POP_Y),1); pose("pigHoist","translateY(0px)"); pose("pigHop",hopT(0,0)); pose("pigSquash","scale(1,1)"); pose("pigShadow",null,0);
   pose("hayBack",null,1); pose("hayFront",null,1); pose("world",CAM_DOWN); pose("bg",BG_DOWN);
-  if(v==="pixie") pose("pixieHay","translateY(-66px)");
-  Object.assign(pepper().dataset,{mood:"joy",hay:"on",hat:v==="hat"?"on":"",sweat:"",dangle:"",harness:""});
+  Object.assign(hero().dataset,{mood:"joy",hay:"on",prop:BURIED.includes(v)?v:"",sweat:"",dangle:"",harness:""});
   $("pigShake").classList.remove("tremble");
   SC.down=true; hayBump();
   await done(anim($("cam"),[{opacity:1}],{duration:320}));
-  Snd.wheek(); landed();
+  Snd.wheek(); flourish(v); landed();
 }
 /* new round: dismantle, pan back up if we fell, and trot the pig back in */
-function sceneReset(instant){
-  const away=!SC.pigHome, down=SC.down;
+function sceneReset(instant,next){
+  const away=!SC.pigHome, down=SC.down, swap=next.hero!==cast.hero;
   cancelScene(); SC.stage=0; SC.target=0; landed(true); /* show any pending loss message now, without the landing */
-  if(instant){ initScene(false); return; }
+  if(instant){ applyCast(next); initScene(false); buddyRest(500); return; }
   enqueue(async()=>{
     setMood("happy"); $("pigShake").classList.remove("tremble");
-    Object.assign(pepper().dataset,{sweat:"",dangle:""});
-    if(reduced()&&(down||away)){
+    Object.assign(hero().dataset,{sweat:"",dangle:""});
+    if(reduced()&&(down||away||swap)){
       await done(anim($("cam"),[{opacity:0}],{duration:200}));
-      initScene(false);
+      applyCast(next); initScene(false); buddyRest(0);
       await done(anim($("cam"),[{opacity:1}],{duration:260}));
       return;
     }
     let last=dismantle();
-    anim($("pixie"),[{transform:`translateX(${PIXIE0}px)`}],{duration:520,easing:EASE.inOut});
+    buddyTo(BUDDY.hide,420,EASE.inOut); const duck=wait(420); /* timed, not awaited: a quick guess cheers or frets and cancels the duck */
     if(away){ const f=anim($("pigPos"),[{opacity:0}],{duration:200,easing:"ease"}); last=last||f; }
+    else if(swap){ SC.pigHome=false; await Promise.all([done(walk(HOME.x,HOME.y,-40,HOME.y,720,true,EASE.inOut)),done(last)]); last=null; } /* trots off so the other pig can star */
     if(down){
       anim($("bg"),[{transform:"translateY(0%)"}],{duration:760,easing:EASE.inOut});
       last=anim($("world"),[{transform:"translateY(0%)"}],{duration:760,easing:EASE.inOut});
     }
-    await done(last);
-    initScene(away);
-    if(away){ SC.pigHome=false; await done(walk(-40,HOME.y,HOME.x,HOME.y,820,true,EASE.out)); SC.pigHome=true; }
+    await Promise.all([done(last),duck]);
+    applyCast(next); initScene(away||swap); buddyRest(160);
+    if(away||swap){ SC.pigHome=false; await done(walk(-40,HOME.y,HOME.x,HOME.y,820,true,EASE.out)); SC.pigHome=true; }
   });
 }
 function sceneWin(){
   cancelScene();
   enqueue(async()=>{
-    const art=pepper();
+    const art=hero();
     setMood("joy"); Object.assign(art.dataset,{sweat:"",dangle:""}); $("pigShake").classList.remove("tremble");
     if(!SC.pigHome){
       if(art.dataset.harness==="on"){ /* unclip: the rope retracts and the pig is set down */
@@ -987,10 +1081,10 @@ function sceneWin(){
       await walkHome();
     }
     dismantle();
-    $("pixieArt").dataset.mood="joy";
-    anim($("pixie"),[{transform:"translateX(118px)"}],{duration:560,easing:EASE.out});
+    $("buddyArt").dataset.mood="joy";
+    anim($("buddy"),[{transform:"translateX(118px)"}],{duration:560,easing:EASE.out}); /* all the way out of the log to join in */
     await wait(220);
-    for(let i=0;i<3;i++){ popcorn("pixie"); await done(popcorn("pig")); }
+    for(let i=0;i<3;i++){ popcorn("buddy"); await done(popcorn("pig")); }
   });
 }
 
@@ -1001,7 +1095,7 @@ function treatFly(fromEl){
     if(!reduced()) $("treatchip").animate([{transform:"scale(1.18)"},{transform:"scale(1)"}],{duration:260,easing:EASE.out});
   };
   if(reduced()||!fromEl){ bump(); return; }
-  const a=fromEl.getBoundingClientRect(), b=pepper().getBoundingClientRect();
+  const a=fromEl.getBoundingClientRect(), b=hero().getBoundingClientRect();
   const sx=a.left+a.width/2-12, sy=a.top+a.height/2-12, tx=b.left+b.width/2-12, ty=b.top+b.height*.6-12, dy=ty-sy;
   const el=document.createElement("div"); el.className="fly"; el.innerHTML="<i></i>";
   el.firstChild.textContent=VEG[(treatsThisGame-1)%VEG.length];
@@ -1038,7 +1132,7 @@ function buildWord(){
   const longest=Math.max(...up.split(" ").map(s=>s.length)), gap=longest>9?3:5;
   const room=Math.min(w.clientWidth||360,452);
   w.style.setProperty("--gap",gap+"px");
-  w.style.setProperty("--tile",PigLogic.tileSize(up.split(" ").map(s=>s.length),room,gap,112)+"px");
+  w.style.setProperty("--tile",PigLogic.tileSize(up.split(" ").map(s=>s.length),room,gap,Math.min(112,Math.round(innerHeight*.13)))+"px");
   let grp=null, n=0;
   pre.forEach((fixed,i)=>{
     if(fixed===" "){ grp=null; return; }
@@ -1141,14 +1235,14 @@ function guess(L){
     guessed.add(L); Snd.right();
     treatsThisGame++; stats.treats=(stats.treats||0)+1;
     syncKeys(); keyFeedback(L,true); revealLetter(L);
-    treatFly(keyEl(L)); pixiePeek(guessed.size); flashJoy();
+    treatFly(keyEl(L)); buddyCheer(); flashJoy();
     say(L+" is in the word.");
     if(treatsThisGame>=10) awardBadge("veg10");
     if(PigLogic.isWon(entry,guessed)) finish(true);
   } else {
     wrongSet.add(L); wrongCount++; Snd.wrong();
     syncKeys(); keyFeedback(L,false); renderPips();
-    sceneTo(PigLogic.stageFor(wrongCount,settings.lives));
+    sceneTo(PigLogic.stageFor(wrongCount,settings.lives)); buddyWorry();
     say("No "+L+". "+(settings.lives-wrongCount)+" chances left.");
     if(PigLogic.isLost(wrongCount,settings.lives)) finish(false);
   }
@@ -1187,8 +1281,8 @@ function finish(won){
   } else {
     if(mode==="daily"){ /* daily streak survives a loss, free streak resets */ }
     else { stats.streak=0; }
-    const w=entry.w;
-    SC.onLanded=soft=>toast("The word was "+w+(soft?" — Pepper landed softly and is very pleased 🐹":""));
+    const w=entry.w, name=NAMES[cast.hero];
+    SC.onLanded=soft=>toast("The word was "+w+(soft?" — "+name+" landed softly and is very pleased 🐹":""));
     say("Out of chances. The word was "+w+".");
     revealAnswer();
   }
@@ -1334,14 +1428,14 @@ function runSelfTest(){
   ev("stage 10 lives",()=>[0,1,2,3,4,5,6,7,8,9,10].map(m=>PigLogic.stageFor(m,10)),[0,1,2,3,4,5,6,7,8,9,10]);
   ev("stage rises every miss, all lives",()=>{ for(let L=4;L<=10;L++) for(let m=1;m<=L;m++) if(PigLogic.stageFor(m,L)<=PigLogic.stageFor(m-1,L)) return L+":"+m; return "ok"; },"ok");
   ev("stage past lives stays dropped",()=>PigLogic.stageFor(9,6),10);
-  ev("first landing is the classic",()=>PigLogic.landingVariant(0,()=>0.5),"first");
+  ev("first landing is the classic",()=>PigLogic.landingVariant(0,"",()=>0.5),"first");
   const rs=Array.from({length:50},(_,i)=>i/50);
   ev("at least eight later landings",()=>new Set(rs.map(r=>PigLogic.landingVariant(3,"",()=>r))).size>=8,true);
   ev("later landings never repeat the last",()=>["bounce","hat","friend","sneeze"].every(last=>rs.every(r=>{ const v=PigLogic.landingVariant(3,last,()=>r); return v&&v!==last&&v!=="first"; })),true);
-  ev("every later landing still reachable after one",()=>new Set(rs.map(r=>PigLogic.landingVariant(3,"hat",()=>r))).size,new Set(rs.map(r=>PigLogic.landingVariant(3,"",()=>r))).size-1);
+  ev("every other landing still reachable after one",()=>[...new Set(rs.map(r=>PigLogic.landingVariant(3,"hat",()=>r)))].sort(),LANDINGS.filter(v=>v!=="hat").sort());
   ev("cast: Pepper reachable",()=>PigLogic.castFor(()=>0),{hero:"pepper",buddy:"pixie"});
   ev("cast: Pixie reachable",()=>PigLogic.castFor(()=>0.99),{hero:"pixie",buddy:"pepper"});
-  ev("onlooker on screen is the other pig",()=>["pepper","pixie"].map(k=>{ applyCast({hero:k,buddy:k==="pepper"?"pixie":"pepper"}); return $("heroArt").dataset.kind+"/"+$("buddyArt").dataset.kind+"/"+$("hayBuddyArt").dataset.kind; }).concat(applyCast(cast)||[]),["pepper/pixie/pixie","pixie/pepper/pepper"]);
+  ev("onlooker on screen is the other pig",()=>{ const prev=cast; return ["pepper","pixie"].map(k=>{ applyCast({hero:k,buddy:k==="pepper"?"pixie":"pepper"}); const r=$("heroArt").dataset.kind+"/"+$("buddyArt").dataset.kind+"/"+$("hayBuddyArt").dataset.kind; applyCast(prev); return r; }); },["pepper/pixie/pixie","pixie/pepper/pepper"]);
   ev("game fits one screen without scrolling",()=>document.scrollingElement.scrollHeight<=innerHeight&&$("newBtn").getBoundingClientRect().bottom<=innerHeight,true);
   ev("tile size: short word is full size",()=>PigLogic.tileSize([6],374,5,112),42);
   ev("tile size: long word fits the row",()=>{ const t=PigLogic.tileSize([12],374,3,112); return 12*t+11*3<=374; },true);
@@ -1361,7 +1455,6 @@ function runSelfTest(){
 
 
 /* ============ boot ============ */
-$("pepperArt").innerHTML=pigArt("pepper"); $("pixieArt").innerHTML=pigArt("pixie"); $("pixieHayArt").innerHTML=pigArt("pixie");
 buildKbd(); bind(); syncTabs(); syncSoundBtn(); renderAlbum();
 newRound(true);
 if(new URLSearchParams(location.search).has("selftest")) runSelfTest();
