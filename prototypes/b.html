@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f9a8c9">
+<link rel="icon" href="data:,">
+<title>Piggy Paradise Hangman</title>
+<style>
+:root{
+  --pink-50:#fff5f9; --pink-100:#ffe4ef; --pink-200:#ffc9de; --pink-300:#f9a8c9;
+  --pink-400:#f27ba8; --pink-500:#e14e87; --pink-600:#b93a6c; --pink-700:#8c2a51;
+  --cream:#fffdf7; --ink:#4a2436; --ink-soft:#7c4a5f; --leaf:#5da271; --leaf-dark:#3e7a4f;
+  --gold:#e8a93d; --card:#ffffff;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --ease-in-out:cubic-bezier(0.77,0,0.175,1);
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:linear-gradient(180deg,var(--pink-50) 0%,#fdeef4 45%,#f7e3ee 100%);
+  color:var(--ink); min-height:100dvh; touch-action:manipulation;
+  padding-top:var(--sat); padding-bottom:var(--sab);
+}
+#app{max-width:520px;margin:0 auto;padding:10px 14px calc(14px + var(--sab));min-height:100dvh;display:flex;flex-direction:column}
+/* ---------- header ---------- */
+header.top{display:flex;align-items:center;gap:8px}
+.logo{font-size:22px;font-weight:800;letter-spacing:-0.02em}
+.logo small{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+.iconbtn{
+  margin-left:auto;border:2px solid var(--pink-200);background:var(--card);color:var(--ink);
+  min-width:44px;min-height:44px;border-radius:14px;font-size:20px;cursor:pointer;
+  transition:transform 150ms var(--ease-out),background-color 150ms ease;
+}
+.iconbtn:active{transform:scale(0.93)}
+.iconbtn[aria-pressed="true"]{background:var(--pink-100)}
+/* ---------- mode tabs ---------- */
+.tabs{display:flex;gap:8px;margin:10px 0 4px}
+.tab{
+  flex:1;border:2px solid var(--pink-200);background:#ffffffaa;color:var(--ink-soft);
+  border-radius:16px;min-height:48px;font-size:15px;font-weight:700;cursor:pointer;
+  transition:transform 160ms var(--ease-out),background-color 160ms ease,color 160ms ease,border-color 160ms ease;
+}
+.tab:active{transform:scale(0.97)}
+.tab[aria-selected="true"]{background:var(--pink-500);border-color:var(--pink-500);color:#fff}
+.tab .sub{display:block;font-size:11px;font-weight:600;opacity:.85}
+/* ---------- stage (gallows + pigs) ---------- */
+#stage{
+  position:relative;background:linear-gradient(180deg,#fff 0%,var(--pink-100) 100%);
+  border:2px solid var(--pink-200);border-radius:22px;margin-top:8px;overflow:hidden;
+  min-height:300px;
+}
+#scene{width:100%;height:auto;display:block}
+.haynote{
+  position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:12px;font-weight:700;
+  color:var(--ink-soft);opacity:0;transition:opacity 250ms ease;pointer-events:none;
+}
+.haynote.show{opacity:1}
+.treatrow{display:flex;align-items:center;gap:6px;padding:8px 12px 2px;min-height:40px;flex-wrap:wrap}
+.treatrow .lbl{font-size:12px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em}
+.treat{
+  font-size:24px;line-height:1;display:inline-block;opacity:0;transform:scale(0.5) translateY(8px);
+  transition:opacity 220ms var(--ease-out),transform 280ms var(--ease-out);
+}
+.treat.earned{opacity:1;transform:scale(1) translateY(0)}
+/* ---------- word ---------- */
+#meta{display:flex;align-items:center;gap:8px;margin:10px 2px 0;flex-wrap:wrap}
+#catpill{background:var(--pink-500);color:#fff;font-size:12px;font-weight:800;border-radius:999px;padding:5px 12px;letter-spacing:.02em}
+#diffpill{font-size:12px;font-weight:800;border-radius:999px;padding:5px 12px;border:2px solid var(--pink-200);color:var(--ink-soft)}
+#streakpill{margin-left:auto;font-size:13px;font-weight:800;color:var(--pink-600)}
+#word{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px 0 4px;min-height:56px}
+.tile{
+  width:38px;height:50px;border-radius:12px;background:var(--card);border:2px solid var(--pink-200);
+  display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:var(--ink);
+  transition:transform 200ms var(--ease-out),opacity 200ms ease,background-color 200ms ease,border-color 200ms ease;
+}
+.tile.reveal{transform:scale(0.95);opacity:0}
+.tile.revealed{background:#fff;transform:scale(1);opacity:1}
+.tile.won{background:#e3f6e8;border-color:var(--leaf)}
+.tile.lost{background:#ffe8ee;border-color:var(--pink-400)}
+.tile.space{width:18px;border:none;background:transparent}
+.tile.punct{border-style:dashed;color:var(--pink-600);font-size:20px}
+/* ---------- hint ---------- */
+#hintbar{display:flex;gap:8px;align-items:center;margin:6px 2px}
+#hintbtn{
+  border:2px solid var(--pink-300);background:var(--card);color:var(--pink-600);font-weight:800;font-size:14px;
+  border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer;
+  transition:transform 150ms var(--ease-out),background-color 150ms ease;
+}
+#hintbtn:active{transform:scale(0.95)}
+#hinttext{font-size:14px;color:var(--ink-soft);font-style:italic;opacity:0;transform:translateY(4px);transition:opacity 220ms ease,transform 220ms var(--ease-out)}
+#hinttext.show{opacity:1;transform:translateY(0)}
+/* ---------- keyboard ---------- */
+#kbd{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin:10px 0 4px}
+.key{
+  min-height:48px;border:none;border-radius:13px;font-size:18px;font-weight:800;color:var(--ink);
+  background:var(--card);box-shadow:0 2px 0 var(--pink-200);cursor:pointer;
+  transition:transform 120ms var(--ease-out),background-color 150ms ease,opacity 150ms ease,box-shadow 120ms ease;
+}
+.key:active{transform:scale(0.93)}
+.key.right{background:#cdeccf;box-shadow:0 2px 0 var(--leaf-dark);color:#1f4d2c}
+.key.wrong{background:#f3d3dc;box-shadow:none;color:#9c4a63;opacity:.75}
+.key:disabled{cursor:default}
+/* ---------- action row ---------- */
+.actions{display:flex;gap:8px;margin:8px 0}
+.btn{
+  flex:1;border:none;border-radius:16px;min-height:50px;font-size:15px;font-weight:800;cursor:pointer;
+  transition:transform 150ms var(--ease-out),background-color 150ms ease,opacity 150ms ease;
+}
+.btn:active{transform:scale(0.96)}
+.btn.primary{background:var(--pink-500);color:#fff}
+.btn.ghost{background:var(--card);color:var(--pink-600);border:2px solid var(--pink-200)}
+/* ---------- panels / modal ---------- */
+.sheet{
+  position:fixed;inset:0;background:rgba(74,36,54,.45);display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity 220ms ease;z-index:50;
+}
+.sheet.open{opacity:1;pointer-events:auto}
+.card{
+  background:var(--cream);border-radius:24px 24px 0 0;width:100%;max-width:520px;max-height:86dvh;overflow:auto;
+  padding:18px 18px calc(22px + var(--sab));transform:translateY(24px) scale(0.98);opacity:0;
+  transition:transform 280ms var(--ease-out),opacity 220ms ease;
+}
+.sheet.open .card{transform:translateY(0) scale(1);opacity:1}
+.card h2{margin:0 0 4px;font-size:20px;letter-spacing:-0.01em}
+.card p.sub{margin:0 0 12px;color:var(--ink-soft);font-size:14px}
+.setrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--pink-100)}
+.setrow label{font-weight:700;font-size:15px;flex:1}
+.setrow output{font-weight:800;color:var(--pink-600);min-width:2ch;text-align:right}
+input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
+.switch{position:relative;width:58px;height:44px;flex:none}
+.switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.knob{position:absolute;top:8px;left:4px;right:4px;bottom:8px;background:#e9cbd8;border-radius:999px;transition:background-color 180ms ease;pointer-events:none}
+.knob::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform 200ms var(--ease-out)}
+.switch input:checked + .knob{background:var(--leaf)}
+.switch input:checked + .knob::after{transform:translateX(24px)}
+.switch input:focus-visible + .knob{outline:3px solid var(--pink-500);outline-offset:2px}
+.cats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 8px}
+.catchip{
+  border:2px solid var(--pink-200);background:#fff;border-radius:14px;min-height:48px;font-size:14px;font-weight:700;
+  color:var(--ink-soft);cursor:pointer;transition:transform 150ms var(--ease-out),background-color 150ms ease;
+}
+.catchip:active{transform:scale(0.95)}
+.catchip[aria-pressed="true"]{background:var(--pink-100);border-color:var(--pink-500);color:var(--pink-700)}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.stat{background:#fff;border:2px solid var(--pink-100);border-radius:14px;padding:10px;text-align:center}
+.stat b{display:block;font-size:22px}
+.stat span{font-size:12px;color:var(--ink-soft);font-weight:700}
+/* sticker album */
+.album{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+.sticker{background:#fff;border:2px solid var(--pink-100);border-radius:16px;padding:10px 6px;text-align:center;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.sticker .em{font-size:30px;filter:grayscale(1);opacity:.35}
+.sticker.won{border-color:var(--gold);background:#fffbeF}
+.sticker.won .em{filter:none;opacity:1}
+.sticker b{font-size:11px}
+.sticker small{font-size:10px;color:var(--ink-soft)}
+/* toast */
+#toast{
+  position:fixed;left:50%;bottom:calc(20px + var(--sab));transform:translateX(-50%) translateY(16px) scale(0.95);
+  background:var(--ink);color:#fff;font-weight:700;font-size:14px;border-radius:999px;padding:12px 20px;
+  opacity:0;transition:opacity 220ms ease,transform 260ms var(--ease-out);z-index:80;pointer-events:none;max-width:92vw;text-align:center;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+#empty{padding:22px;text-align:center;color:var(--ink-soft);font-weight:600}
+/* popcorning pig hop */
+@keyframes hop{0%{transform:translateY(0)}30%{transform:translateY(-14px)}55%{transform:translateY(0)}75%{transform:translateY(-7px)}100%{transform:translateY(0)}}
+.hopping{animation:hop 480ms var(--ease-in-out)}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+.wiggle{animation:wiggle 300ms ease}
+@media (hover:hover) and (pointer:fine){
+  .key:hover{transform:translateY(-1px)}
+  .btn:hover{filter:brightness(1.03)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0.01ms !important;transition-duration:200ms !important}
+  .treat,.tile,#hinttext,#toast,.card{transform:none !important}
+  .hopping,.wiggle{animation:none !important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="logo">🐹 Piggy Paradise<small>hangman</small></div>
+    <button class="iconbtn" id="albumBtn" aria-label="Sticker album">🏅</button>
+    <button class="iconbtn" id="soundBtn" aria-label="Toggle sound" aria-pressed="true">🔊</button>
+    <button class="iconbtn" id="setBtn" aria-label="Settings">⚙️</button>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Game mode">
+    <button class="tab" id="tabFree" role="tab" aria-selected="true">Free play<span class="sub" id="freeSub">pick a word</span></button>
+    <button class="tab" id="tabDaily" role="tab" aria-selected="false">Daily puzzle<span class="sub" id="dailySub">one a day</span></button>
+  </div>
+
+  <section id="stage" aria-label="Guinea pig scene">
+    <svg id="scene" viewBox="0 0 400 250" role="img" aria-label="Cartoon guinea pig on a wooden platform under a small gallows"></svg>
+    <div class="haynote" id="haynote">Phew — soft landing in the hay! 🐹💛</div>
+  </section>
+  <div class="treatrow" id="treatrow" aria-label="Vegetable treats earned"><span class="lbl">Veg box</span></div>
+
+  <div id="meta">
+    <span id="catpill">animals</span><span id="diffpill">easy</span>
+    <span id="streakpill">🔥 streak 0</span>
+  </div>
+  <div id="word" aria-live="polite"></div>
+  <div id="hintbar">
+    <button id="hintbtn">💡 Hint</button>
+    <span id="hinttext"></span>
+  </div>
+  <div id="kbd" role="group" aria-label="Letter keyboard"></div>
+  <div class="actions">
+    <button class="btn ghost" id="newBtn">🎲 New word</button>
+    <button class="btn primary" id="statsBtn">📊 Stats</button>
+  </div>
+  <div id="empty" hidden></div>
+</div>
+
+<!-- settings sheet -->
+<div class="sheet" id="setSheet" aria-hidden="true"><div class="card" role="dialog" aria-label="Settings">
+  <h2>⚙️ Settings</h2><p class="sub">Everything saves on this phone only.</p>
+  <div class="setrow"><label for="minLen">Shortest word</label><input type="range" id="minLen" min="3" max="14" step="1"><output id="minLenOut"></output></div>
+  <div class="setrow"><label for="maxLen">Longest word</label><input type="range" id="maxLen" min="3" max="14" step="1"><output id="maxLenOut"></output></div>
+  <div class="setrow"><label for="lives">Piggy chances (lives)</label><input type="range" id="lives" min="4" max="10" step="1"><output id="livesOut"></output></div>
+  <div class="setrow"><label for="phrases">Phrases (multi-word)</label><span class="switch"><input type="checkbox" id="phrases"><span class="knob"></span></span></div>
+  <div class="setrow"><label for="soundT">Sounds</label><span class="switch"><input type="checkbox" id="soundT" checked><span class="knob"></span></span></div>
+  <h2 style="margin-top:14px">Categories</h2><p class="sub">Pick at least one.</p>
+  <div class="cats" id="cats"></div>
+  <button class="btn primary" id="setDone" style="margin-top:10px">Done — start munching 🥕</button>
+</div></div>
+
+<!-- stats + album sheet -->
+<div class="sheet" id="statSheet" aria-hidden="true"><div class="card" role="dialog" aria-label="Statistics and sticker album">
+  <h2>📊 Stats &amp; sticker album</h2><p class="sub" id="statSub"></p>
+  <div class="statgrid">
+    <div class="stat"><b id="sStreak">0</b><span>current streak</span></div>
+    <div class="stat"><b id="sBest">0</b><span>best streak</span></div>
+    <div class="stat"><b id="sGames">0</b><span>games played</span></div>
+    <div class="stat"><b id="sWins">0</b><span>games won</span></div>
+  </div>
+  <h2>🏅 Sticker album</h2><p class="sub">Earn stickers by playing. They live on this phone only.</p>
+  <div class="album" id="album"></div>
+  <div id="catwins" style="margin-top:12px"></div>
+  <button class="btn primary" id="statDone" style="margin-top:14px">Back to the piggies 🐹</button>
+</div></div>
+
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   PIGGY PARADISE — prototype B. All logic is offline, single file.
+   Pure game-logic helpers live in PigLogic so ?selftest can check them.
+   ===================================================================== */
+const STORE_SETTINGS = "hangman-b:settings";
+const STORE_STATS = "hangman-b:stats";
+
+const CATS = [
+  {id:"animals", name:"Animals"},
+  {id:"myth", name:"Mythology"},
+  {id:"plants", name:"Plants"},
+  {id:"gems", name:"Gemstones"},
+  {id:"birds", name:"Birds"},
+  {id:"food", name:"Food & drink"},
+  {id:"geo", name:"Geography"},
+  {id:"nineties", name:"UK No.1s · 90s"},
+  {id:"noughties", name:"UK No.1s · 00s"}
+];
+
+/* word, one-line clue, difficulty. Music: title letters guessed, artist is the hint. */
+const WORDS = {
+animals:[
+ ["BADGER","Digs setts and loves night-time snacks","easy"],
+ ["OTTER","Playful river swimmer that holds hands","easy"],
+ ["HEDGEHOG","Prickly garden friend that snuffles at dusk","easy"],
+ ["GUINEA PIG","Round squeaky pet that says wheek","easy"],
+ ["SQUIRREL","Nut-burying tree acrobat with a bushy tail","easy"],
+ ["MOLE","Velvety digger that rarely sees the sun","easy"],
+ ["STOAT","Slim hunter that dances to dazzle rabbits","medium"],
+ ["DORMOUSE","Sleepy hazel-nut nibbler","medium"],
+ ["PINE MARTEN","Cat-sized woodland climber with a cream bib","medium"],
+ ["HARVEST MOUSE","Tiny climber with a curly tail","medium"],
+ ["RED DEER","Antlers make this one the monarch of the glen","easy"],
+ ["SEAL","Flappy fish-lover that suns on sandbanks","easy"],
+ ["FOX","Bushy-tailed night prowler with a white tip","easy"],
+ ["BAT","Only mammal that truly flies","easy"],
+ ["SHREW","Tiny trilling hunter with a pointy nose","medium"],
+ ["WEASEL","Smallest carnivore, quick as a flash","medium"],
+ ["HARE","Long-legged boxer of the meadows","easy"],
+ ["WATER VOLE","Riverbank nibbler, Ratty from the riverbank tales","medium"],
+ ["POLECAT","Stripey-faced ancestor of the ferret","hard"],
+ ["CAPERCAILLIE","Huge grouse of the pinewoods","hard"],
+ ["SEA HORSE","Tiny upright fish with a horsey head","medium"],
+ ["JELLYFISH","Wobbly stinger with no brain","easy"],
+ ["STARFISH","Five-armed rockpool crawler","easy"],
+ ["EDIBLE CRAB","Brown crab caught off the coast","medium"],
+ ["SLOW WORM","Legless lizard often found under logs","medium"]],
+myth:[
+ ["ZEUS","King of the Greek gods, hurler of thunderbolts","easy"],
+ ["ATHENA","Goddess of wisdom, born from Zeus's head","easy"],
+ ["THOR","Norse god whose hammer returns when thrown","easy"],
+ ["ODIN","One-eyed Norse ruler with two ravens","easy"],
+ ["LOKI","Norse trickster who causes endless mischief","medium"],
+ ["MEDUSA","Snake-haired woman whose gaze turns you to stone","easy"],
+ ["MINOTAUR","Half bull, half man, lost in a maze","medium"],
+ ["PHOENIX","Firebird reborn from its own ashes","easy"],
+ ["KRAKEN","Giant sea monster that grabs ships","medium"],
+ ["VALHALLA","Hall where brave Norse warriors feast","medium"],
+ ["EXCALIBUR","The sword in the stone","easy"],
+ ["MERLIN","Wizard who advised a famous king","easy"],
+ ["UNICORN","One-horned horse on the Scottish arms","easy"],
+ ["DRAGON","Fire-breathing beast guarding gold","easy"],
+ ["SIREN","Singer whose song lures sailors to rocks","medium"],
+ ["CYCLOPS","One-eyed giant outwitted by Odysseus","medium"],
+ ["PEGASUS","Winged horse born of sea foam","easy"],
+ ["CERBERUS","Three-headed dog guarding the underworld","medium"],
+ ["NARCISSUS","Youth who fell in love with his own reflection","hard"],
+ ["PANDORA","Her box let trouble into the world","medium"],
+ ["ICARUS","Flew too close to the sun on wax wings","medium"],
+ ["PERSEPHONE","Queen of the underworld, daughter of Demeter","hard"],
+ ["FREYA","Norse goddess who rides a cat-drawn chariot","medium"],
+ ["ANANSI","West African trickster spider of many tales","hard"],
+ ["SELKIE","Seal-folk who shed their skins to walk ashore","hard"]],
+plants:[
+ ["DAISY","Day's eye, the lawn's cheerful button","easy"],
+ ["BLUEBELL","Carpet of the spring woods","easy"],
+ ["FOXGLOVE","Tall spire of thimbles, loved by bumblebees","medium"],
+ ["SNOWDROP","First brave flower of the year","easy"],
+ ["DAFFODIL","Golden trumpet of St David's Day","easy"],
+ ["HEATHER","Purple moorland honey plant","easy"],
+ ["HAWTHORN","May blossom on the hedgerow","medium"],
+ ["HOLLY","Spiky leaves and red winter berries","easy"],
+ ["IVY","Climber that clings with tiny roots","easy"],
+ ["FERN","Feathery fronds, no flowers at all","easy"],
+ ["THISTLE","Prickly emblem of Scotland","easy"],
+ ["SHAMROCK","Three leaves of Ireland","easy"],
+ ["DANDELION","Clock of fluffy seeds children love to blow","easy"],
+ ["NETTLE","Stinger that makes a fine soup","easy"],
+ ["BRAMBLE","Scrambly bush of blackberries","easy"],
+ ["ELDERFLOWER","June blossom for cordial","medium"],
+ ["BLACKTHORN","Sloe berries for winter gin","hard"],
+ ["WILD GARLIC","Ramsons carpeting the woods in spring","medium"],
+ ["COWSLIP","Nodding yellow bells of old meadows","medium"],
+ ["POPPY","Red remembrance flower","easy"],
+ ["SUNFLOWER","Tall face that follows the sun","easy"],
+ ["LAVENDER","Purple spikes for sleepy pillows","easy"],
+ ["ROSEMARY","Herb for remembrance and roast potatoes","easy"],
+ ["SAGE","Soft grey herb for stuffing","medium"],
+ ["MISTLETOE","Kissing branch of the orchards","medium"]],
+gems:[
+ ["DIAMOND","Hardest gem, a girl's best friend","easy"],
+ ["RUBY","Red birthstone of July","easy"],
+ ["SAPPHIRE","Blue gem of September skies","easy"],
+ ["EMERALD","Green treasure of Colombia","easy"],
+ ["OPAL","Rainbow flashes, birthstone of October","medium"],
+ ["AMETHYST","Purple quartz of February","easy"],
+ ["TOPAZ","Golden gem of November","easy"],
+ ["GARNET","Deep red stone of January","medium"],
+ ["PEARL","Ocean's gift from an oyster","easy"],
+ ["AMBER","Fossilised tree resin, sometimes with insects","medium"],
+ ["JADE","Green stone carved for emperors","medium"],
+ ["ONYX","Banded black stone of beads","medium"],
+ ["MOONSTONE","Glowing stone of June","medium"],
+ ["TURQUOISE","Blue-green stone of December","medium"],
+ ["PERIDOT","Olive-green gem of August","hard"],
+ ["AQUAMARINE","Sea-blue stone of March","hard"],
+ ["CITRINE","Lemon quartz of November","medium"],
+ ["LAPIS LAZULI","Deep blue stone ground for paint","hard"],
+ ["MALACHITE","Swirled green copper stone","hard"],
+ ["TIGERS EYE","Striped brown stone that shimmers","medium"],
+ ["ROSE QUARTZ","Pink stone of love","easy"],
+ ["MOONSTONE","Shimmery feldspar of new beginnings","medium"],
+ ["HEMATITE","Silvery stone that polishes to a mirror","hard"],
+ ["JET","Black fossil wood of Whitby","hard"],
+ ["CORNELIAN","Rust-red chalcedony of signet rings","hard"]],
+birds:[
+ ["ROBIN","Redbreast gardener's friend","easy"],
+ ["BLACKBIRD","Golden-beaked dawn singer","easy"],
+ ["BLUE TIT","Acrobat of the peanut feeder","easy"],
+ ["WREN","Tiny rustler with a cocked tail","easy"],
+ ["CHAFFINCH","Pink-breasted finch of the woods","medium"],
+ ["GOLDFINCH","Red-faced charmer of thistles","medium"],
+ ["KINGFISHER","Jewel that dives for minnows","easy"],
+ ["BARN OWL","Heart-faced silent hunter","easy"],
+ ["TAWNY OWL","Tawny hooter of the night woods","medium"],
+ ["KESTREL","Hovering hunter of motorway verges","medium"],
+ ["BUZZARD","Mewing circler over the hills","medium"],
+ ["SPARROWHAWK","Garden dash-and-grab hunter","medium"],
+ ["HERON","Grey statue of the shallows","easy"],
+ ["SWALLOW","Summer scissor-tail over the barns","easy"],
+ ["SWIFT","Screaming sickle of high summer","medium"],
+ ["HOUSE MARTIN","Mud-cup nester under the eaves","medium"],
+ ["DIPPER","White-breasted bobber of fast streams","hard"],
+ ["NUTHATCH","Headfirst down the tree trunk","hard"],
+ ["TREECREEPER","Spiralling prober of bark","hard"],
+ ["JAY","Pink screecher that plants acorns","medium"],
+ ["MAGPIE","One for sorrow, chatterer in black and white","easy"],
+ ["JACKDAW","Grey-hooded church-tower clown","medium"],
+ ["ROOK","Noisy farmer of the rookery","medium"],
+ ["PUFFIN","Clown of the sea cliffs with a rainbow beak","easy"],
+ ["GANNET","Plunge-diver of the ocean stacks","medium"]],
+food:[
+ ["CRUMPET","Holey griddle cake for butter","easy"],
+ ["SCONE","Cream-tea star, jam first or cream first","easy"],
+ ["YORKSHIRE PUDDING"," risen batter with roast beef","easy"],
+ ["FISH AND CHIPS","Newspaper supper with vinegar","easy"],
+ ["CORNISH PASTY","Tin-miner's hand-held lunch","easy"],
+ ["HAGGIS","Served with neeps and tatties","medium"],
+ ["BLACK PUDDING","Sliced blood sausage of a full breakfast","medium"],
+ ["CLOTTED CREAM","Thick spoonable pride of Devon","medium"],
+ ["CHEDDAR","Cave-aged cheese of Somerset","easy"],
+ ["STILTON","Veiny blue of Christmas cheeseboards","medium"],
+ ["PLOUGHMANS LUNCH","Pub plate of cheese, pickle and bread","medium"],
+ ["SAUSAGE ROLL","Greggs favourite in flaky pastry","easy"],
+ ["PORK PIE","Cold raised pie with jelly","medium"],
+ ["SCOTCH EGG","Picnic egg in a sausage coat","easy"],
+ ["BREAD AND BUTTER PUDDING","Nursery pudding of crusts and custard","medium"],
+ ["SPOTTED DICK","Pudding dotted with currants","medium"],
+ ["ETON MESS","Strawberries, meringue and cream","medium"],
+ ["BAKEWELL TART","Almond-topped Derbyshire treat","medium"],
+ ["VICTORIA SPONGE","Jam-and-cream sandwich cake","easy"],
+ ["LEMON DRIZZLE","Sticky teatime loaf","easy"],
+ ["GINGER NUTS","Dunkable snap of a biscuit","easy"],
+ ["CUSTARD CREAM","Bartholomew's sandwich biscuit","easy"],
+ ["MARMITE","Love it or hate it spread","easy"],
+ ["BRANSTON PICKLE","Chunky pickle of the ploughman's","medium"],
+ ["HP SAUCE","Brown sauce of the full English","hard"]],
+geo:[
+ ["BEN NEVIS","Britain's highest summit","easy"],
+ ["SNOWDON","Welsh giant also called Yr Wyddfa","easy"],
+ ["LOCH NESS","Home of a famous monster","easy"],
+ ["GIANT'S CAUSEWAY","Hexagon stones of County Antrim","medium"],
+ ["LAKE DISTRICT","Fells, lakes and Beatrix Potter","easy"],
+ ["ISLE OF SKYE","Misty Hebridean island of the Cuillin","medium"],
+ ["HADRIAN'S WALL","Roman stones coast to coast","easy"],
+ ["STONEHENGE","Wiltshire circle of standing stones","easy"],
+ ["WHITE CLIFFS OF DOVER","Chalk welcome home","easy"],
+ ["THAMES","River through the capital","easy"],
+ ["SEVERN","Britain's longest river","medium"],
+ ["PENNINES","Backbone of England","medium"],
+ ["DARTMOOR","Tor-topped moor of the Hound","medium"],
+ ["PEAK DISTRICT","First national park","medium"],
+ ["NORFOLK BROADS","Reedy boating waterways","medium"],
+ ["JURASSIC COAST","Fossil cliffs of Dorset and Devon","medium"],
+ ["ANGLESEY","Island over the Menai Strait","hard"],
+ ["ORKNEY","Isles of Skara Brae","hard"],
+ ["SHETLAND","Far northern isles of ponies","medium"],
+ ["SCILLY ISLES","Palm trees off Cornwall","hard"],
+ ["MALHAM COVE","Limestone cliff of the Dales","hard"],
+ ["CHEDDAR GORGE","Caves beneath the cheese town","medium"],
+ ["EDINBURGH CASTLE","Volcanic fortress over the Royal Mile","easy"],
+ ["TOWER BRIDGE","Twin-towered Thames crossing","easy"],
+ ["ST PAUL'S CATHEDRAL","Wren's dome over the City","easy"]],
+nineties:[
+ ["UNCHAINED MELODY","The Righteous Brothers","easy"],
+ ["ICE ICE BABY","Vanilla Ice","easy"],
+ ["DO THE BARTMAN","The Simpsons","medium"],
+ ["THE SHOOP SHOOP SONG","Cher","medium"],
+ ["EVERYTHING I DO","Bryan Adams","easy"],
+ ["BOHEMIAN RHAPSODY","Queen","easy"],
+ ["STAY","Shakespears Sister","medium"],
+ ["RHYTHM IS A DANCER","Snap!","medium"],
+ ["I WILL ALWAYS LOVE YOU","Whitney Houston","easy"],
+ ["OH CAROLINA","Shaggy","medium"],
+ ["MR BLOBBY","Mr Blobby","medium"],
+ ["LOVE IS ALL AROUND","Wet Wet Wet","easy"],
+ ["BABY COME BACK","Pato Banton","medium"],
+ ["BELIEVE","Cher","easy"],
+ ["CANDLE IN THE WIND 1997","Elton John","medium"],
+ ["BARBIE GIRL","Aqua","easy"],
+ ["NEVER EVER","All Saints","medium"],
+ ["NO MATTER WHAT","Boyzone","medium"],
+ ["TRAGEDY","Steps","easy"],
+ ["BABY ONE MORE TIME","Britney Spears","easy"],
+ ["FLAT BEAT","Mr Oizo","hard"],
+ ["THAT DON'T IMPRESS ME MUCH","Shania Twain","medium"],
+ ["ANGELS","Robbie Williams","hard"],
+ ["WANNA BE","Spice Girls","hard"],
+ ["SPICE UP YOUR LIFE","Spice Girls","medium"]],
+noughties:[
+ ["PURE AND SIMPLE","Hear'Say","medium"],
+ ["WHOLE AGAIN","Atomic Kitten","easy"],
+ ["IT WASN'T ME","Shaggy","easy"],
+ ["DO YOU REALLY LIKE IT","DJ Pied Piper","hard"],
+ ["LADY MARMALADE","Christina Aguilera, Lil Kim, Mya and Pink","medium"],
+ ["ETERNAL FLAME","Atomic Kitten","medium"],
+ ["HEY YA","Outkast","easy"],
+ ["AGAINST ALL ODDS","Steve Brookstein","hard"],
+ ["IS THIS THE WAY TO AMARILLO","Tony Christie featuring Peter Kay","medium"],
+ ["HIPS DON'T LIE","Shakira","easy"],
+ ["STAR GIRL","McFly","medium"],
+ ["PATIENCE","Take That","easy"],
+ ["SHINE","Take That","easy"],
+ ["APOLOGIZE","Timbaland presents OneRepublic","medium"],
+ ["UMBRELLA","Rihanna featuring Jay-Z","easy"],
+ ["BEAUTIFUL GIRLS","Sean Kingston","easy"],
+ ["SMILE","Lily Allen","easy"],
+ ["CRAZY","Gnarls Barkley","easy"],
+ ["GRACE KELLY","Mika","easy"],
+ ["IF I WERE A BOY","Beyonce","medium"],
+ ["JUST DANCE","Lady Gaga","easy"],
+ ["POKER FACE","Lady Gaga","easy"],
+ ["RUN","Leona Lewis","medium"],
+ ["HERO","The X Factor Finalists","medium"],
+ ["HALLELUJAH","Alexandra Burke","easy"]]
+};
+
+/* ============ pure logic (tested by ?selftest) ============ */
+const PigLogic = {
+  letterCount(entry){ const m=(entry.w||"").toUpperCase().match(/[A-Z]/g); return m?m.length:0; },
+  isPhrase(entry){ return /\s/.test(entry.w||""); },
+  /* set of guessable letters that appear */
+  targetLetters(entry){
+    const s=new Set();
+    for(const ch of (entry.w||"").toUpperCase()) if(ch>="A"&&ch<="Z") s.add(ch);
+    return s;
+  },
+  /* letters etc pre-filled: everything not A-Z shows from the start */
+  prefilled(entry){
+    const out=[];
+    for(const ch of (entry.w||"").toUpperCase()){
+      if(ch>="A"&&ch<="Z") out.push(null);
+      else out.push(ch===" "?" ":ch);
+    }
+    return out;
+  },
+  filterEntries(all, settings){
+    const min=Math.min(settings.minLen,settings.maxLen), max=Math.max(settings.minLen,settings.maxLen);
+    return all.filter(e=>{
+      const n=PigLogic.letterCount(e);
+      if(n<min||n>max) return false;
+      if(!settings.phrases && PigLogic.isPhrase(e)) return false;
+      if(!settings.cats.includes(e.cat)) return false;
+      return true;
+    });
+  },
+  /* deterministic daily index from a YYYY-MM-DD string */
+  dailyIndex(dateStr, n){
+    if(n<=0) return 0;
+    let h=0;
+    for(let i=0;i<dateStr.length;i++){ h=(h*31 + dateStr.charCodeAt(i))>>>0; }
+    h^=0x9e3779b9; h=Math.imul(h,0x85ebca6b)>>>0; h^=h>>>13;
+    return h % n;
+  },
+  pickRandom(n, rand){ return Math.floor((rand?rand():Math.random())*n); },
+  isWon(entry, guessed){
+    for(const L of PigLogic.targetLetters(entry)) if(!guessed.has(L)) return false;
+    return true;
+  },
+  isLost(wrongCount, lives){ return wrongCount>=lives; }
+};
+
+function todayStr(d){ d=d||new Date();
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), dd=String(d.getDate()).padStart(2,"0");
+  return y+"-"+m+"-"+dd;
+}
+
+/* ============ storage ============ */
+function loadJSON(key, fallback){
+  try{
+    const raw=localStorage.getItem(key);
+    if(raw==null) return JSON.parse(JSON.stringify(fallback));
+    const v=JSON.parse(raw);
+    if(v==null||typeof v!=="object") throw new Error("bad shape");
+    return v;
+  }catch(e){ return JSON.parse(JSON.stringify(fallback)); }
+}
+const DEFAULT_SETTINGS={minLen:3,maxLen:14,phrases:true,cats:CATS.map(c=>c.id),lives:6,muted:false};
+const DEFAULT_STATS={streak:0,best:0,dailyStreak:0,dailyLast:"",games:0,wins:0,winsPerCat:{},badges:[],treats:0};
+let settings=Object.assign({},DEFAULT_SETTINGS,loadJSON(STORE_SETTINGS,DEFAULT_SETTINGS));
+let stats=Object.assign({},DEFAULT_STATS,loadJSON(STORE_STATS,DEFAULT_STATS));
+if(!Array.isArray(stats.badges)) stats.badges=[];
+if(typeof stats.winsPerCat!=="object"||stats.winsPerCat===null) stats.winsPerCat={};
+function saveSettings(){ try{localStorage.setItem(STORE_SETTINGS,JSON.stringify(settings));}catch(e){} }
+function saveStats(){ try{localStorage.setItem(STORE_STATS,JSON.stringify(stats));}catch(e){} }
+
+/* badges catalogue (about 10) */
+const BADGES=[
+ {id:"first",em:"🌱",name:"First munch",desc:"Win your first game"},
+ {id:"streak3",em:"🔥",name:"Wheek streak",desc:"Reach a streak of 3"},
+ {id:"streak5",em:"⚡",name:"Popcorn party",desc:"Reach a streak of 5"},
+ {id:"daily",em:"📅",name:"Daily dab",desc:"Solve the daily puzzle"},
+ {id:"daily3",em:"🗓️",name:"Three-day grazer",desc:"Daily streak of 3"},
+ {id:"nomiss",em:"✨",name:"Squeaky clean",desc:"Win without a single miss"},
+ {id:"comeback",em:"💪",name:"Hay-day hero",desc:"Win with only 1 life left"},
+ {id:"explorer",em:"🧭",name:"Explorer",desc:"Win in 4 different categories"},
+ {id:"hintwin",em:"💡",name:"Clever clogs",desc:"Win after using the hint"},
+ {id:"veg10",em:"🥕",name:"Veg feast",desc:"Earn 10 treats in one game"},
+ {id:"ten",em:"🏆",name:"Top pig",desc:"Play 10 games"}
+];
+function awardBadge(id){
+  if(stats.badges.includes(id)) return null;
+  stats.badges.push(id); saveStats();
+  const b=BADGES.find(b=>b.id===id);
+  if(b) toast("New sticker: "+b.em+" "+b.name+"!");
+  renderAlbum(); return b;
+}
+
+/* ============ sound (Web Audio, gesture-gated) ============ */
+let actx=null;
+function ensureAudio(){
+  if(actx) return true;
+  try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return false; }
+  if(actx.state==="suspended") actx.resume();
+  return true;
+}
+function tone(freq,dur,delay,type,vol){
+  if(settings.muted||!actx) return;
+  const t=actx.currentTime+(delay||0);
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type=type||"sine"; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol||0.06,t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(t); o.stop(t+dur+0.05);
+}
+const Snd={
+  unlock(){ ensureAudio(); },
+  press(){ tone(520,0.08,0,"triangle",0.03); },
+  right(){ tone(660,0.12,0,"sine",0.05); tone(880,0.14,0.09,"sine",0.05); }, /* wheek-ish rise */
+  wrong(){ tone(220,0.18,0,"sawtooth",0.02); },
+  win(){ [523,659,784,1047].forEach((f,i)=>tone(f,0.22,i*0.11,"triangle",0.05)); },
+  lose(){ [392,330,262,196].forEach((f,i)=>tone(f,0.25,i*0.13,"sine",0.04)); },
+  pop(){ tone(990,0.07,0,"square",0.02); }
+};
+function syncSoundBtn(){
+  const b=document.getElementById("soundBtn");
+  b.textContent=settings.muted?"🔇":"🔊";
+  b.setAttribute("aria-pressed",String(!settings.muted));
+  document.getElementById("soundT").checked=!settings.muted;
+}
+
+/* ============ game state ============ */
+let mode="free";           /* free | daily */
+let entry=null;            /* {w,h,d,cat} */
+let guessed=new Set(), wrongSet=new Set();
+let wrongCount=0, hintUsed=false, treatsThisGame=0, over=false;
+const VEG=["🥕","🫑","🥒","🥬","🍅","🌿","🌽","🍀"];
+let vegQueue=[];
+
+function allEntries(){
+  const out=[];
+  for(const c of CATS) for(const [w,h,d] of (WORDS[c.id]||[])) out.push({w:w,h:h,d:d,cat:c.id});
+  return out;
+}
+function todaysEntry(){
+  const pool=PigLogic.filterEntries(allEntries(),Object.assign({},settings,{cats:CATS.map(c=>c.id),minLen:3,maxLen:14,phrases:true}));
+  const list=pool.length?pool:allEntries();
+  return list[PigLogic.dailyIndex(todayStr(),list.length)];
+}
+function newRound(){
+  guessed=new Set(); wrongSet=new Set(); wrongCount=0; hintUsed=false; treatsThisGame=0; over=false;
+  vegQueue=VEG.slice();
+  const pool=PigLogic.filterEntries(allEntries(),settings);
+  const empty=document.getElementById("empty");
+  if(mode==="daily"){ entry=todaysEntry(); empty.hidden=true; }
+  else if(!pool.length){
+    entry=null; empty.hidden=false;
+    empty.textContent="No words match those filters — widen the word length or tick more categories in ⚙️.";
+    renderAll(); return;
+  } else { entry=pool[PigLogic.pickRandom(pool.length)]; empty.hidden=true; }
+  document.getElementById("hinttext").classList.remove("show");
+  document.getElementById("hinttext").textContent="";
+  document.getElementById("haynote").classList.remove("show");
+  renderAll(true);
+}
+
+/* ============ rendering ============ */
+const $=id=>document.getElementById(id);
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200);
+}
+
+/* --- cartoon guinea pigs: Pepper (white+grey) & Pixie (white/brown/black, shy) --- */
+function pigSVG(which,x,y,s,opts){
+  opts=opts||{};
+  const idp=which+Math.round(x)+"_"+Math.round(y);
+  const patch = which==="pepper"
+    ? `<ellipse cx="-26" cy="-14" rx="22" ry="20" fill="#9aa0ab"/>
+       <ellipse cx="26" cy="-14" rx="22" ry="20" fill="#9aa0ab"/>
+       <ellipse cx="-26" cy="-14" rx="13" ry="12" fill="#7d838e"/>`
+    : `<ellipse cx="-28" cy="-10" rx="20" ry="22" fill="#6b4a2f"/>
+       <ellipse cx="26" cy="-18" rx="18" ry="16" fill="#2e2a28"/>
+       <ellipse cx="8" cy="14" rx="14" ry="12" fill="#8a5a35" opacity="0.85"/>`;
+  const worry = opts.worried
+    ? `<path d="M-14 -2 q4 5 8 0" stroke="#5b2b3c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+       <circle cx="-13" cy="-12" r="4.6" fill="#fff"/><circle cx="-13" cy="-12" r="2" fill="#3a2030"/>
+       <circle cx="13" cy="-12" r="4.6" fill="#fff"/><circle cx="13" cy="-12" r="2" fill="#3a2030"/>`
+    : `<circle cx="-13" cy="-12" r="3.4" fill="#3a2030"/><circle cx="-12" cy="-13" r="1.1" fill="#fff"/>
+       <circle cx="13" cy="-12" r="3.4" fill="#3a2030"/><circle cx="14" cy="-13" r="1.1" fill="#fff"/>
+       <path d="M-7 2 q7 6 14 0" stroke="#a2546b" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  const nameTag = opts.name ? `<text x="0" y="56" text-anchor="middle" font-size="14" font-weight="800" fill="#7c4a5f" opacity="0.9">${opts.name}</text>` : ``;
+  const hide = opts.hidden
+    ? `<rect x="-46" y="-34" width="60" height="70" rx="12" fill="#a9744f"/>
+       <rect x="-46" y="-34" width="60" height="70" rx="12" fill="none" stroke="#7c4f30" stroke-width="3"/>
+       <rect x="-34" y="-44" width="36" height="14" rx="7" fill="#8a5a35"/>`
+    : ``;
+  return `<g transform="translate(${x} ${y}) scale(${s})" class="${opts.cls||""}" ${opts.gid?`id="${opts.gid}"`:""}>
+    ${hide}
+    <ellipse cx="0" cy="30" rx="34" ry="7" fill="#000" opacity="0.08"/>
+    <ellipse cx="0" cy="2" rx="40" ry="30" fill="${which==="pepper"?"#f7f2e4":"#fdfbf5"}"/>
+    ${patch}
+    <ellipse cx="-34" cy="-30" rx="9" ry="7" fill="${which==="pepper"?"#9aa0ab":"#6b4a2f"}" transform="rotate(-20 -34 -30)"/>
+    <ellipse cx="34" cy="-30" rx="9" ry="7" fill="${which==="pepper"?"#9aa0ab":"#2e2a28"}" transform="rotate(20 34 -30)"/>
+    <ellipse cx="-4" cy="4" rx="4" ry="3" fill="#e8a0b4"/><ellipse cx="4" cy="-2" rx="2.4" ry="1.8" fill="#c96f88"/>
+    ${worry}
+    ${nameTag}
+  </g>`;
+}
+
+function sceneSVG(){
+  /* wooden gallows builds stage-by-stage with misses; pig stands on trapdoor; final miss -> hay */
+  const L=settings.lives, m=wrongCount;
+  const frac=L<=1?1:m/L;
+  const showBase=frac>0, showPost=frac>=0.25, showBeam=frac>=0.45, showRope=frac>=0.65;
+  const pigOn = m>0 && !overLost();
+  const dropped = overLost();
+  const hidePixie = Math.min(34, Math.max(0, 34 - guessed.size*6)); /* Pixie peeks out as you guess right */
+  let s="";
+  /* hay pile (always there, grows) */
+  const hayH = dropped?1:0.35+frac*0.3;
+  s+=`<g opacity="${0.55+frac*0.45}">
+    <ellipse cx="200" cy="228" rx="${86*hayH+40}" ry="${26*hayH+8}" fill="#e8c96a"/>
+    <ellipse cx="160" cy="222" rx="40" ry="14" fill="#f2d98c"/>
+    <ellipse cx="245" cy="224" rx="44" ry="15" fill="#dfba55"/>
+    ${[150,175,200,225,250].map((x,i)=>`<line x1="${x}" y1="216" x2="${x+(i%2?8:-8)}" y2="206" stroke="#c49a3f" stroke-width="3" stroke-linecap="round"/>`).join("")}
+  </g>`;
+  /* platform + trapdoor */
+  s+=`<g>
+    <rect x="120" y="196" width="160" height="12" rx="4" fill="#8a5a35"/>
+    <rect x="150" y="120" width="10" height="78" fill="#7c4f30"/>
+    <rect x="240" y="120" width="10" height="78" fill="#7c4f30"/>`;
+  if(dropped){
+    s+=`<rect x="176" y="196" width="24" height="12" rx="3" fill="#6e4426" transform="rotate(48 188 202)"/>
+        <rect x="200" y="196" width="24" height="12" rx="3" fill="#6e4426" transform="rotate(-48 212 202)"/>`;
+  } else {
+    s+=`<rect x="176" y="196" width="48" height="12" rx="3" fill="#a9744f" stroke="#6e4426" stroke-width="2"/>`;
+  }
+  s+=`</g>`;
+  if(showBase) s+=`<rect x="120" y="60" width="150" height="14" rx="6" fill="#8a5a35"/>`;
+  if(showPost) s+=`<rect x="126" y="70" width="16" height="130" rx="7" fill="#9c6a40"/><rect x="126" y="70" width="16" height="130" rx="7" fill="none" stroke="#7c4f30" stroke-width="2"/>`;
+  if(showBeam) s+=`<rect x="126" y="52" width="130" height="14" rx="7" fill="#9c6a40" stroke="#7c4f30" stroke-width="2"/>`;
+  if(showRope) s+=`<line x1="238" y1="66" x2="238" y2="104" stroke="#c49a3f" stroke-width="4" stroke-linecap="round"/>`;
+  /* the star: Pepper on the trapdoor (worried), or dropped into hay */
+  if(dropped){
+    s+=pigSVG("pepper",200,192,0.72,{worried:false,gid:"pigdrop",name:"Pepper"});
+    s+=`<text x="200" y="38" text-anchor="middle" font-size="15" font-weight="bold" fill="#8c2a51">wheek! that was soft 💛</text>`;
+  } else if(pigOn){
+    s+=`<g id="pigon">${pigSVG("pepper",238,164,0.6,{worried:m>=L-1,name:"Pepper"})}</g>`;
+  }
+  /* Pixie the shy friend peeks from behind her hide; warms up as you guess right */
+  s+=`<g transform="translate(${-hidePixie} 0)">${pigSVG("pixie",322,190,0.55,{hidden:hidePixie>10,name:"Pixie"})}</g>`;
+  /* Pepper cheering at the side when no misses yet */
+  if(!pigOn && !dropped) s+=`<g id="pigside">${pigSVG("pepper",72,196,0.62,{name:"Pepper"})}</g>`;
+  /* veg bowl */
+  s+=`<g><ellipse cx="358" cy="232" rx="26" ry="10" fill="#b93a6c"/><ellipse cx="358" cy="229" rx="26" ry="9" fill="#e14e87"/>
+    <text x="358" y="236" text-anchor="middle" font-size="15">${treatsThisGame>0?VEG[(treatsThisGame-1)%VEG.length]:"🥗"}</text></g>`;
+  return s;
+}
+function overLost(){ return over && PigLogic.isLost(wrongCount,settings.lives); }
+function overWon(){ return over && entry && PigLogic.isWon(entry,guessed); }
+
+function renderScene(){
+  const sc=$("scene"); sc.innerHTML=sceneSVG();
+  const pig=document.getElementById("pigon");
+  if(pig&&(window.__hop)){ pig.classList.add("hopping"); window.__hop=false; }
+  if(overLost()){
+    const d=document.getElementById("pigdrop");
+    if(d && !window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+      d.animate([{transform:"translateY(-70px)"},{transform:"translateY(0)"}],{duration:520,easing:"cubic-bezier(0.23,1,0.32,1)"});
+    }
+    $("haynote").classList.add("show");
+  }
+}
+
+function renderWord(){
+  const w=$("word"); w.innerHTML="";
+  if(!entry) return;
+  const pre=PigLogic.prefilled(entry);
+  const won=overWon();
+  pre.forEach((fixed,i)=>{
+    const d=document.createElement("div");
+    if(fixed===" "){ d.className="tile space"; w.appendChild(d); return; }
+    const ch=entry.w.toUpperCase()[i];
+    const known=fixed!==null||guessed.has(ch);
+    const showAnswer=!known&&over&&!won;
+    d.className="tile"+((known||showAnswer)?" revealed":" reveal")+(won?" won":(showAnswer?" lost":""));
+    if(fixed!==null&&fixed!==" "){ d.classList.add("punct"); }
+    d.textContent=(known||showAnswer)?(fixed!==null?fixed:ch):"";
+    d.style.transitionDelay=(known?Math.min(i*28,420):0)+"ms";
+    w.appendChild(d);
+  });
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    w.querySelectorAll(".tile.reveal").forEach(t=>{t.classList.remove("reveal");});
+  }));
+}
+
+function renderKbd(){
+  const k=$("kbd"); k.innerHTML="";
+  for(let c=65;c<=90;c++){
+    const L=String.fromCharCode(c);
+    const b=document.createElement("button");
+    b.className="key"; b.textContent=L; b.setAttribute("aria-label","Guess "+L);
+    b.disabled=over||!entry||guessed.has(L)||wrongSet.has(L);
+    if(guessed.has(L)) b.classList.add("right");
+    if(wrongSet.has(L)) b.classList.add("wrong");
+    b.addEventListener("click",()=>{ Snd.unlock(); guess(L); });
+    k.appendChild(b);
+  }
+}
+
+function renderMeta(){
+  if(!entry){ $("catpill").textContent="—"; $("diffpill").textContent="—"; return; }
+  const cat=CATS.find(c=>c.id===entry.cat);
+  $("catpill").textContent=mode==="daily"?"📅 daily · "+(cat?cat.name:entry.cat):(cat?cat.name:entry.cat);
+  $("diffpill").textContent=entry.d;
+  const st=mode==="daily"?stats.dailyStreak:stats.streak;
+  $("streakpill").textContent="🔥 streak "+st;
+  $("dailySub").textContent = stats.dailyLast===todayStr() ? "done ✓ · streak "+stats.dailyStreak : "one a day";
+  $("freeSub").textContent="streak "+stats.streak;
+}
+
+function renderTreats(){
+  const r=$("treatrow"); r.querySelectorAll(".treat").forEach(n=>n.remove());
+  const n=Math.min(treatsThisGame,12);
+  for(let i=0;i<n;i++){
+    const s=document.createElement("span"); s.className="treat"; s.textContent=VEG[i%VEG.length];
+    r.appendChild(s);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>s.classList.add("earned")));
+  }
+}
+
+function renderAlbum(){
+  const a=$("album"); if(!a) return; a.innerHTML="";
+  for(const b of BADGES){
+    const won=stats.badges.includes(b.id);
+    const d=document.createElement("div");
+    d.className="sticker"+(won?" won":"");
+    d.innerHTML=`<div class="em">${won?b.em:"🔒"}</div><b>${won?b.name:"???"}</b><small>${won?b.desc:"keep playing"}</small>`;
+    a.appendChild(d);
+  }
+}
+
+function renderAll(newGame){
+  renderScene(); renderWord(); renderKbd(); renderMeta(); renderTreats(); syncSoundBtn();
+  if(newGame){
+    const hop=document.getElementById("pigside");
+    if(hop&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){ hop.classList.add("hopping"); }
+  }
+}
+
+/* ============ guessing ============ */
+function guess(L){
+  if(over||!entry||guessed.has(L)||wrongSet.has(L)) return;
+  Snd.unlock();
+  if(entry.w.toUpperCase().includes(L)){
+    guessed.add(L); Snd.right(); Snd.pop();
+    treatsThisGame++; stats.treats=(stats.treats||0)+1;
+    window.__hop=true;
+    const pig=document.getElementById("pigon")||document.getElementById("pigside");
+    if(pig&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){ pig.classList.remove("hopping"); void pig.getBoundingClientRect(); pig.classList.add("hopping"); }
+    if(treatsThisGame>=10) awardBadge("veg10");
+    if(PigLogic.isWon(entry,guessed)) finish(true);
+    else { renderAll(); }
+  } else {
+    wrongSet.add(L); wrongCount++; Snd.wrong();
+    const sc=$("scene"); sc.classList.remove("wiggle"); void sc.getBoundingClientRect(); sc.classList.add("wiggle");
+    if(PigLogic.isLost(wrongCount,settings.lives)) finish(false);
+    else renderAll();
+  }
+  saveStats();
+}
+
+function finish(won){
+  over=true;
+  stats.games++;
+  if(stats.games>=10) awardBadge("ten");
+  if(won){
+    Snd.win();
+    const catWins=(stats.winsPerCat[entry.cat]||0)+1; stats.winsPerCat[entry.cat]=catWins;
+    stats.wins++;
+    if(mode==="daily"){
+      if(stats.dailyLast!==todayStr()){
+        stats.dailyStreak=(stats.dailyLast===yesterdayStr()?stats.dailyStreak:0)+1;
+        stats.dailyLast=todayStr();
+      }
+      awardBadge("daily");
+      if(stats.dailyStreak>=3) awardBadge("daily3");
+      stats.streak++; stats.best=Math.max(stats.best,stats.streak);
+    } else {
+      stats.streak++; stats.best=Math.max(stats.best,stats.streak);
+    }
+    if(stats.streak>=3) awardBadge("streak3");
+    if(stats.streak>=5) awardBadge("streak5");
+    if(!stats.badges.includes("first")) awardBadge("first");
+    if(wrongCount===0) awardBadge("nomiss");
+    if(settings.lives-wrongCount===1) awardBadge("comeback");
+    if(hintUsed) awardBadge("hintwin");
+    if(Object.keys(stats.winsPerCat).length>=4) awardBadge("explorer");
+    toast("🎉 "+entry.w+" — the piggies popcorn with joy!");
+  } else {
+    Snd.lose();
+    if(mode==="daily"){ /* daily streak survives a loss, free streak resets */ }
+    else { stats.streak=0; }
+    toast("The word was "+entry.w+" — Pepper is fine, just a bit hay-covered 🐹");
+  }
+  saveStats(); renderAll();
+}
+function yesterdayStr(){ const d=new Date(); d.setDate(d.getDate()-1); return todayStr(d); }
+
+/* ============ settings UI ============ */
+function renderCats(){
+  const c=$("cats"); c.innerHTML="";
+  for(const cat of CATS){
+    const b=document.createElement("button");
+    b.className="catchip"; b.textContent=cat.name;
+    b.setAttribute("aria-pressed",String(settings.cats.includes(cat.id)));
+    b.addEventListener("click",()=>{
+      Snd.unlock(); Snd.press();
+      const i=settings.cats.indexOf(cat.id);
+      if(i>=0){ if(settings.cats.length>1) settings.cats.splice(i,1); else { toast("Keep at least one category!"); return; } }
+      else settings.cats.push(cat.id);
+      saveSettings(); renderCats();
+    });
+    c.appendChild(b);
+  }
+}
+function syncSettingsUI(){
+  $("minLen").value=settings.minLen; $("minLenOut").textContent=settings.minLen;
+  $("maxLen").value=settings.maxLen; $("maxLenOut").textContent=settings.maxLen;
+  $("lives").value=settings.lives; $("livesOut").textContent=settings.lives;
+  $("phrases").checked=settings.phrases;
+  renderCats();
+}
+function openSheet(id){ $(id).classList.add("open"); $(id).setAttribute("aria-hidden","false"); }
+function closeSheet(id){ $(id).classList.remove("open"); $(id).setAttribute("aria-hidden","true"); }
+
+/* ============ stats sheet ============ */
+function renderStatsSheet(){
+  $("sStreak").textContent=stats.streak; $("sBest").textContent=stats.best;
+  $("sGames").textContent=stats.games; $("sWins").textContent=stats.wins;
+  $("statSub").textContent="Daily puzzle streak: "+stats.dailyStreak+(stats.dailyLast===todayStr()?" (done today ✓)":"");
+  const cw=$("catwins"); cw.innerHTML="<b style='font-size:13px'>Wins per category</b>";
+  const ul=document.createElement("div"); ul.style.cssText="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px";
+  for(const c of CATS){
+    const n=stats.winsPerCat[c.id]||0;
+    const s=document.createElement("span");
+    s.style.cssText="font-size:12px;font-weight:700;background:#fff;border:2px solid var(--pink-100);border-radius:999px;padding:4px 10px";
+    s.textContent=c.name+": "+n; ul.appendChild(s);
+  }
+  cw.appendChild(ul);
+  renderAlbum();
+}
+
+/* ============ events ============ */
+function bind(){
+  document.addEventListener("pointerdown",()=>Snd.unlock(),{once:true});
+  document.addEventListener("keydown",e=>{
+    if(e.key&&e.key.length===1){
+      const L=e.key.toUpperCase();
+      if(L>="A"&&L<="Z"&&!$("setSheet").classList.contains("open")&&!$("statSheet").classList.contains("open")) guess(L);
+    }
+  });
+  $("tabFree").addEventListener("click",()=>{ if(mode!=="free"){mode="free";Snd.press();syncTabs();newRound();} });
+  $("tabDaily").addEventListener("click",()=>{ if(mode!=="daily"){mode="daily";Snd.press();syncTabs();newRound();} });
+  $("hintbtn").addEventListener("click",()=>{
+    if(!entry) return; Snd.unlock(); Snd.press(); hintUsed=true; saveStats();
+    const h=$("hinttext"); h.textContent="💡 "+entry.h; h.classList.add("show");
+  });
+  $("newBtn").addEventListener("click",()=>{ Snd.unlock(); Snd.press(); if(mode==="daily"){toast("Daily puzzle is one word a day — try Free play for more!");return;} newRound(); });
+  $("setBtn").addEventListener("click",()=>{ Snd.press(); syncSettingsUI(); openSheet("setSheet"); });
+  $("setDone").addEventListener("click",()=>{ Snd.press(); closeSheet("setSheet"); newRound(); });
+  $("statsBtn").addEventListener("click",()=>{ Snd.press(); renderStatsSheet(); openSheet("statSheet"); });
+  $("statDone").addEventListener("click",()=>{ Snd.press(); closeSheet("statSheet"); });
+  $("albumBtn").addEventListener("click",()=>{ Snd.press(); renderStatsSheet(); openSheet("statSheet"); });
+  $("soundBtn").addEventListener("click",()=>{ settings.muted=!settings.muted; saveSettings(); syncSoundBtn(); if(!settings.muted){Snd.unlock();Snd.press();} });
+  $("setSheet").addEventListener("click",e=>{ if(e.target===$("setSheet")){closeSheet("setSheet");newRound();} });
+  $("statSheet").addEventListener("click",e=>{ if(e.target===$("statSheet")) closeSheet("statSheet"); });
+  $("minLen").addEventListener("input",e=>{ settings.minLen=+e.target.value; if(settings.minLen>settings.maxLen){settings.maxLen=settings.minLen;} saveSettings(); syncSettingsUI(); });
+  $("maxLen").addEventListener("input",e=>{ settings.maxLen=+e.target.value; if(settings.maxLen<settings.minLen){settings.minLen=settings.maxLen;} saveSettings(); syncSettingsUI(); });
+  $("lives").addEventListener("input",e=>{ settings.lives=+e.target.value; saveSettings(); syncSettingsUI(); });
+  $("phrases").addEventListener("change",e=>{ settings.phrases=e.target.checked; saveSettings(); });
+  $("soundT").addEventListener("change",e=>{ settings.muted=!e.target.checked; saveSettings(); syncSoundBtn(); });
+}
+function syncTabs(){
+  $("tabFree").setAttribute("aria-selected",String(mode==="free"));
+  $("tabDaily").setAttribute("aria-selected",String(mode==="daily"));
+}
+
+/* ============ self-test (?selftest) ============ */
+function runSelfTest(){
+  const t=[];
+  const eq=(n,a,b)=>t.push([n,JSON.stringify(a)===JSON.stringify(b),a,b]);
+  eq("letterCount ignores spaces/punct",PigLogic.letterCount({w:"CANDLE IN THE WIND 1997"}),15);
+  eq("isPhrase true",PigLogic.isPhrase({w:"GUINEA PIG"}),true);
+  eq("isPhrase false",PigLogic.isPhrase({w:"BADGER"}),false);
+  eq("targetLetters",[...PigLogic.targetLetters({w:"OTTER"})].sort(),["E","O","R","T"]);
+  eq("prefilled keeps digits",PigLogic.prefilled({w:"CANDLE 1997"}).slice(6),[" ","1","9","9","7"]);
+  const s={minLen:3,maxLen:14,phrases:false,cats:["animals"]};
+  const all=allEntries();
+  const f=PigLogic.filterEntries(all,s);
+  eq("filter drops phrases when off",f.every(e=>!PigLogic.isPhrase(e)),true);
+  eq("filter keeps category",f.every(e=>e.cat==="animals"),true);
+  eq("filter respects length",f.every(e=>{const n=PigLogic.letterCount(e);return n>=3&&n<=14;}),true);
+  eq("daily deterministic",PigLogic.dailyIndex("2026-01-01",200),PigLogic.dailyIndex("2026-01-01",200));
+  eq("daily in range",PigLogic.dailyIndex("2026-05-06",200)<200,true);
+  eq("win detects",PigLogic.isWon({w:"OTTER"},new Set(["O","T","E","R"])),true);
+  eq("win incomplete",PigLogic.isWon({w:"OTTER"},new Set(["O","T"])),false);
+  eq("loss at lives",PigLogic.isLost(6,6),true);
+  eq("no loss below lives",PigLogic.isLost(5,6),false);
+  /* storage round-trip with corrupt data */
+  try{localStorage.setItem("hangman-b:__t","{oops");}catch(e){}
+  const v=loadJSON("hangman-b:__t",{a:1}); eq("corrupt storage resets",v,{a:1});
+  try{localStorage.removeItem("hangman-b:__t");}catch(e){}
+  let pass=0;
+  for(const [n,ok,a,b] of t){ if(ok){pass++;console.log("%cPASS "+n,"color:green");} else console.error("FAIL "+n,a,b); }
+  console.log(`selftest: ${pass}/${t.length} passed`);
+  return pass===t.length;
+}
+
+/* ============ boot ============ */
+bind(); syncTabs(); syncSoundBtn(); renderAlbum();
+newRound();
+if(new URLSearchParams(location.search).has("selftest")) runSelfTest();
+</script>
+</body>
+</html>
