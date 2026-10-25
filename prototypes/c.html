@@ -665,8 +665,8 @@ function pickFinish(side, st, last, rand){
     else fits = ["oneTwo", "cutBack"];                               /* Arsenal in the final third */
   } else {
     if (st.x > 64) fits = ["buildUp", "corner"];                     /* City dominated */
-    else if (st.x < 40) fits = ["turnover", "corner"];               /* Arsenal pressing high */
-    else fits = ["corner", "turnover"];
+    else if (st.poss === "ars") fits = ["turnover", "corner"];       /* Arsenal had the ball, pressing high */
+    else fits = ["corner", "buildUp"];                               /* even play */
   }
   fits = fits.filter(function(k){ return k !== last; });
   return fits[Math.floor(rand() * fits.length)];
@@ -1741,6 +1741,7 @@ function startWord(){
     keysEl.hidden = true;
     $("catTag").textContent = "—";
     renderDots(); renderLives(); renderScore(false);
+    if (scene.mode === "goal") scene.play(matchState(0, 0, settings.lives, 0));   /* back to shape after a goal */
     return;
   }
   empty.hidden = true;
@@ -1751,8 +1752,7 @@ function startWord(){
   let seed = Math.floor(Math.random() * 0x7fffffff);
   if (scene.mode === "goal") seed = (seed & ~1) | (scene.conceded === scene.ars ? 1 : 0);
   cur = { entry:entry, guessed:new Set(), misses:0, hintUsed:false, startTime:Date.now(), over:false, seed:seed, state:null };
-  cur.state = stateNow();
-  scene.play(cur.state);
+  swing();
   $("clueText").textContent = "";
   $("clueText").classList.remove("show");
   $("clueBtn").hidden = false;
@@ -2120,11 +2120,13 @@ function runSelfTests(){
   t("Arsenal win with City camped: counter or long ball", fits("ars", cityCamped), ["counter", "longBall"]);
   t("Arsenal win from even play: through ball or long ball", fits("ars", level), ["longBall", "throughBall"]);
   t("Arsenal win in the final third: one-two or cut-back", fits("ars", arsHigh), ["cutBack", "oneTwo"]);
-  t("City win after dominating: build-up or corner", fits("city", cityCamped), ["buildUp", "corner"]);
-  t("City win while Arsenal press high: turnover or corner", fits("city", arsHigh), ["corner", "turnover"]);
-  t("City win from even play: corner or turnover", fits("city", level), ["corner", "turnover"]);
+  /* City finish from the state before the final miss, so misses = lives - 1 */
+  const cityDominant = matchState(0, 5, 6, 0), arsHadIt = matchState(0.9, 5, 6, 0), cityLevel = matchState(0.5, 5, 6, 0);
+  t("City win after dominating: build-up or corner", fits("city", cityDominant), ["buildUp", "corner"]);
+  t("City win while Arsenal had the ball: turnover or corner", fits("city", arsHadIt), ["corner", "turnover"]);
+  t("City win from even play: corner or build-up", fits("city", cityLevel), ["buildUp", "corner"]);
   t("finish never repeats", [0, 0.5, 0.99].map(function(r){ return pickFinish("ars", cityCamped, "counter", function(){ return r; }); }), ["longBall", "longBall", "longBall"]);
-  t("finish never repeats (City)", [0, 0.99].map(function(r){ return pickFinish("city", arsHigh, "turnover", function(){ return r; }); }), ["corner", "corner"]);
+  t("finish never repeats (City)", [0, 0.99].map(function(r){ return pickFinish("city", arsHadIt, "turnover", function(){ return r; }); }), ["corner", "corner"]);
   t("every finish has a play and a caption", ["ars", "city"].every(function(side){
     return Object.keys(FINISHES[side]).length >= 3 && Object.keys(FINISHES[side]).every(function(k){ return typeof FINISH_PLAYS[k] === "function" && FINISHES[side][k].length > 0; });
   }), true);
