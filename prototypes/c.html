@@ -2181,6 +2181,8 @@ function runSelfTests(){
   const kb = ballAt(tp - 1e-3), ka = ballAt(tp + 1e-3);
   t("kick leaves from the passer's new spot", Math.hypot(kb[0] - ka[0], kb[1] - ka[1]) < 0.1, true);
   B.events = saved[0]; B.holder = saved[1]; scene.busyUntil = saved[2];
+  /* layout: the game screen fits the viewport with no page scroll */
+  t("game fits one screen without scrolling", document.scrollingElement.scrollHeight <= innerHeight && $("nextBtn").getBoundingClientRect().bottom <= innerHeight, true);
   if (failures.length){
     console.error("SELFTEST FAIL (" + failures.length + "/" + n + "):\n" + failures.join("\n"));
   } else {
