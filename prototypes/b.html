@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f9a8c9">
+<meta name="theme-color" content="#fde3ee">
 <link rel="icon" href="data:,">
 <title>Piggy Paradise Hangman</title>
 <style>
@@ -14,125 +14,131 @@
   --gold:#e8a93d; --card:#ffffff;
   --ease-out:cubic-bezier(0.23,1,0.32,1);
   --ease-in-out:cubic-bezier(0.77,0,0.175,1);
+  --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+  --ease-back:cubic-bezier(0.34,1.56,0.64,1);
   --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+  --lift:0 1px 0 rgba(140,42,81,.05),0 6px 16px -8px rgba(140,42,81,.32);
+  --font:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
 body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  background:linear-gradient(180deg,var(--pink-50) 0%,#fdeef4 45%,#f7e3ee 100%);
-  color:var(--ink); min-height:100dvh; touch-action:manipulation;
-  padding-top:var(--sat); padding-bottom:var(--sab);
+  font-family:var(--font);color:var(--ink);min-height:100dvh;touch-action:manipulation;
+  background:radial-gradient(130% 70% at 50% 0%,#fff 0%,var(--pink-50) 45%,#fbe2ee 100%) fixed;
+  padding:var(--sat) var(--sar) var(--sab) var(--sal);
 }
-#app{max-width:520px;margin:0 auto;padding:10px 14px calc(14px + var(--sab));min-height:100dvh;display:flex;flex-direction:column}
+button{font:inherit;color:inherit;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--pink-500);outline-offset:2px}
+#app{max-width:480px;margin:0 auto;padding:8px 14px 12px;min-height:calc(100dvh - var(--sat) - var(--sab));display:flex;flex-direction:column}
 /* ---------- header ---------- */
-header.top{display:flex;align-items:center;gap:8px}
-.logo{font-size:22px;font-weight:800;letter-spacing:-0.02em}
-.logo small{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+header.top{display:flex;align-items:center;gap:6px;min-height:44px}
+.logo{display:flex;align-items:center;gap:8px;margin-right:auto;font-size:19px;font-weight:800;letter-spacing:-0.02em;line-height:1.05}
+.logo svg{width:34px;height:34px;flex:none}
+.logo small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
 .iconbtn{
-  margin-left:auto;border:2px solid var(--pink-200);background:var(--card);color:var(--ink);
-  min-width:44px;min-height:44px;border-radius:14px;font-size:20px;cursor:pointer;
-  transition:transform 150ms var(--ease-out),background-color 150ms ease;
+  width:44px;height:44px;border:0;border-radius:14px;background:var(--card);box-shadow:var(--lift);color:var(--pink-700);
+  display:grid;place-items:center;cursor:pointer;transition:transform 140ms var(--ease-out);
 }
-.iconbtn:active{transform:scale(0.93)}
-.iconbtn[aria-pressed="true"]{background:var(--pink-100)}
-/* ---------- mode tabs ---------- */
-.tabs{display:flex;gap:8px;margin:10px 0 4px}
+.iconbtn:active{transform:scale(0.94)}
+.iconbtn svg{width:22px;height:22px}
+.iconbtn .off,.iconbtn[aria-pressed="false"] .on{display:none}
+.iconbtn[aria-pressed="false"] .off{display:block}
+/* ---------- mode tabs: segmented control with a sliding pill ---------- */
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;margin-top:8px;padding:4px;border-radius:16px;background:#f7d8e5}
+.seg .pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:12px;background:var(--card);box-shadow:var(--lift);transition:transform 280ms var(--ease-out)}
+.seg[data-mode="daily"] .pill{transform:translateX(100%)}
 .tab{
-  flex:1;border:2px solid var(--pink-200);background:#ffffffaa;color:var(--ink-soft);
-  border-radius:16px;min-height:48px;font-size:15px;font-weight:700;cursor:pointer;
-  transition:transform 160ms var(--ease-out),background-color 160ms ease,color 160ms ease,border-color 160ms ease;
+  position:relative;border:0;background:none;min-height:44px;border-radius:12px;cursor:pointer;
+  font-size:14.5px;font-weight:800;line-height:1.15;color:var(--ink-soft);transition:transform 140ms var(--ease-out);
 }
 .tab:active{transform:scale(0.97)}
-.tab[aria-selected="true"]{background:var(--pink-500);border-color:var(--pink-500);color:#fff}
-.tab .sub{display:block;font-size:11px;font-weight:600;opacity:.85}
-/* ---------- stage (gallows + pigs) ---------- */
+.tab[aria-selected="true"]{color:var(--ink)}
+.tab .sub{display:block;font-size:11px;font-weight:700;color:var(--ink-soft)}
+/* ---------- stage: a window onto one tall world the camera can pan ---------- */
 #stage{
-  position:relative;background:linear-gradient(180deg,#fff 0%,var(--pink-100) 100%);
-  border:2px solid var(--pink-200);border-radius:22px;margin-top:8px;overflow:hidden;
-  min-height:300px;
+  position:relative;margin-top:10px;aspect-ratio:400/260;border-radius:24px;overflow:hidden;isolation:isolate;
+  background:#ffe9f1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 12px 28px -16px rgba(140,42,81,.5);
 }
-#scene{width:100%;height:auto;display:block}
-.haynote{
-  position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:12px;font-weight:700;
-  color:var(--ink-soft);opacity:0;transition:opacity 250ms ease;pointer-events:none;
-}
-.haynote.show{opacity:1}
-.treatrow{display:flex;align-items:center;gap:6px;padding:8px 12px 2px;min-height:40px;flex-wrap:wrap}
-.treatrow .lbl{font-size:12px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em}
-.treat{
-  font-size:24px;line-height:1;display:inline-block;opacity:0;transform:scale(0.5) translateY(8px);
-  transition:opacity 220ms var(--ease-out),transform 280ms var(--ease-out);
-}
-.treat.earned{opacity:1;transform:scale(1) translateY(0)}
+#cam{position:absolute;inset:0}
+#bg,#world{position:absolute;left:0;top:0;width:100%;height:auto;display:block}
+#bg{aspect-ratio:400/420}
+#world{aspect-ratio:400/700}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+#pips,#treatchip{display:flex;align-items:center;border-radius:999px;background:rgba(255,255,255,.86);box-shadow:var(--lift)}
+#pips{gap:4px;padding:7px 9px}
+.pip{width:9px;height:9px;border-radius:50%;background:var(--pink-500);transition:transform 260ms var(--ease-back),opacity 260ms ease}
+.pip.used{opacity:.2;transform:scale(0.7)}
+#treatchip{gap:4px;padding:4px 11px 4px 8px;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
 /* ---------- word ---------- */
-#meta{display:flex;align-items:center;gap:8px;margin:10px 2px 0;flex-wrap:wrap}
-#catpill{background:var(--pink-500);color:#fff;font-size:12px;font-weight:800;border-radius:999px;padding:5px 12px;letter-spacing:.02em}
-#diffpill{font-size:12px;font-weight:800;border-radius:999px;padding:5px 12px;border:2px solid var(--pink-200);color:var(--ink-soft)}
-#streakpill{margin-left:auto;font-size:13px;font-weight:800;color:var(--pink-600)}
-#word{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px 0 4px;min-height:56px}
+#meta{display:flex;align-items:center;gap:6px;margin:12px 2px 0;min-height:26px}
+.chip{font-size:12px;font-weight:800;border-radius:999px;padding:5px 11px;letter-spacing:.01em}
+#catpill{background:var(--pink-600);color:#fff}
+#diffpill{background:var(--card);color:var(--ink-soft);box-shadow:inset 0 0 0 1.5px var(--pink-200)}
+#streakpill{margin-left:auto;font-size:13px;font-weight:800;color:var(--pink-700);font-variant-numeric:tabular-nums}
+#word{--tile:38px;--gap:5px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 14px;margin-top:12px;min-height:calc(var(--tile)*1.22)}
+.wgrp{display:flex;gap:var(--gap)}
 .tile{
-  width:38px;height:50px;border-radius:12px;background:var(--card);border:2px solid var(--pink-200);
-  display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:var(--ink);
-  transition:transform 200ms var(--ease-out),opacity 200ms ease,background-color 200ms ease,border-color 200ms ease;
+  position:relative;width:var(--tile);height:calc(var(--tile)*1.22);border-radius:calc(var(--tile)*.28);
+  display:grid;place-items:center;background:var(--card);font-size:calc(var(--tile)*.6);font-weight:800;color:var(--ink);
+  box-shadow:inset 0 -3px 0 var(--pink-200),0 3px 8px -4px rgba(140,42,81,.35);
 }
-.tile.reveal{transform:scale(0.95);opacity:0}
-.tile.revealed{background:#fff;transform:scale(1);opacity:1}
-.tile.won{background:#e3f6e8;border-color:var(--leaf)}
-.tile.lost{background:#ffe8ee;border-color:var(--pink-400)}
-.tile.space{width:18px;border:none;background:transparent}
-.tile.punct{border-style:dashed;color:var(--pink-600);font-size:20px}
-/* ---------- hint ---------- */
-#hintbar{display:flex;gap:8px;align-items:center;margin:6px 2px}
-#hintbtn{
-  border:2px solid var(--pink-300);background:var(--card);color:var(--pink-600);font-weight:800;font-size:14px;
-  border-radius:999px;padding:10px 16px;min-height:44px;cursor:pointer;
-  transition:transform 150ms var(--ease-out),background-color 150ms ease;
+.tile::after{content:"";position:absolute;inset:0;border-radius:inherit;background:#daf2e0;box-shadow:inset 0 -3px 0 #8fcf9f;opacity:0;transition:opacity 280ms ease var(--d,0ms)}
+.tile.won::after{opacity:1}
+.tile .ch{position:relative;z-index:1}
+.tile.miss .ch{color:var(--pink-600)}
+.tile.punct{background:transparent;box-shadow:none;color:var(--ink-soft)}
+#hinttext{min-height:20px;margin:8px 4px 0;text-align:center;font-size:14px;font-style:italic;color:var(--ink-soft);opacity:0;transform:translateY(4px);transition:opacity 220ms ease,transform 220ms var(--ease-out)}
+#hinttext.show{opacity:1;transform:none}
+#empty{padding:14px 10px 0;text-align:center;color:var(--ink-soft);font-weight:700}
+/* ---------- keyboard: raised keys, the face presses into its base ---------- */
+.bottom{margin-top:auto;padding-top:8px}
+#kbd{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+#kbd .key:nth-child(22){grid-column-start:2}
+.key{position:relative;height:47px;border:0;padding:0;border-radius:12px;background:var(--pink-300);cursor:pointer}
+.key span{
+  position:absolute;inset:0 0 4px;display:grid;place-items:center;border-radius:12px;background:var(--card);
+  font-size:19px;font-weight:800;color:var(--ink);transition:transform 110ms var(--ease-out);
 }
-#hintbtn:active{transform:scale(0.95)}
-#hinttext{font-size:14px;color:var(--ink-soft);font-style:italic;opacity:0;transform:translateY(4px);transition:opacity 220ms ease,transform 220ms var(--ease-out)}
-#hinttext.show{opacity:1;transform:translateY(0)}
-/* ---------- keyboard ---------- */
-#kbd{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin:10px 0 4px}
-.key{
-  min-height:48px;border:none;border-radius:13px;font-size:18px;font-weight:800;color:var(--ink);
-  background:var(--card);box-shadow:0 2px 0 var(--pink-200);cursor:pointer;
-  transition:transform 120ms var(--ease-out),background-color 150ms ease,opacity 150ms ease,box-shadow 120ms ease;
-}
-.key:active{transform:scale(0.93)}
-.key.right{background:#cdeccf;box-shadow:0 2px 0 var(--leaf-dark);color:#1f4d2c}
-.key.wrong{background:#f3d3dc;box-shadow:none;color:#9c4a63;opacity:.75}
+.key:active:not(:disabled) span{transform:translateY(3px)}
+.key.right{background:var(--leaf)}
+.key.right span{background:#daf2e0;color:#1f4d2c}
+.key.wrong{background:#efd9e2}
+.key.wrong span{background:#f8e9ef;color:#865069;transform:translateY(3px)}
 .key:disabled{cursor:default}
-/* ---------- action row ---------- */
-.actions{display:flex;gap:8px;margin:8px 0}
+.key:disabled:not(.right):not(.wrong) span{opacity:.5}
+.actions{display:flex;gap:8px;margin-top:10px}
 .btn{
-  flex:1;border:none;border-radius:16px;min-height:50px;font-size:15px;font-weight:800;cursor:pointer;
-  transition:transform 150ms var(--ease-out),background-color 150ms ease,opacity 150ms ease;
+  flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:16px;min-height:48px;
+  font-size:15px;font-weight:800;cursor:pointer;transition:transform 140ms var(--ease-out);
 }
-.btn:active{transform:scale(0.96)}
-.btn.primary{background:var(--pink-500);color:#fff}
-.btn.ghost{background:var(--card);color:var(--pink-600);border:2px solid var(--pink-200)}
-/* ---------- panels / modal ---------- */
-.sheet{
-  position:fixed;inset:0;background:rgba(74,36,54,.45);display:flex;align-items:flex-end;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity 220ms ease;z-index:50;
-}
-.sheet.open{opacity:1;pointer-events:auto}
+.btn:active{transform:scale(0.97)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.primary{background:var(--pink-600);color:#fff;box-shadow:0 3px 0 var(--pink-700)}
+.btn.ghost{background:var(--card);color:var(--pink-700);box-shadow:var(--lift)}
+/* ---------- bottom sheets ---------- */
+.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
+.sheet::before{content:"";position:absolute;inset:0;background:rgba(74,36,54,.42);opacity:0;transition:opacity 260ms ease}
+.sheet.open{pointer-events:auto}
+.sheet.open::before{opacity:1}
 .card{
-  background:var(--cream);border-radius:24px 24px 0 0;width:100%;max-width:520px;max-height:86dvh;overflow:auto;
-  padding:18px 18px calc(22px + var(--sab));transform:translateY(24px) scale(0.98);opacity:0;
-  transition:transform 280ms var(--ease-out),opacity 220ms ease;
+  position:relative;width:100%;max-width:480px;max-height:88dvh;overflow:auto;overscroll-behavior:contain;
+  background:var(--cream);border-radius:26px 26px 0 0;padding:10px 18px calc(20px + var(--sab));
+  box-shadow:0 -12px 40px -20px rgba(74,36,54,.55);transform:translateY(100%);transition:transform 240ms var(--ease-drawer);
 }
-.sheet.open .card{transform:translateY(0) scale(1);opacity:1}
+.card:focus{outline:none}
+.sheet.open .card{transform:none;transition-duration:420ms}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--pink-200);margin:0 auto 12px}
 .card h2{margin:0 0 4px;font-size:20px;letter-spacing:-0.01em}
 .card p.sub{margin:0 0 12px;color:var(--ink-soft);font-size:14px}
 .setrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--pink-100)}
 .setrow label{font-weight:700;font-size:15px;flex:1}
-.setrow output{font-weight:800;color:var(--pink-600);min-width:2ch;text-align:right}
+.setrow output{font-weight:800;color:var(--pink-600);min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}
 input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
 .switch{position:relative;width:58px;height:44px;flex:none}
 .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
-.knob{position:absolute;top:8px;left:4px;right:4px;bottom:8px;background:#e9cbd8;border-radius:999px;transition:background-color 180ms ease;pointer-events:none}
+.knob{position:absolute;top:8px;left:4px;right:4px;bottom:8px;background:#e9cbd8;border-radius:999px;pointer-events:none}
 .knob::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform 200ms var(--ease-out)}
 .switch input:checked + .knob{background:var(--leaf)}
 .switch input:checked + .knob::after{transform:translateX(24px)}
@@ -140,86 +146,184 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
 .cats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 8px}
 .catchip{
   border:2px solid var(--pink-200);background:#fff;border-radius:14px;min-height:48px;font-size:14px;font-weight:700;
-  color:var(--ink-soft);cursor:pointer;transition:transform 150ms var(--ease-out),background-color 150ms ease;
+  color:var(--ink-soft);cursor:pointer;transition:transform 140ms var(--ease-out);
 }
-.catchip:active{transform:scale(0.95)}
+.catchip:active{transform:scale(0.96)}
 .catchip[aria-pressed="true"]{background:var(--pink-100);border-color:var(--pink-500);color:var(--pink-700)}
-.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
-.stat{background:#fff;border:2px solid var(--pink-100);border-radius:14px;padding:10px;text-align:center}
-.stat b{display:block;font-size:22px}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 14px}
+.stat{background:#fff;border-radius:16px;padding:12px 10px;text-align:center;box-shadow:var(--lift)}
+.stat b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
 .stat span{font-size:12px;color:var(--ink-soft);font-weight:700}
-/* sticker album */
 .album{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
-.sticker{background:#fff;border:2px solid var(--pink-100);border-radius:16px;padding:10px 6px;text-align:center;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.sticker{background:#fff;border-radius:16px;padding:10px 6px;text-align:center;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:var(--lift)}
 .sticker .em{font-size:30px;filter:grayscale(1);opacity:.35}
-.sticker.won{border-color:var(--gold);background:#fffbeF}
+.sticker.won{background:#fffbef;box-shadow:inset 0 0 0 2px var(--gold),var(--lift)}
 .sticker.won .em{filter:none;opacity:1}
 .sticker b{font-size:11px}
 .sticker small{font-size:10px;color:var(--ink-soft)}
-/* toast */
+/* ---------- toast, effects layer ---------- */
 #toast{
-  position:fixed;left:50%;bottom:calc(20px + var(--sab));transform:translateX(-50%) translateY(16px) scale(0.95);
-  background:var(--ink);color:#fff;font-weight:700;font-size:14px;border-radius:999px;padding:12px 20px;
-  opacity:0;transition:opacity 220ms ease,transform 260ms var(--ease-out);z-index:80;pointer-events:none;max-width:92vw;text-align:center;
+  position:fixed;left:50%;top:calc(10px + var(--sat));z-index:80;max-width:min(92vw,440px);padding:12px 18px;border-radius:18px;
+  background:var(--ink);color:#fff;font-weight:700;font-size:14px;text-align:center;pointer-events:none;
+  box-shadow:0 12px 30px -12px rgba(74,36,54,.6);opacity:0;transform:translate(-50%,-140%);
+  transition:opacity 220ms ease,transform 300ms var(--ease-out);
 }
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
-#empty{padding:22px;text-align:center;color:var(--ink-soft);font-weight:600}
-/* popcorning pig hop */
-@keyframes hop{0%{transform:translateY(0)}30%{transform:translateY(-14px)}55%{transform:translateY(0)}75%{transform:translateY(-7px)}100%{transform:translateY(0)}}
-.hopping{animation:hop 480ms var(--ease-in-out)}
-@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
-.wiggle{animation:wiggle 300ms ease}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#fx{position:fixed;inset:0;z-index:40;pointer-events:none;overflow:hidden}
+.fly{position:absolute;left:0;top:0;font-size:24px;line-height:1}
+.fly i{display:block;font-style:normal}
+.confetti{position:absolute;left:0;top:0;width:8px;height:12px;border-radius:2px}
+.sr{position:fixed;top:0;left:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* ---------- pig moods and props: crossfades, never frame swaps ---------- */
+.pig .m-happy,.pig .m-worried,.pig .m-scared,.pig .m-joy,.pig .hz,.pig .sw,.pig .hb{opacity:0;transition:opacity 180ms ease}
+.pig[data-mood="happy"] .m-happy,.pig[data-mood="worried"] .m-worried,.pig[data-mood="scared"] .m-scared,.pig[data-mood="joy"] .m-joy,
+.pig[data-harness="on"] .hz,.pig[data-sweat="on"] .sw,.pig[data-hay="on"] .hb{opacity:1}
+.pig .hat{opacity:0;transform:translateY(-10px);transition:opacity 200ms ease,transform 380ms var(--ease-back)}
+.pig[data-hat="on"] .hat{opacity:1;transform:translateY(0)}
+.pig[data-dangle="on"] .feet{animation:dangle 900ms ease-in-out infinite alternate}
+@keyframes dangle{from{transform:translateY(0)}to{transform:translateY(1.6px)}}
+.blink{transform-box:fill-box;transform-origin:center;animation:blink 5.2s infinite}
+#pixieArt .blink{animation-delay:-2.4s}
+@keyframes blink{0%,95%,100%{transform:scaleY(1)}97.5%{transform:scaleY(0.12)}}
+.tremble{animation:tremble 130ms linear infinite}
+@keyframes tremble{0%,100%{transform:translateX(0)}25%{transform:translateX(-0.8px)}75%{transform:translateX(0.8px)}}
+.drip{animation:drip 1.4s var(--ease-in-out) infinite}
+@keyframes drip{0%{transform:translateY(0);opacity:1}80%{transform:translateY(4px);opacity:0}100%{transform:translateY(0);opacity:0}}
+.cloud{animation:drift 60s linear infinite alternate}
+@keyframes drift{from{transform:translateX(-14px)}to{transform:translateX(18px)}}
 @media (hover:hover) and (pointer:fine){
-  .key:hover{transform:translateY(-1px)}
-  .btn:hover{filter:brightness(1.03)}
+  .key:hover:not(:disabled) span{transform:translateY(-1px)}
+  .iconbtn:hover,.btn:hover{filter:brightness(1.03)}
 }
 @media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:0.01ms !important;transition-duration:200ms !important}
-  .treat,.tile,#hinttext,#toast,.card{transform:none !important}
-  .hopping,.wiggle{animation:none !important}
+  .blink,.tremble,.drip,.cloud,.pig[data-dangle="on"] .feet{animation:none}
+  .pig .hat,#hinttext{transform:none}
+  .seg .pill{transition:none}
+  .card{transform:none;opacity:0;transition:opacity 220ms ease}
+  .sheet.open .card{opacity:1;transition-duration:220ms}
+  #toast{transform:translate(-50%,0)}
 }
 </style>
 </head>
 <body>
 <div id="app">
   <header class="top">
-    <div class="logo">🐹 Piggy Paradise<small>hangman</small></div>
-    <button class="iconbtn" id="albumBtn" aria-label="Sticker album">🏅</button>
-    <button class="iconbtn" id="soundBtn" aria-label="Toggle sound" aria-pressed="true">🔊</button>
-    <button class="iconbtn" id="setBtn" aria-label="Settings">⚙️</button>
+    <div class="logo">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="9" cy="11" rx="5" ry="4" fill="#6c7380"/><ellipse cx="31" cy="11" rx="5" ry="4" fill="#9aa0aa"/><circle cx="20" cy="22" r="16" fill="#f1ebe0" stroke="#e7d9cc"/><path d="M5 19C5 10 13 6 19 6.5C20 11 19 15 18 19C15 23 8 23 5 19Z" fill="#646b78"/><ellipse cx="20" cy="15" rx="2.2" ry="7.5" fill="#fff"/><circle cx="13.5" cy="20" r="2.2" fill="#2a1520"/><circle cx="26.5" cy="20" r="2.2" fill="#2a1520"/><ellipse cx="20" cy="25" rx="2.3" ry="1.7" fill="#f08aa6"/></svg>
+      <div>Piggy Paradise<small>hangman</small></div>
+    </div>
+    <button class="iconbtn" id="albumBtn" aria-label="Stats and sticker album"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+    <button class="iconbtn" id="soundBtn" aria-label="Sound" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path class="on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="off" d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <button class="iconbtn" id="setBtn" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9.5M18.5 7H20M4 17h3.5M12.5 17H20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
   </header>
 
-  <div class="tabs" role="tablist" aria-label="Game mode">
+  <div class="seg" id="seg" role="tablist" aria-label="Game mode" data-mode="free">
+    <span class="pill" aria-hidden="true"></span>
     <button class="tab" id="tabFree" role="tab" aria-selected="true">Free play<span class="sub" id="freeSub">pick a word</span></button>
     <button class="tab" id="tabDaily" role="tab" aria-selected="false">Daily puzzle<span class="sub" id="dailySub">one a day</span></button>
   </div>
 
   <section id="stage" aria-label="Guinea pig scene">
-    <svg id="scene" viewBox="0 0 400 250" role="img" aria-label="Cartoon guinea pig on a wooden platform under a small gallows"></svg>
-    <div class="haynote" id="haynote">Phew — soft landing in the hay! 🐹💛</div>
+    <div id="cam">
+      <svg id="bg" viewBox="0 0 400 420" aria-hidden="true">
+        <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd2e3"/><stop offset=".5" stop-color="#ffe9f0"/><stop offset="1" stop-color="#e4f1fb"/></linearGradient></defs>
+        <rect width="400" height="420" fill="url(#sky)"/>
+        <circle cx="336" cy="44" r="36" fill="#fff4d6" opacity=".6"/><circle cx="336" cy="44" r="19" fill="#ffefb8"/>
+        <g class="cloud"><path d="M52 64a13 13 0 0 1 24-7a11 11 0 0 1 19 6a9 9 0 0 1-1 18H54a9 9 0 0 1-2-17z" fill="#fff"/></g>
+        <g class="cloud" style="animation-duration:80s"><path d="M196 34a10 10 0 0 1 18-5a9 9 0 0 1 15 5a7 7 0 0 1-1 14h-31a7 7 0 0 1-1-14z" fill="#fff" opacity=".85"/></g>
+        <g class="cloud" style="animation-duration:70s;animation-direction:alternate-reverse"><path d="M318 136a10 10 0 0 1 18-5a9 9 0 0 1 15 5a7 7 0 0 1-1 14h-31a7 7 0 0 1-1-14z" fill="#fff" opacity=".8"/></g>
+        <path d="M0 236C70 214 130 232 200 222S330 214 400 224V420H0z" fill="#e2efe2"/>
+        <path d="M0 290C90 268 170 292 260 278S360 270 400 280V420H0z" fill="#cbe6d0"/>
+        <g fill="#a9d6b4"><circle cx="320" cy="272" r="7"/><circle cx="332" cy="267" r="9"/><circle cx="346" cy="272" r="6"/><circle cx="374" cy="264" r="7"/></g>
+        <path d="M0 352C100 336 220 356 400 340V420H0z" fill="#b5ddbf"/>
+      </svg>
+      <svg id="world" viewBox="0 0 400 700" aria-hidden="true">
+        <defs>
+          <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0c4ae"/><stop offset="1" stop-color="#d99d8a"/></linearGradient>
+          <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6a46c"/><stop offset="1" stop-color="#b47e4a"/></linearGradient>
+          <linearGradient id="hayG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d77a"/><stop offset="1" stop-color="#e2b54e"/></linearGradient>
+          <clipPath id="pigClip"><ellipse cx="0" cy="-25" rx="29" ry="25"/></clipPath>
+        </defs>
+        <!-- clifftop meadow, cliff face and the yard far below -->
+        <path d="M0 214H300C309 228 296 262 302 300C308 342 292 384 298 432C304 482 290 524 298 572C302 602 296 626 300 650H0z" fill="url(#rock)"/>
+        <path d="M0 318C90 308 190 324 298 314M0 446C80 436 200 452 296 444M0 560C100 552 200 566 298 558" stroke="#cf8f7b" stroke-width="3" fill="none" stroke-linecap="round" opacity=".45"/>
+        <g fill="#e3a995" opacity=".7"><ellipse cx="60" cy="270" rx="16" ry="8"/><ellipse cx="200" cy="380" rx="22" ry="9"/><ellipse cx="110" cy="500" rx="18" ry="8"/><ellipse cx="240" cy="610" rx="16" ry="7"/></g>
+        <path d="M-4 207C70 201 150 211 222 206S292 206 305 211C311 215 306 223 296 223H-4z" fill="#8fd08f"/>
+        <path d="M-4 220C80 226 200 227 296 223" stroke="#5da271" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <g fill="#ff9fc3"><circle cx="112" cy="206" r="3"/><circle cx="196" cy="205" r="2.6"/><circle cx="236" cy="207" r="2.4"/></g>
+        <g fill="#fff"><circle cx="126" cy="208" r="2.4"/><circle cx="208" cy="206" r="2.2"/></g>
+        <path d="M0 642C90 634 210 648 400 636V700H0z" fill="#93d495"/>
+        <g stroke="#b88355" stroke-linecap="round" fill="none"><path d="M28 616V644M76 614V644M124 616V644" stroke-width="5"/><path d="M24 624H130M24 636H130" stroke-width="4"/></g>
+        <g fill="#ff9fc3"><circle cx="160" cy="652" r="3"/><circle cx="214" cy="660" r="2.6"/></g>
+        <!-- Pixie's log hide -->
+        <ellipse cx="80" cy="190" rx="7" ry="20" fill="#4f3220"/>
+        <g transform="translate(0 212)"><g id="pixie" style="transform:translateX(70px)"><g id="pixieHop"><g id="pixieSquash"><g id="pixieArt" class="pig" data-mood="happy" transform="scale(0.72)"></g></g></g></g></g>
+        <path d="M10 168H80V212H10A9 22 0 0 1 10 168z" fill="#b57f55"/>
+        <path d="M16 179H70M22 191H62M16 202H72" stroke="#93613d" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+        <ellipse cx="80" cy="190" rx="7.5" ry="21" fill="none" stroke="#cf9f70" stroke-width="3"/>
+        <path d="M28 169c4-8 15-8 19 0z" fill="#7cc47f"/><circle cx="52" cy="166" r="3" fill="#ff9fc3"/>
+        <!-- hay pile: hidden until the first landing -->
+        <g id="hayBack" style="opacity:0">
+          <g transform="translate(335 700)"><g id="hayBackSq"><path d="M-72 2C-68-62-40-90 0-98S68-60 70 2z" fill="#e7bd57"/><path d="M-40-70l-8-10M-10-88l-2-12M22-84l8-10M48-60l10-6" stroke="#c99a3a" stroke-width="2.4" stroke-linecap="round"/></g></g>
+          <g transform="translate(282 740)"><g id="pixieHay"><g class="pig" data-mood="joy" id="pixieHayArt" transform="scale(0.72)"></g></g></g>
+        </g>
+        <!-- gallows, built piece by piece -->
+        <g id="pDeckBack" style="opacity:0">
+          <path d="M264 196V214M296 196V212M300 258L352 197" stroke="#9a6a3f" stroke-width="6" stroke-linecap="round"/>
+          <g fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"><rect x="228" y="204" width="12" height="9" rx="2"/><rect x="238" y="196" width="12" height="17" rx="2"/><rect x="248" y="188" width="10" height="25" rx="2"/></g>
+        </g>
+        <g transform="translate(280 189)"><g id="pPost" style="opacity:0"><rect x="-6" y="-122" width="12" height="122" rx="3" fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"/><path d="M-1-110V-20" stroke="#a87444" stroke-width="1.5" opacity=".6"/></g></g>
+        <g transform="translate(270 66)"><g id="pBeam" style="opacity:0"><rect width="92" height="11" rx="3" fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"/><circle cx="10" cy="5.5" r="1.6" fill="#8a5a35"/><circle cx="62" cy="5.5" r="1.6" fill="#8a5a35"/></g></g>
+        <g transform="translate(280 112)"><g id="pBrace" style="opacity:0"><rect y="-3.5" width="50" height="7" rx="3" transform="rotate(-44)" fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"/></g></g>
+        <!-- rope and pig swing together about the beam -->
+        <g transform="translate(332 77)"><g id="swing"><g transform="translate(-332 -77)">
+          <g transform="translate(332 77)">
+            <g id="rope" style="opacity:0"><path d="M0 0V40" stroke="#c9a067" stroke-width="3.4" stroke-linecap="round"/><path d="M0 1V39" stroke="#9f7741" stroke-width="3.4" stroke-dasharray="2 3"/></g>
+            <g id="bow" style="opacity:0"><path d="M0 2v4q0 3 3 3" stroke="#8c6a4a" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M0 0C-6-6-13-5-12 0S-6 6 0 0zM0 0C6-6 13-5 12 0S6 6 0 0z" fill="#f27ba8" stroke="#b93a6c" stroke-width="1.2"/><circle r="2.6" fill="#e14e87"/></g>
+          </g>
+          <g id="pigPos" style="transform:translate(168px,212px)">
+            <ellipse id="pigShadow" rx="24" ry="4" fill="#4a2436" fill-opacity=".14"/>
+            <g id="pigHoist"><g id="pigHop"><g id="pigSquash"><g id="pigShake"><g id="pepperArt" class="pig" data-mood="happy"></g></g></g></g></g>
+          </g>
+        </g></g></g>
+        <g id="pDeckFront" style="opacity:0">
+          <rect x="252" y="188" width="54" height="8" rx="2" fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"/>
+          <rect x="358" y="188" width="8" height="8" rx="2" fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"/>
+          <g transform="translate(306 188)"><g id="tdL"><rect width="26" height="8" rx="1.5" fill="#c38c57" stroke="#8a5a35" stroke-width="1.5"/></g></g>
+          <g transform="translate(358 188)"><g id="tdR"><rect x="-26" width="26" height="8" rx="1.5" fill="#c38c57" stroke="#8a5a35" stroke-width="1.5"/></g></g>
+        </g>
+        <g id="hayFront" style="opacity:0"><g transform="translate(335 700)"><g id="hayFrontSq"><path d="M-76 2C-66-44-38-62 0-66S66-44 72 2z" fill="url(#hayG)"/><path d="M-50-30l-10-8M-24-52l-6-10M4-60l2-12M30-52l8-9M54-32l10-6M-36-14l-8-4M20-20l9-5" stroke="#c99a3a" stroke-width="2.4" stroke-linecap="round"/></g></g></g>
+        <g id="strawFx"></g><g id="dust"></g><g id="hearts"></g>
+        <g transform="translate(374 102)"><g id="gulp" style="opacity:0"><path d="M-12 7l-7 9 12-6z" fill="#fff" stroke="#e14e87" stroke-width="1.5" stroke-linejoin="round"/><rect x="-21" y="-11" width="42" height="20" rx="10" fill="#fff" stroke="#e14e87" stroke-width="1.5"/><text y="3.6" text-anchor="middle" font-size="10.5" font-weight="800" fill="#8c2a51">gulp!</text></g></g>
+      </svg>
+    </div>
+    <div class="hud">
+      <div id="pips" role="img" aria-label="chances left"></div>
+      <div id="treatchip" aria-label="Treats this game"><span aria-hidden="true">🥕</span><b id="treatN">0</b></div>
+    </div>
   </section>
-  <div class="treatrow" id="treatrow" aria-label="Vegetable treats earned"><span class="lbl">Veg box</span></div>
 
   <div id="meta">
-    <span id="catpill">animals</span><span id="diffpill">easy</span>
-    <span id="streakpill">🔥 streak 0</span>
+    <span class="chip" id="catpill">animals</span><span class="chip" id="diffpill">easy</span>
+    <span id="streakpill">streak 0</span>
   </div>
-  <div id="word" aria-live="polite"></div>
-  <div id="hintbar">
-    <button id="hintbtn">💡 Hint</button>
-    <span id="hinttext"></span>
-  </div>
-  <div id="kbd" role="group" aria-label="Letter keyboard"></div>
-  <div class="actions">
-    <button class="btn ghost" id="newBtn">🎲 New word</button>
-    <button class="btn primary" id="statsBtn">📊 Stats</button>
-  </div>
+  <div id="word" role="img" aria-label="Word"></div>
+  <div id="hinttext"></div>
   <div id="empty" hidden></div>
+
+  <div class="bottom">
+    <div id="kbd" role="group" aria-label="Letter keyboard"></div>
+    <div class="actions">
+      <button class="btn ghost" id="hintbtn">💡 Hint</button>
+      <button class="btn primary" id="newBtn">New word</button>
+    </div>
+  </div>
 </div>
 
 <!-- settings sheet -->
-<div class="sheet" id="setSheet" aria-hidden="true"><div class="card" role="dialog" aria-label="Settings">
-  <h2>⚙️ Settings</h2><p class="sub">Everything saves on this phone only.</p>
+<div class="sheet" id="setSheet" aria-hidden="true" inert><div class="card" role="dialog" aria-modal="true" aria-label="Settings" tabindex="-1">
+  <div class="grab" aria-hidden="true"></div>
+  <h2>Settings</h2><p class="sub">Everything saves on this phone only.</p>
   <div class="setrow"><label for="minLen">Shortest word</label><input type="range" id="minLen" min="3" max="14" step="1"><output id="minLenOut"></output></div>
   <div class="setrow"><label for="maxLen">Longest word</label><input type="range" id="maxLen" min="3" max="14" step="1"><output id="maxLenOut"></output></div>
   <div class="setrow"><label for="lives">Piggy chances (lives)</label><input type="range" id="lives" min="4" max="10" step="1"><output id="livesOut"></output></div>
@@ -227,12 +331,13 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
   <div class="setrow"><label for="soundT">Sounds</label><span class="switch"><input type="checkbox" id="soundT" checked><span class="knob"></span></span></div>
   <h2 style="margin-top:14px">Categories</h2><p class="sub">Pick at least one.</p>
   <div class="cats" id="cats"></div>
-  <button class="btn primary" id="setDone" style="margin-top:10px">Done — start munching 🥕</button>
+  <button class="btn primary" id="setDone" style="margin-top:10px;width:100%">Done — start munching 🥕</button>
 </div></div>
 
 <!-- stats + album sheet -->
-<div class="sheet" id="statSheet" aria-hidden="true"><div class="card" role="dialog" aria-label="Statistics and sticker album">
-  <h2>📊 Stats &amp; sticker album</h2><p class="sub" id="statSub"></p>
+<div class="sheet" id="statSheet" aria-hidden="true" inert><div class="card" role="dialog" aria-modal="true" aria-label="Statistics and sticker album" tabindex="-1">
+  <div class="grab" aria-hidden="true"></div>
+  <h2>Stats &amp; sticker album</h2><p class="sub" id="statSub"></p>
   <div class="statgrid">
     <div class="stat"><b id="sStreak">0</b><span>current streak</span></div>
     <div class="stat"><b id="sBest">0</b><span>best streak</span></div>
@@ -242,11 +347,13 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
   <h2>🏅 Sticker album</h2><p class="sub">Earn stickers by playing. They live on this phone only.</p>
   <div class="album" id="album"></div>
   <div id="catwins" style="margin-top:12px"></div>
-  <button class="btn primary" id="statDone" style="margin-top:14px">Back to the piggies 🐹</button>
+  <button class="btn primary" id="statDone" style="margin-top:14px;width:100%">Back to the piggies 🐹</button>
 </div></div>
 
+<div id="fx" aria-hidden="true"></div>
 <div id="toast" role="status"></div>
-
+<div id="sr" class="sr" aria-live="polite"></div>
+<!-- words:begin --><script id="hangman-words" type="application/json">{"version":1,"categories":[{"id":"animals","name":"Animals","words":[{"answer":"BADGER","hint":"Digs setts and loves night-time snacks","difficulty":"easy"},{"answer":"OTTER","hint":"Playful river swimmer that holds hands","difficulty":"easy"},{"answer":"HEDGEHOG","hint":"Prickly garden friend that snuffles at dusk","difficulty":"easy"},{"answer":"GUINEA PIG","hint":"Round squeaky pet that says wheek","difficulty":"easy"},{"answer":"SQUIRREL","hint":"Nut-burying tree acrobat with a bushy tail","difficulty":"easy"},{"answer":"MOLE","hint":"Velvety digger that rarely sees the sun","difficulty":"easy"},{"answer":"STOAT","hint":"Slim hunter that dances to dazzle rabbits","difficulty":"medium"},{"answer":"DORMOUSE","hint":"Sleepy hazel-nut nibbler","difficulty":"medium"},{"answer":"PINE MARTEN","hint":"Cat-sized woodland climber with a cream bib","difficulty":"medium"},{"answer":"HARVEST MOUSE","hint":"Tiny climber with a curly tail","difficulty":"medium"},{"answer":"RED DEER","hint":"Antlers make this one the monarch of the glen","difficulty":"easy"},{"answer":"SEAL","hint":"Flappy fish-lover that suns on sandbanks","difficulty":"easy"},{"answer":"FOX","hint":"Bushy-tailed night prowler with a white tip","difficulty":"easy"},{"answer":"BAT","hint":"Only mammal that truly flies","difficulty":"easy"},{"answer":"SHREW","hint":"Tiny trilling hunter with a pointy nose","difficulty":"medium"},{"answer":"WEASEL","hint":"Smallest carnivore, quick as a flash","difficulty":"medium"},{"answer":"HARE","hint":"Long-legged boxer of the meadows","difficulty":"easy"},{"answer":"WATER VOLE","hint":"Riverbank nibbler, Ratty from the riverbank tales","difficulty":"medium"},{"answer":"POLECAT","hint":"Stripey-faced ancestor of the ferret","difficulty":"hard"},{"answer":"CAPERCAILLIE","hint":"Huge grouse of the pinewoods","difficulty":"hard"},{"answer":"SEA HORSE","hint":"Tiny upright fish with a horsey head","difficulty":"medium"},{"answer":"JELLYFISH","hint":"Wobbly stinger with no brain","difficulty":"easy"},{"answer":"STARFISH","hint":"Five-armed rockpool crawler","difficulty":"easy"},{"answer":"EDIBLE CRAB","hint":"Brown crab caught off the coast","difficulty":"medium"},{"answer":"SLOW WORM","hint":"Legless lizard often found under logs","difficulty":"medium"}]},{"id":"mythology","name":"Mythology","words":[{"answer":"ZEUS","hint":"King of the Greek gods, hurler of thunderbolts","difficulty":"easy"},{"answer":"ATHENA","hint":"Goddess of wisdom, born from Zeus's head","difficulty":"easy"},{"answer":"THOR","hint":"Norse god whose hammer returns when thrown","difficulty":"easy"},{"answer":"ODIN","hint":"One-eyed Norse ruler with two ravens","difficulty":"easy"},{"answer":"LOKI","hint":"Norse trickster who causes endless mischief","difficulty":"medium"},{"answer":"MEDUSA","hint":"Snake-haired woman whose gaze turns you to stone","difficulty":"easy"},{"answer":"MINOTAUR","hint":"Half bull, half man, lost in a maze","difficulty":"medium"},{"answer":"PHOENIX","hint":"Firebird reborn from its own ashes","difficulty":"easy"},{"answer":"KRAKEN","hint":"Giant sea monster that grabs ships","difficulty":"medium"},{"answer":"VALHALLA","hint":"Hall where brave Norse warriors feast","difficulty":"medium"},{"answer":"EXCALIBUR","hint":"The sword in the stone","difficulty":"easy"},{"answer":"MERLIN","hint":"Wizard who advised a famous king","difficulty":"easy"},{"answer":"UNICORN","hint":"One-horned horse on the Scottish arms","difficulty":"easy"},{"answer":"DRAGON","hint":"Fire-breathing beast guarding gold","difficulty":"easy"},{"answer":"SIREN","hint":"Singer whose song lures sailors to rocks","difficulty":"medium"},{"answer":"CYCLOPS","hint":"One-eyed giant outwitted by Odysseus","difficulty":"medium"},{"answer":"PEGASUS","hint":"Winged horse born of sea foam","difficulty":"easy"},{"answer":"CERBERUS","hint":"Three-headed dog guarding the underworld","difficulty":"medium"},{"answer":"NARCISSUS","hint":"Youth who fell in love with his own reflection","difficulty":"hard"},{"answer":"PANDORA","hint":"Her box let trouble into the world","difficulty":"medium"},{"answer":"ICARUS","hint":"Flew too close to the sun on wax wings","difficulty":"medium"},{"answer":"PERSEPHONE","hint":"Queen of the underworld, daughter of Demeter","difficulty":"hard"},{"answer":"FREYA","hint":"Norse goddess who rides a cat-drawn chariot","difficulty":"medium"},{"answer":"ANANSI","hint":"West African trickster spider of many tales","difficulty":"hard"},{"answer":"SELKIE","hint":"Seal-folk who shed their skins to walk ashore","difficulty":"hard"}]},{"id":"plants","name":"Plants","words":[{"answer":"DAISY","hint":"Day's eye, the lawn's cheerful button","difficulty":"easy"},{"answer":"BLUEBELL","hint":"Carpet of the spring woods","difficulty":"easy"},{"answer":"FOXGLOVE","hint":"Tall spire of thimbles, loved by bumblebees","difficulty":"medium"},{"answer":"SNOWDROP","hint":"First brave flower of the year","difficulty":"easy"},{"answer":"DAFFODIL","hint":"Golden trumpet of St David's Day","difficulty":"easy"},{"answer":"HEATHER","hint":"Purple moorland honey plant","difficulty":"easy"},{"answer":"HAWTHORN","hint":"May blossom on the hedgerow","difficulty":"medium"},{"answer":"HOLLY","hint":"Spiky leaves and red winter berries","difficulty":"easy"},{"answer":"IVY","hint":"Climber that clings with tiny roots","difficulty":"easy"},{"answer":"FERN","hint":"Feathery fronds, no flowers at all","difficulty":"easy"},{"answer":"THISTLE","hint":"Prickly emblem of Scotland","difficulty":"easy"},{"answer":"SHAMROCK","hint":"Three leaves of Ireland","difficulty":"easy"},{"answer":"DANDELION","hint":"Clock of fluffy seeds children love to blow","difficulty":"easy"},{"answer":"NETTLE","hint":"Stinger that makes a fine soup","difficulty":"easy"},{"answer":"BRAMBLE","hint":"Scrambly bush of blackberries","difficulty":"easy"},{"answer":"ELDERFLOWER","hint":"June blossom for cordial","difficulty":"medium"},{"answer":"BLACKTHORN","hint":"Sloe berries for winter gin","difficulty":"hard"},{"answer":"WILD GARLIC","hint":"Ramsons carpeting the woods in spring","difficulty":"medium"},{"answer":"COWSLIP","hint":"Nodding yellow bells of old meadows","difficulty":"medium"},{"answer":"POPPY","hint":"Red remembrance flower","difficulty":"easy"},{"answer":"SUNFLOWER","hint":"Tall face that follows the sun","difficulty":"easy"},{"answer":"LAVENDER","hint":"Purple spikes for sleepy pillows","difficulty":"easy"},{"answer":"ROSEMARY","hint":"Herb for remembrance and roast potatoes","difficulty":"easy"},{"answer":"SAGE","hint":"Soft grey herb for stuffing","difficulty":"medium"},{"answer":"MISTLETOE","hint":"Kissing branch of the orchards","difficulty":"medium"}]},{"id":"gemstones","name":"Gemstones","words":[{"answer":"DIAMOND","hint":"Hardest gem, a girl's best friend","difficulty":"easy"},{"answer":"RUBY","hint":"Red birthstone of July","difficulty":"easy"},{"answer":"SAPPHIRE","hint":"Blue gem of September skies","difficulty":"easy"},{"answer":"EMERALD","hint":"Green treasure of Colombia","difficulty":"easy"},{"answer":"OPAL","hint":"Rainbow flashes, birthstone of October","difficulty":"medium"},{"answer":"AMETHYST","hint":"Purple quartz of February","difficulty":"easy"},{"answer":"TOPAZ","hint":"Golden gem of November","difficulty":"easy"},{"answer":"GARNET","hint":"Deep red stone of January","difficulty":"medium"},{"answer":"PEARL","hint":"Ocean's gift from an oyster","difficulty":"easy"},{"answer":"AMBER","hint":"Fossilised tree resin, sometimes with insects","difficulty":"medium"},{"answer":"JADE","hint":"Green stone carved for emperors","difficulty":"medium"},{"answer":"ONYX","hint":"Banded black stone of beads","difficulty":"medium"},{"answer":"MOONSTONE","hint":"Glowing stone of June","difficulty":"medium"},{"answer":"TURQUOISE","hint":"Blue-green stone of December","difficulty":"medium"},{"answer":"PERIDOT","hint":"Olive-green gem of August","difficulty":"hard"},{"answer":"AQUAMARINE","hint":"Sea-blue stone of March","difficulty":"hard"},{"answer":"CITRINE","hint":"Lemon quartz of November","difficulty":"medium"},{"answer":"LAPIS LAZULI","hint":"Deep blue stone ground for paint","difficulty":"hard"},{"answer":"MALACHITE","hint":"Swirled green copper stone","difficulty":"hard"},{"answer":"TIGERS EYE","hint":"Striped brown stone that shimmers","difficulty":"medium"},{"answer":"ROSE QUARTZ","hint":"Pink stone of love","difficulty":"easy"},{"answer":"MOONSTONE","hint":"Shimmery feldspar of new beginnings","difficulty":"medium"},{"answer":"HEMATITE","hint":"Silvery stone that polishes to a mirror","difficulty":"hard"},{"answer":"JET","hint":"Black fossil wood of Whitby","difficulty":"hard"},{"answer":"CORNELIAN","hint":"Rust-red chalcedony of signet rings","difficulty":"hard"}]},{"id":"birds","name":"Birds","words":[{"answer":"ROBIN","hint":"Redbreast gardener's friend","difficulty":"easy"},{"answer":"BLACKBIRD","hint":"Golden-beaked dawn singer","difficulty":"easy"},{"answer":"BLUE TIT","hint":"Acrobat of the peanut feeder","difficulty":"easy"},{"answer":"WREN","hint":"Tiny rustler with a cocked tail","difficulty":"easy"},{"answer":"CHAFFINCH","hint":"Pink-breasted finch of the woods","difficulty":"medium"},{"answer":"GOLDFINCH","hint":"Red-faced charmer of thistles","difficulty":"medium"},{"answer":"KINGFISHER","hint":"Jewel that dives for minnows","difficulty":"easy"},{"answer":"BARN OWL","hint":"Heart-faced silent hunter","difficulty":"easy"},{"answer":"TAWNY OWL","hint":"Tawny hooter of the night woods","difficulty":"medium"},{"answer":"KESTREL","hint":"Hovering hunter of motorway verges","difficulty":"medium"},{"answer":"BUZZARD","hint":"Mewing circler over the hills","difficulty":"medium"},{"answer":"SPARROWHAWK","hint":"Garden dash-and-grab hunter","difficulty":"medium"},{"answer":"HERON","hint":"Grey statue of the shallows","difficulty":"easy"},{"answer":"SWALLOW","hint":"Summer scissor-tail over the barns","difficulty":"easy"},{"answer":"SWIFT","hint":"Screaming sickle of high summer","difficulty":"medium"},{"answer":"HOUSE MARTIN","hint":"Mud-cup nester under the eaves","difficulty":"medium"},{"answer":"DIPPER","hint":"White-breasted bobber of fast streams","difficulty":"hard"},{"answer":"NUTHATCH","hint":"Headfirst down the tree trunk","difficulty":"hard"},{"answer":"TREECREEPER","hint":"Spiralling prober of bark","difficulty":"hard"},{"answer":"JAY","hint":"Pink screecher that plants acorns","difficulty":"medium"},{"answer":"MAGPIE","hint":"One for sorrow, chatterer in black and white","difficulty":"easy"},{"answer":"JACKDAW","hint":"Grey-hooded church-tower clown","difficulty":"medium"},{"answer":"ROOK","hint":"Noisy farmer of the rookery","difficulty":"medium"},{"answer":"PUFFIN","hint":"Clown of the sea cliffs with a rainbow beak","difficulty":"easy"},{"answer":"GANNET","hint":"Plunge-diver of the ocean stacks","difficulty":"medium"}]},{"id":"food-and-drink","name":"Food & drink","words":[{"answer":"CRUMPET","hint":"Holey griddle cake for butter","difficulty":"easy"},{"answer":"SCONE","hint":"Cream-tea star, jam first or cream first","difficulty":"easy"},{"answer":"YORKSHIRE PUDDING","hint":" risen batter with roast beef","difficulty":"easy"},{"answer":"FISH AND CHIPS","hint":"Newspaper supper with vinegar","difficulty":"easy"},{"answer":"CORNISH PASTY","hint":"Tin-miner's hand-held lunch","difficulty":"easy"},{"answer":"HAGGIS","hint":"Served with neeps and tatties","difficulty":"medium"},{"answer":"BLACK PUDDING","hint":"Sliced blood sausage of a full breakfast","difficulty":"medium"},{"answer":"CLOTTED CREAM","hint":"Thick spoonable pride of Devon","difficulty":"medium"},{"answer":"CHEDDAR","hint":"Cave-aged cheese of Somerset","difficulty":"easy"},{"answer":"STILTON","hint":"Veiny blue of Christmas cheeseboards","difficulty":"medium"},{"answer":"PLOUGHMANS LUNCH","hint":"Pub plate of cheese, pickle and bread","difficulty":"medium"},{"answer":"SAUSAGE ROLL","hint":"Greggs favourite in flaky pastry","difficulty":"easy"},{"answer":"PORK PIE","hint":"Cold raised pie with jelly","difficulty":"medium"},{"answer":"SCOTCH EGG","hint":"Picnic egg in a sausage coat","difficulty":"easy"},{"answer":"BREAD AND BUTTER PUDDING","hint":"Nursery pudding of crusts and custard","difficulty":"medium"},{"answer":"SPOTTED DICK","hint":"Pudding dotted with currants","difficulty":"medium"},{"answer":"ETON MESS","hint":"Strawberries, meringue and cream","difficulty":"medium"},{"answer":"BAKEWELL TART","hint":"Almond-topped Derbyshire treat","difficulty":"medium"},{"answer":"VICTORIA SPONGE","hint":"Jam-and-cream sandwich cake","difficulty":"easy"},{"answer":"LEMON DRIZZLE","hint":"Sticky teatime loaf","difficulty":"easy"},{"answer":"GINGER NUTS","hint":"Dunkable snap of a biscuit","difficulty":"easy"},{"answer":"CUSTARD CREAM","hint":"Bartholomew's sandwich biscuit","difficulty":"easy"},{"answer":"MARMITE","hint":"Love it or hate it spread","difficulty":"easy"},{"answer":"BRANSTON PICKLE","hint":"Chunky pickle of the ploughman's","difficulty":"medium"},{"answer":"HP SAUCE","hint":"Brown sauce of the full English","difficulty":"hard"}]},{"id":"geography","name":"Geography","words":[{"answer":"BEN NEVIS","hint":"Britain's highest summit","difficulty":"easy"},{"answer":"SNOWDON","hint":"Welsh giant also called Yr Wyddfa","difficulty":"easy"},{"answer":"LOCH NESS","hint":"Home of a famous monster","difficulty":"easy"},{"answer":"GIANT'S CAUSEWAY","hint":"Hexagon stones of County Antrim","difficulty":"medium"},{"answer":"LAKE DISTRICT","hint":"Fells, lakes and Beatrix Potter","difficulty":"easy"},{"answer":"ISLE OF SKYE","hint":"Misty Hebridean island of the Cuillin","difficulty":"medium"},{"answer":"HADRIAN'S WALL","hint":"Roman stones coast to coast","difficulty":"easy"},{"answer":"STONEHENGE","hint":"Wiltshire circle of standing stones","difficulty":"easy"},{"answer":"WHITE CLIFFS OF DOVER","hint":"Chalk welcome home","difficulty":"easy"},{"answer":"THAMES","hint":"River through the capital","difficulty":"easy"},{"answer":"SEVERN","hint":"Britain's longest river","difficulty":"medium"},{"answer":"PENNINES","hint":"Backbone of England","difficulty":"medium"},{"answer":"DARTMOOR","hint":"Tor-topped moor of the Hound","difficulty":"medium"},{"answer":"PEAK DISTRICT","hint":"First national park","difficulty":"medium"},{"answer":"NORFOLK BROADS","hint":"Reedy boating waterways","difficulty":"medium"},{"answer":"JURASSIC COAST","hint":"Fossil cliffs of Dorset and Devon","difficulty":"medium"},{"answer":"ANGLESEY","hint":"Island over the Menai Strait","difficulty":"hard"},{"answer":"ORKNEY","hint":"Isles of Skara Brae","difficulty":"hard"},{"answer":"SHETLAND","hint":"Far northern isles of ponies","difficulty":"medium"},{"answer":"SCILLY ISLES","hint":"Palm trees off Cornwall","difficulty":"hard"},{"answer":"MALHAM COVE","hint":"Limestone cliff of the Dales","difficulty":"hard"},{"answer":"CHEDDAR GORGE","hint":"Caves beneath the cheese town","difficulty":"medium"},{"answer":"EDINBURGH CASTLE","hint":"Volcanic fortress over the Royal Mile","difficulty":"easy"},{"answer":"TOWER BRIDGE","hint":"Twin-towered Thames crossing","difficulty":"easy"},{"answer":"ST PAUL'S CATHEDRAL","hint":"Wren's dome over the City","difficulty":"easy"}]},{"id":"uk-number-ones","name":"UK number ones","words":[{"answer":"UNCHAINED MELODY","hint":"The Righteous Brothers","difficulty":"easy"},{"answer":"ICE ICE BABY","hint":"Vanilla Ice","difficulty":"easy"},{"answer":"DO THE BARTMAN","hint":"The Simpsons","difficulty":"medium"},{"answer":"THE SHOOP SHOOP SONG","hint":"Cher","difficulty":"medium"},{"answer":"EVERYTHING I DO","hint":"Bryan Adams","difficulty":"easy"},{"answer":"BOHEMIAN RHAPSODY","hint":"Queen","difficulty":"easy"},{"answer":"STAY","hint":"Shakespears Sister","difficulty":"medium"},{"answer":"RHYTHM IS A DANCER","hint":"Snap!","difficulty":"medium"},{"answer":"I WILL ALWAYS LOVE YOU","hint":"Whitney Houston","difficulty":"easy"},{"answer":"OH CAROLINA","hint":"Shaggy","difficulty":"medium"},{"answer":"MR BLOBBY","hint":"Mr Blobby","difficulty":"medium"},{"answer":"LOVE IS ALL AROUND","hint":"Wet Wet Wet","difficulty":"easy"},{"answer":"BABY COME BACK","hint":"Pato Banton","difficulty":"medium"},{"answer":"BELIEVE","hint":"Cher","difficulty":"easy"},{"answer":"CANDLE IN THE WIND 1997","hint":"Elton John","difficulty":"medium"},{"answer":"BARBIE GIRL","hint":"Aqua","difficulty":"easy"},{"answer":"NEVER EVER","hint":"All Saints","difficulty":"medium"},{"answer":"NO MATTER WHAT","hint":"Boyzone","difficulty":"medium"},{"answer":"TRAGEDY","hint":"Steps","difficulty":"easy"},{"answer":"BABY ONE MORE TIME","hint":"Britney Spears","difficulty":"easy"},{"answer":"FLAT BEAT","hint":"Mr Oizo","difficulty":"hard"},{"answer":"THAT DON'T IMPRESS ME MUCH","hint":"Shania Twain","difficulty":"medium"},{"answer":"ANGELS","hint":"Robbie Williams","difficulty":"hard"},{"answer":"WANNA BE","hint":"Spice Girls","difficulty":"hard"},{"answer":"SPICE UP YOUR LIFE","hint":"Spice Girls","difficulty":"medium"},{"answer":"PURE AND SIMPLE","hint":"Hear'Say","difficulty":"medium"},{"answer":"WHOLE AGAIN","hint":"Atomic Kitten","difficulty":"easy"},{"answer":"IT WASN'T ME","hint":"Shaggy","difficulty":"easy"},{"answer":"DO YOU REALLY LIKE IT","hint":"DJ Pied Piper","difficulty":"hard"},{"answer":"LADY MARMALADE","hint":"Christina Aguilera, Lil Kim, Mya and Pink","difficulty":"medium"},{"answer":"ETERNAL FLAME","hint":"Atomic Kitten","difficulty":"medium"},{"answer":"HEY YA","hint":"Outkast","difficulty":"easy"},{"answer":"AGAINST ALL ODDS","hint":"Steve Brookstein","difficulty":"hard"},{"answer":"IS THIS THE WAY TO AMARILLO","hint":"Tony Christie featuring Peter Kay","difficulty":"medium"},{"answer":"HIPS DON'T LIE","hint":"Shakira","difficulty":"easy"},{"answer":"STAR GIRL","hint":"McFly","difficulty":"medium"},{"answer":"PATIENCE","hint":"Take That","difficulty":"easy"},{"answer":"SHINE","hint":"Take That","difficulty":"easy"},{"answer":"APOLOGIZE","hint":"Timbaland presents OneRepublic","difficulty":"medium"},{"answer":"UMBRELLA","hint":"Rihanna featuring Jay-Z","difficulty":"easy"},{"answer":"BEAUTIFUL GIRLS","hint":"Sean Kingston","difficulty":"easy"},{"answer":"SMILE","hint":"Lily Allen","difficulty":"easy"},{"answer":"CRAZY","hint":"Gnarls Barkley","difficulty":"easy"},{"answer":"GRACE KELLY","hint":"Mika","difficulty":"easy"},{"answer":"IF I WERE A BOY","hint":"Beyonce","difficulty":"medium"},{"answer":"JUST DANCE","hint":"Lady Gaga","difficulty":"easy"},{"answer":"POKER FACE","hint":"Lady Gaga","difficulty":"easy"},{"answer":"RUN","hint":"Leona Lewis","difficulty":"medium"},{"answer":"HERO","hint":"The X Factor Finalists","difficulty":"medium"},{"answer":"HALLELUJAH","hint":"Alexandra Burke","difficulty":"easy"}]}]}</script><!-- words:end -->
 <script>
 "use strict";
 /* =====================================================================
@@ -255,256 +362,10 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
    ===================================================================== */
 const STORE_SETTINGS = "hangman-b:settings";
 const STORE_STATS = "hangman-b:stats";
+const STORE_HAY = "hangman-b:hayseen";
 
-const CATS = [
-  {id:"animals", name:"Animals"},
-  {id:"myth", name:"Mythology"},
-  {id:"plants", name:"Plants"},
-  {id:"gems", name:"Gemstones"},
-  {id:"birds", name:"Birds"},
-  {id:"food", name:"Food & drink"},
-  {id:"geo", name:"Geography"},
-  {id:"nineties", name:"UK No.1s · 90s"},
-  {id:"noughties", name:"UK No.1s · 00s"}
-];
-
-/* word, one-line clue, difficulty. Music: title letters guessed, artist is the hint. */
-const WORDS = {
-animals:[
- ["BADGER","Digs setts and loves night-time snacks","easy"],
- ["OTTER","Playful river swimmer that holds hands","easy"],
- ["HEDGEHOG","Prickly garden friend that snuffles at dusk","easy"],
- ["GUINEA PIG","Round squeaky pet that says wheek","easy"],
- ["SQUIRREL","Nut-burying tree acrobat with a bushy tail","easy"],
- ["MOLE","Velvety digger that rarely sees the sun","easy"],
- ["STOAT","Slim hunter that dances to dazzle rabbits","medium"],
- ["DORMOUSE","Sleepy hazel-nut nibbler","medium"],
- ["PINE MARTEN","Cat-sized woodland climber with a cream bib","medium"],
- ["HARVEST MOUSE","Tiny climber with a curly tail","medium"],
- ["RED DEER","Antlers make this one the monarch of the glen","easy"],
- ["SEAL","Flappy fish-lover that suns on sandbanks","easy"],
- ["FOX","Bushy-tailed night prowler with a white tip","easy"],
- ["BAT","Only mammal that truly flies","easy"],
- ["SHREW","Tiny trilling hunter with a pointy nose","medium"],
- ["WEASEL","Smallest carnivore, quick as a flash","medium"],
- ["HARE","Long-legged boxer of the meadows","easy"],
- ["WATER VOLE","Riverbank nibbler, Ratty from the riverbank tales","medium"],
- ["POLECAT","Stripey-faced ancestor of the ferret","hard"],
- ["CAPERCAILLIE","Huge grouse of the pinewoods","hard"],
- ["SEA HORSE","Tiny upright fish with a horsey head","medium"],
- ["JELLYFISH","Wobbly stinger with no brain","easy"],
- ["STARFISH","Five-armed rockpool crawler","easy"],
- ["EDIBLE CRAB","Brown crab caught off the coast","medium"],
- ["SLOW WORM","Legless lizard often found under logs","medium"]],
-myth:[
- ["ZEUS","King of the Greek gods, hurler of thunderbolts","easy"],
- ["ATHENA","Goddess of wisdom, born from Zeus's head","easy"],
- ["THOR","Norse god whose hammer returns when thrown","easy"],
- ["ODIN","One-eyed Norse ruler with two ravens","easy"],
- ["LOKI","Norse trickster who causes endless mischief","medium"],
- ["MEDUSA","Snake-haired woman whose gaze turns you to stone","easy"],
- ["MINOTAUR","Half bull, half man, lost in a maze","medium"],
- ["PHOENIX","Firebird reborn from its own ashes","easy"],
- ["KRAKEN","Giant sea monster that grabs ships","medium"],
- ["VALHALLA","Hall where brave Norse warriors feast","medium"],
- ["EXCALIBUR","The sword in the stone","easy"],
- ["MERLIN","Wizard who advised a famous king","easy"],
- ["UNICORN","One-horned horse on the Scottish arms","easy"],
- ["DRAGON","Fire-breathing beast guarding gold","easy"],
- ["SIREN","Singer whose song lures sailors to rocks","medium"],
- ["CYCLOPS","One-eyed giant outwitted by Odysseus","medium"],
- ["PEGASUS","Winged horse born of sea foam","easy"],
- ["CERBERUS","Three-headed dog guarding the underworld","medium"],
- ["NARCISSUS","Youth who fell in love with his own reflection","hard"],
- ["PANDORA","Her box let trouble into the world","medium"],
- ["ICARUS","Flew too close to the sun on wax wings","medium"],
- ["PERSEPHONE","Queen of the underworld, daughter of Demeter","hard"],
- ["FREYA","Norse goddess who rides a cat-drawn chariot","medium"],
- ["ANANSI","West African trickster spider of many tales","hard"],
- ["SELKIE","Seal-folk who shed their skins to walk ashore","hard"]],
-plants:[
- ["DAISY","Day's eye, the lawn's cheerful button","easy"],
- ["BLUEBELL","Carpet of the spring woods","easy"],
- ["FOXGLOVE","Tall spire of thimbles, loved by bumblebees","medium"],
- ["SNOWDROP","First brave flower of the year","easy"],
- ["DAFFODIL","Golden trumpet of St David's Day","easy"],
- ["HEATHER","Purple moorland honey plant","easy"],
- ["HAWTHORN","May blossom on the hedgerow","medium"],
- ["HOLLY","Spiky leaves and red winter berries","easy"],
- ["IVY","Climber that clings with tiny roots","easy"],
- ["FERN","Feathery fronds, no flowers at all","easy"],
- ["THISTLE","Prickly emblem of Scotland","easy"],
- ["SHAMROCK","Three leaves of Ireland","easy"],
- ["DANDELION","Clock of fluffy seeds children love to blow","easy"],
- ["NETTLE","Stinger that makes a fine soup","easy"],
- ["BRAMBLE","Scrambly bush of blackberries","easy"],
- ["ELDERFLOWER","June blossom for cordial","medium"],
- ["BLACKTHORN","Sloe berries for winter gin","hard"],
- ["WILD GARLIC","Ramsons carpeting the woods in spring","medium"],
- ["COWSLIP","Nodding yellow bells of old meadows","medium"],
- ["POPPY","Red remembrance flower","easy"],
- ["SUNFLOWER","Tall face that follows the sun","easy"],
- ["LAVENDER","Purple spikes for sleepy pillows","easy"],
- ["ROSEMARY","Herb for remembrance and roast potatoes","easy"],
- ["SAGE","Soft grey herb for stuffing","medium"],
- ["MISTLETOE","Kissing branch of the orchards","medium"]],
-gems:[
- ["DIAMOND","Hardest gem, a girl's best friend","easy"],
- ["RUBY","Red birthstone of July","easy"],
- ["SAPPHIRE","Blue gem of September skies","easy"],
- ["EMERALD","Green treasure of Colombia","easy"],
- ["OPAL","Rainbow flashes, birthstone of October","medium"],
- ["AMETHYST","Purple quartz of February","easy"],
- ["TOPAZ","Golden gem of November","easy"],
- ["GARNET","Deep red stone of January","medium"],
- ["PEARL","Ocean's gift from an oyster","easy"],
- ["AMBER","Fossilised tree resin, sometimes with insects","medium"],
- ["JADE","Green stone carved for emperors","medium"],
- ["ONYX","Banded black stone of beads","medium"],
- ["MOONSTONE","Glowing stone of June","medium"],
- ["TURQUOISE","Blue-green stone of December","medium"],
- ["PERIDOT","Olive-green gem of August","hard"],
- ["AQUAMARINE","Sea-blue stone of March","hard"],
- ["CITRINE","Lemon quartz of November","medium"],
- ["LAPIS LAZULI","Deep blue stone ground for paint","hard"],
- ["MALACHITE","Swirled green copper stone","hard"],
- ["TIGERS EYE","Striped brown stone that shimmers","medium"],
- ["ROSE QUARTZ","Pink stone of love","easy"],
- ["MOONSTONE","Shimmery feldspar of new beginnings","medium"],
- ["HEMATITE","Silvery stone that polishes to a mirror","hard"],
- ["JET","Black fossil wood of Whitby","hard"],
- ["CORNELIAN","Rust-red chalcedony of signet rings","hard"]],
-birds:[
- ["ROBIN","Redbreast gardener's friend","easy"],
- ["BLACKBIRD","Golden-beaked dawn singer","easy"],
- ["BLUE TIT","Acrobat of the peanut feeder","easy"],
- ["WREN","Tiny rustler with a cocked tail","easy"],
- ["CHAFFINCH","Pink-breasted finch of the woods","medium"],
- ["GOLDFINCH","Red-faced charmer of thistles","medium"],
- ["KINGFISHER","Jewel that dives for minnows","easy"],
- ["BARN OWL","Heart-faced silent hunter","easy"],
- ["TAWNY OWL","Tawny hooter of the night woods","medium"],
- ["KESTREL","Hovering hunter of motorway verges","medium"],
- ["BUZZARD","Mewing circler over the hills","medium"],
- ["SPARROWHAWK","Garden dash-and-grab hunter","medium"],
- ["HERON","Grey statue of the shallows","easy"],
- ["SWALLOW","Summer scissor-tail over the barns","easy"],
- ["SWIFT","Screaming sickle of high summer","medium"],
- ["HOUSE MARTIN","Mud-cup nester under the eaves","medium"],
- ["DIPPER","White-breasted bobber of fast streams","hard"],
- ["NUTHATCH","Headfirst down the tree trunk","hard"],
- ["TREECREEPER","Spiralling prober of bark","hard"],
- ["JAY","Pink screecher that plants acorns","medium"],
- ["MAGPIE","One for sorrow, chatterer in black and white","easy"],
- ["JACKDAW","Grey-hooded church-tower clown","medium"],
- ["ROOK","Noisy farmer of the rookery","medium"],
- ["PUFFIN","Clown of the sea cliffs with a rainbow beak","easy"],
- ["GANNET","Plunge-diver of the ocean stacks","medium"]],
-food:[
- ["CRUMPET","Holey griddle cake for butter","easy"],
- ["SCONE","Cream-tea star, jam first or cream first","easy"],
- ["YORKSHIRE PUDDING"," risen batter with roast beef","easy"],
- ["FISH AND CHIPS","Newspaper supper with vinegar","easy"],
- ["CORNISH PASTY","Tin-miner's hand-held lunch","easy"],
- ["HAGGIS","Served with neeps and tatties","medium"],
- ["BLACK PUDDING","Sliced blood sausage of a full breakfast","medium"],
- ["CLOTTED CREAM","Thick spoonable pride of Devon","medium"],
- ["CHEDDAR","Cave-aged cheese of Somerset","easy"],
- ["STILTON","Veiny blue of Christmas cheeseboards","medium"],
- ["PLOUGHMANS LUNCH","Pub plate of cheese, pickle and bread","medium"],
- ["SAUSAGE ROLL","Greggs favourite in flaky pastry","easy"],
- ["PORK PIE","Cold raised pie with jelly","medium"],
- ["SCOTCH EGG","Picnic egg in a sausage coat","easy"],
- ["BREAD AND BUTTER PUDDING","Nursery pudding of crusts and custard","medium"],
- ["SPOTTED DICK","Pudding dotted with currants","medium"],
- ["ETON MESS","Strawberries, meringue and cream","medium"],
- ["BAKEWELL TART","Almond-topped Derbyshire treat","medium"],
- ["VICTORIA SPONGE","Jam-and-cream sandwich cake","easy"],
- ["LEMON DRIZZLE","Sticky teatime loaf","easy"],
- ["GINGER NUTS","Dunkable snap of a biscuit","easy"],
- ["CUSTARD CREAM","Bartholomew's sandwich biscuit","easy"],
- ["MARMITE","Love it or hate it spread","easy"],
- ["BRANSTON PICKLE","Chunky pickle of the ploughman's","medium"],
- ["HP SAUCE","Brown sauce of the full English","hard"]],
-geo:[
- ["BEN NEVIS","Britain's highest summit","easy"],
- ["SNOWDON","Welsh giant also called Yr Wyddfa","easy"],
- ["LOCH NESS","Home of a famous monster","easy"],
- ["GIANT'S CAUSEWAY","Hexagon stones of County Antrim","medium"],
- ["LAKE DISTRICT","Fells, lakes and Beatrix Potter","easy"],
- ["ISLE OF SKYE","Misty Hebridean island of the Cuillin","medium"],
- ["HADRIAN'S WALL","Roman stones coast to coast","easy"],
- ["STONEHENGE","Wiltshire circle of standing stones","easy"],
- ["WHITE CLIFFS OF DOVER","Chalk welcome home","easy"],
- ["THAMES","River through the capital","easy"],
- ["SEVERN","Britain's longest river","medium"],
- ["PENNINES","Backbone of England","medium"],
- ["DARTMOOR","Tor-topped moor of the Hound","medium"],
- ["PEAK DISTRICT","First national park","medium"],
- ["NORFOLK BROADS","Reedy boating waterways","medium"],
- ["JURASSIC COAST","Fossil cliffs of Dorset and Devon","medium"],
- ["ANGLESEY","Island over the Menai Strait","hard"],
- ["ORKNEY","Isles of Skara Brae","hard"],
- ["SHETLAND","Far northern isles of ponies","medium"],
- ["SCILLY ISLES","Palm trees off Cornwall","hard"],
- ["MALHAM COVE","Limestone cliff of the Dales","hard"],
- ["CHEDDAR GORGE","Caves beneath the cheese town","medium"],
- ["EDINBURGH CASTLE","Volcanic fortress over the Royal Mile","easy"],
- ["TOWER BRIDGE","Twin-towered Thames crossing","easy"],
- ["ST PAUL'S CATHEDRAL","Wren's dome over the City","easy"]],
-nineties:[
- ["UNCHAINED MELODY","The Righteous Brothers","easy"],
- ["ICE ICE BABY","Vanilla Ice","easy"],
- ["DO THE BARTMAN","The Simpsons","medium"],
- ["THE SHOOP SHOOP SONG","Cher","medium"],
- ["EVERYTHING I DO","Bryan Adams","easy"],
- ["BOHEMIAN RHAPSODY","Queen","easy"],
- ["STAY","Shakespears Sister","medium"],
- ["RHYTHM IS A DANCER","Snap!","medium"],
- ["I WILL ALWAYS LOVE YOU","Whitney Houston","easy"],
- ["OH CAROLINA","Shaggy","medium"],
- ["MR BLOBBY","Mr Blobby","medium"],
- ["LOVE IS ALL AROUND","Wet Wet Wet","easy"],
- ["BABY COME BACK","Pato Banton","medium"],
- ["BELIEVE","Cher","easy"],
- ["CANDLE IN THE WIND 1997","Elton John","medium"],
- ["BARBIE GIRL","Aqua","easy"],
- ["NEVER EVER","All Saints","medium"],
- ["NO MATTER WHAT","Boyzone","medium"],
- ["TRAGEDY","Steps","easy"],
- ["BABY ONE MORE TIME","Britney Spears","easy"],
- ["FLAT BEAT","Mr Oizo","hard"],
- ["THAT DON'T IMPRESS ME MUCH","Shania Twain","medium"],
- ["ANGELS","Robbie Williams","hard"],
- ["WANNA BE","Spice Girls","hard"],
- ["SPICE UP YOUR LIFE","Spice Girls","medium"]],
-noughties:[
- ["PURE AND SIMPLE","Hear'Say","medium"],
- ["WHOLE AGAIN","Atomic Kitten","easy"],
- ["IT WASN'T ME","Shaggy","easy"],
- ["DO YOU REALLY LIKE IT","DJ Pied Piper","hard"],
- ["LADY MARMALADE","Christina Aguilera, Lil Kim, Mya and Pink","medium"],
- ["ETERNAL FLAME","Atomic Kitten","medium"],
- ["HEY YA","Outkast","easy"],
- ["AGAINST ALL ODDS","Steve Brookstein","hard"],
- ["IS THIS THE WAY TO AMARILLO","Tony Christie featuring Peter Kay","medium"],
- ["HIPS DON'T LIE","Shakira","easy"],
- ["STAR GIRL","McFly","medium"],
- ["PATIENCE","Take That","easy"],
- ["SHINE","Take That","easy"],
- ["APOLOGIZE","Timbaland presents OneRepublic","medium"],
- ["UMBRELLA","Rihanna featuring Jay-Z","easy"],
- ["BEAUTIFUL GIRLS","Sean Kingston","easy"],
- ["SMILE","Lily Allen","easy"],
- ["CRAZY","Gnarls Barkley","easy"],
- ["GRACE KELLY","Mika","easy"],
- ["IF I WERE A BOY","Beyonce","medium"],
- ["JUST DANCE","Lady Gaga","easy"],
- ["POKER FACE","Lady Gaga","easy"],
- ["RUN","Leona Lewis","medium"],
- ["HERO","The X Factor Finalists","medium"],
- ["HALLELUJAH","Alexandra Burke","easy"]]
-};
+/* Word data lives in the shared #hangman-words JSON block; the page reads words only from it. */
+const WORD_DATA=(()=>{ try{ return JSON.parse(document.getElementById("hangman-words").textContent); }catch(e){ return {version:1,categories:[]}; } })();
 
 /* ============ pure logic (tested by ?selftest) ============ */
 const PigLogic = {
@@ -548,8 +409,49 @@ const PigLogic = {
     for(const L of PigLogic.targetLetters(entry)) if(!guessed.has(L)) return false;
     return true;
   },
-  isLost(wrongCount, lives){ return wrongCount>=lives; }
+  isLost(wrongCount, lives){ return wrongCount>=lives; },
+  /* shared word schema -> internal entries; malformed or empty data yields nothing */
+  entriesFromData(data){
+    const out=[];
+    for(const c of (data&&Array.isArray(data.categories))?data.categories:[]){
+      if(!c||typeof c.id!=="string"||!Array.isArray(c.words)) continue;
+      for(const w of c.words){
+        if(!w||typeof w.answer!=="string"||!/[A-Z]/i.test(w.answer)) continue;
+        out.push({w:w.answer,h:typeof w.hint==="string"?w.hint:"",d:w.difficulty||"",cat:c.id});
+      }
+    }
+    return out;
+  },
+  /* categories that actually have playable words, in data order */
+  categoriesFromData(data){
+    const ids=new Set(PigLogic.entriesFromData(data).map(e=>e.cat));
+    return ((data&&Array.isArray(data.categories))?data.categories:[])
+      .filter(c=>c&&ids.has(c.id)).map(c=>({id:c.id,name:typeof c.name==="string"&&c.name?c.name:c.id}));
+  },
+  /* keep saved category picks that still exist; none left means all */
+  sanitizeCats(saved, available){
+    const kept=Array.isArray(saved)?saved.filter(id=>available.includes(id)):[];
+    return kept.length?kept:available.slice();
+  },
+  /* gallows stage 0..10 for a miss count: 1-9 build and lead up, 10 is the drop; every miss advances at least one step */
+  stageFor(m,lives){ return m>=lives?10:Math.round(m*9/(lives-1)); },
+  /* which hay landing to play: the first reveal is the classic, later ones vary */
+  landingVariant(seen,rand){ return seen>0?["bounce","hat","pixie"][Math.min(2,Math.floor((rand?rand():Math.random())*3))]:"first"; },
+  /* largest tile (20-42px) that fits every word on one line and the whole answer within maxH; words wrap 14px apart, rows 8px apart */
+  tileSize(lens,room,gap,maxH){
+    for(let t=42;t>20;t--){
+      let rows=1, x=0, fits=true;
+      for(const n of lens){
+        const w=n*t+(n-1)*gap;
+        if(w>room){ fits=false; break; }
+        if(x&&x+14+w>room){ rows++; x=w; } else x+=(x?14:0)+w;
+      }
+      if(fits&&rows*t*1.22+(rows-1)*8<=maxH) return t;
+    }
+    return 20;
+  }
 };
+const CATS=PigLogic.categoriesFromData(WORD_DATA);
 
 function todayStr(d){ d=d||new Date();
   const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), dd=String(d.getDate()).padStart(2,"0");
@@ -570,6 +472,7 @@ const DEFAULT_SETTINGS={minLen:3,maxLen:14,phrases:true,cats:CATS.map(c=>c.id),l
 const DEFAULT_STATS={streak:0,best:0,dailyStreak:0,dailyLast:"",games:0,wins:0,winsPerCat:{},badges:[],treats:0};
 let settings=Object.assign({},DEFAULT_SETTINGS,loadJSON(STORE_SETTINGS,DEFAULT_SETTINGS));
 let stats=Object.assign({},DEFAULT_STATS,loadJSON(STORE_STATS,DEFAULT_STATS));
+settings.cats=PigLogic.sanitizeCats(settings.cats,CATS.map(c=>c.id));
 if(!Array.isArray(stats.badges)) stats.badges=[];
 if(typeof stats.winsPerCat!=="object"||stats.winsPerCat===null) stats.winsPerCat={};
 function saveSettings(){ try{localStorage.setItem(STORE_SETTINGS,JSON.stringify(settings));}catch(e){} }
@@ -616,20 +519,38 @@ function tone(freq,dur,delay,type,vol){
   o.connect(g); g.connect(actx.destination);
   o.start(t); o.stop(t+dur+0.05);
 }
+function sweep(f0,f1,dur,delay,type,vol){
+  if(settings.muted||!actx) return;
+  const t=actx.currentTime+(delay||0);
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type=type||"sine"; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol||0.05,t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(t); o.stop(t+dur+0.05);
+}
 const Snd={
   unlock(){ ensureAudio(); },
   press(){ tone(520,0.08,0,"triangle",0.03); },
   right(){ tone(660,0.12,0,"sine",0.05); tone(880,0.14,0.09,"sine",0.05); }, /* wheek-ish rise */
   wrong(){ tone(220,0.18,0,"sawtooth",0.02); },
   win(){ [523,659,784,1047].forEach((f,i)=>tone(f,0.22,i*0.11,"triangle",0.05)); },
-  lose(){ [392,330,262,196].forEach((f,i)=>tone(f,0.25,i*0.13,"sine",0.04)); },
-  pop(){ tone(990,0.07,0,"square",0.02); }
+  crunch(){ tone(1500,0.03,0,"square",0.012); tone(1150,0.03,0.05,"square",0.012); },
+  knock(){ tone(190,0.09,0,"triangle",0.07); tone(95,0.12,0.01,"sine",0.06); },
+  zip(){ sweep(520,240,0.35,0,"triangle",0.025); },
+  click(){ tone(1300,0.04,0,"square",0.018); tone(900,0.05,0.04,"square",0.014); },
+  creak(){ sweep(190,140,0.4,0,"sawtooth",0.01); },
+  gulp(){ sweep(300,150,0.12,0,"sine",0.06); sweep(260,420,0.1,0.14,"sine",0.04); },
+  clack(){ tone(140,0.08,0,"square",0.025); tone(110,0.1,0.06,"triangle",0.05); },
+  ping(){ tone(1760,0.3,0,"sine",0.035); tone(2637,0.25,0.02,"sine",0.018); },
+  whoosh(){ sweep(900,160,0.85,0,"sine",0.022); },
+  flump(){ tone(110,0.22,0,"triangle",0.09); tone(70,0.28,0.02,"sine",0.08); },
+  wheek(p){ p=p||1; sweep(900*p,1500*p,0.12,0,"sine",0.045); sweep(1400*p,1100*p,0.14,0.12,"sine",0.045); sweep(950*p,1600*p,0.12,0.3,"sine",0.04); }
 };
 function syncSoundBtn(){
-  const b=document.getElementById("soundBtn");
-  b.textContent=settings.muted?"🔇":"🔊";
-  b.setAttribute("aria-pressed",String(!settings.muted));
-  document.getElementById("soundT").checked=!settings.muted;
+  $("soundBtn").setAttribute("aria-pressed",String(!settings.muted));
+  $("soundT").checked=!settings.muted;
 }
 
 /* ============ game state ============ */
@@ -638,199 +559,567 @@ let entry=null;            /* {w,h,d,cat} */
 let guessed=new Set(), wrongSet=new Set();
 let wrongCount=0, hintUsed=false, treatsThisGame=0, over=false;
 const VEG=["🥕","🫑","🥒","🥬","🍅","🌿","🌽","🍀"];
-let vegQueue=[];
 
 function allEntries(){
-  const out=[];
-  for(const c of CATS) for(const [w,h,d] of (WORDS[c.id]||[])) out.push({w:w,h:h,d:d,cat:c.id});
-  return out;
+  return PigLogic.entriesFromData(WORD_DATA);
 }
 function todaysEntry(){
   const pool=PigLogic.filterEntries(allEntries(),Object.assign({},settings,{cats:CATS.map(c=>c.id),minLen:3,maxLen:14,phrases:true}));
   const list=pool.length?pool:allEntries();
-  return list[PigLogic.dailyIndex(todayStr(),list.length)];
+  return list.length?list[PigLogic.dailyIndex(todayStr(),list.length)]:null;
 }
-function newRound(){
+
+function newRound(instant){
   guessed=new Set(); wrongSet=new Set(); wrongCount=0; hintUsed=false; treatsThisGame=0; over=false;
-  vegQueue=VEG.slice();
+  sceneReset(instant);
   const pool=PigLogic.filterEntries(allEntries(),settings);
-  const empty=document.getElementById("empty");
-  if(mode==="daily"){ entry=todaysEntry(); empty.hidden=true; }
-  else if(!pool.length){
-    entry=null; empty.hidden=false;
-    empty.textContent="No words match those filters — widen the word length or tick more categories in ⚙️.";
-    renderAll(); return;
-  } else { entry=pool[PigLogic.pickRandom(pool.length)]; empty.hidden=true; }
-  document.getElementById("hinttext").classList.remove("show");
-  document.getElementById("hinttext").textContent="";
-  document.getElementById("haynote").classList.remove("show");
-  renderAll(true);
+  const empty=$("empty");
+  if(mode==="daily") entry=todaysEntry();
+  else entry=pool.length?pool[PigLogic.pickRandom(pool.length)]:null;
+  empty.hidden=!!entry;
+  if(!entry){
+    empty.textContent=allEntries().length
+      ?"No words match those filters — widen the word length or tick more categories in Settings."
+      :"No words are available yet.";
+  }
+  $("hinttext").classList.remove("show");
+  $("hinttext").textContent="";
+  $("hintbtn").disabled=!entry;
+  buildWord(); syncKeys(); renderPips(); renderMeta();
 }
 
 /* ============ rendering ============ */
 const $=id=>document.getElementById(id);
 function toast(msg){
   const t=$("toast"); t.textContent=msg; t.classList.add("show");
-  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200);
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2600);
+}
+function say(msg){ $("sr").textContent=msg; }
+const reduced=()=>window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const EASE={out:"cubic-bezier(0.23,1,0.32,1)",inOut:"cubic-bezier(0.77,0,0.175,1)",back:"cubic-bezier(0.34,1.56,0.64,1)",
+  fall:"cubic-bezier(0.55,0.085,0.68,0.53)",up:"cubic-bezier(0.33,1,0.68,1)",down:"cubic-bezier(0.32,0,0.67,0)"};
+
+/* --- cartoon guinea pigs, front view, feet at (0,0): Pepper (white and grey) & Pixie (white, chocolate, black, tan) --- */
+function pigArt(kind){
+  const P=kind==="pepper";
+  const body=P?"#f1ebe0":"#fffdf8", earL=P?"#6c7380":"#2b2624", earR=P?"#9aa0aa":"#6b4226";
+  const marks=P
+    ? `<ellipse cx="-24" cy="-11" rx="12" ry="15" fill="#cdd0d6"/><ellipse cx="24" cy="-11" rx="12" ry="15" fill="#cdd0d6"/>
+       <path d="M-29-27C-30-44-16-52-1-51C1-44-1-36-3-29C-6-21-15-19-21-21C-26-22-29-24-29-27z" fill="#646b78"/>
+       <ellipse cx="0" cy="-35" rx="4.2" ry="15" fill="#fff"/><ellipse cx="0" cy="-11" rx="14" ry="8" fill="#fff" opacity=".65"/>`
+    : `<path d="M1-51C14-52 29-44 29-31C29-23 21-19 13-21C6-23 3-30 3-37z" fill="#6b4226"/>
+       <ellipse cx="-23" cy="-12" rx="13" ry="14" fill="#2b2624"/><ellipse cx="22" cy="-8" rx="10" ry="9" fill="#c98a4b"/>`;
+  const eyes=r=>`<circle cx="-10" cy="-30" r="${r}" fill="#2a1520"/><circle cx="10" cy="-30" r="${r}" fill="#2a1520"/><circle cx="-8.7" cy="-31.4" r="1.25" fill="#fff"/><circle cx="11.3" cy="-31.4" r="1.25" fill="#fff"/>`;
+  const line=`stroke="#7a2f48" stroke-width="1.8" fill="none" stroke-linecap="round"`;
+  return `<g class="hz"><path d="M-21-26L0-64L21-26" stroke="#e14e87" stroke-width="3.4" fill="none" stroke-linejoin="round"/><circle cx="0" cy="-66" r="4" fill="none" stroke="#b93a6c" stroke-width="2.6"/></g>
+  <ellipse cx="-19" cy="-45" rx="8" ry="6.5" fill="${earL}" transform="rotate(-28 -19 -45)"/><ellipse cx="19" cy="-45" rx="8" ry="6.5" fill="${earR}" transform="rotate(28 19 -45)"/>
+  <ellipse cx="-19" cy="-44" rx="4.5" ry="3.4" fill="#f4b3c3" transform="rotate(-28 -19 -44)"/><ellipse cx="19" cy="-44" rx="4.5" ry="3.4" fill="#f4b3c3" transform="rotate(28 19 -44)"/>
+  <g class="feet" fill="#f2a9ba"><ellipse cx="-15" cy="-2" rx="5.5" ry="3.2"/><ellipse cx="-5" cy="-1" rx="4.5" ry="3"/><ellipse cx="5" cy="-1" rx="4.5" ry="3"/><ellipse cx="15" cy="-2" rx="5.5" ry="3.2"/></g>
+  <ellipse cx="0" cy="-25" rx="29" ry="25" fill="${body}"/>
+  <g clip-path="url(#pigClip)">${marks}<g class="hz"><rect x="-30" y="-12" width="60" height="8" fill="#f27ba8"/><rect x="-30" y="-12" width="60" height="2" fill="#fff" opacity=".5"/></g></g>
+  <ellipse cx="0" cy="-25" rx="29" ry="25" fill="none" stroke="#e5d6c8" stroke-width="1.2"/>
+  <ellipse cx="-18" cy="-21" rx="4.6" ry="3" fill="#f7a8bf" opacity=".75"/><ellipse cx="18" cy="-21" rx="4.6" ry="3" fill="#f7a8bf" opacity=".75"/>
+  <ellipse cx="0" cy="-22.5" rx="3.2" ry="2.3" fill="#f08aa6"/>
+  <g class="m-happy"><g class="blink">${eyes(3.6)}</g><path d="M-5-18q2.5 3 5 0q2.5 3 5 0" ${line}/></g>
+  <g class="m-worried">${eyes(3.8)}<path d="M-16-37L-6-40M16-37L6-40" stroke="#2a1520" stroke-width="1.9" stroke-linecap="round"/><path d="M-5-16.5q2.5-2.2 5 0q2.5 2.2 5 0" ${line}/></g>
+  <g class="m-scared"><circle cx="-10" cy="-30" r="5.6" fill="#fff" stroke="#2a1520" stroke-width="1.2"/><circle cx="10" cy="-30" r="5.6" fill="#fff" stroke="#2a1520" stroke-width="1.2"/><g class="pupils"><circle cx="-10" cy="-29.5" r="2.2" fill="#2a1520"/><circle cx="10" cy="-29.5" r="2.2" fill="#2a1520"/></g><path d="M-16-40L-6-44M16-40L6-44" stroke="#2a1520" stroke-width="1.9" stroke-linecap="round"/><ellipse cx="0" cy="-15.5" rx="2.6" ry="3.2" fill="#7a2f48"/></g>
+  <g class="m-joy"><path d="M-14-29q4-6 8 0M6-29q4-6 8 0" stroke="#2a1520" stroke-width="2.3" fill="none" stroke-linecap="round"/><path d="M-6-18.5q6 8 12 0z" fill="#7a2f48"/><path d="M-3.2-15q3.2 2.6 6.4 0" fill="#f58fab"/></g>
+  <g class="sw"><path class="drip" d="M25-47q3.4 5.4 0 7.6q-3.4-2.2 0-7.6z" fill="#b6e2f7" stroke="#78bde0" stroke-width=".8"/></g>
+  <g class="hb"><path d="M-9-49l-6-7M1-50l2-9M9-48l7-5" stroke="#d6a640" stroke-width="2" stroke-linecap="round"/></g>
+  <g class="hat"><ellipse cx="0" cy="-47" rx="24" ry="5.5" fill="#efcd70" stroke="#c99a3a" stroke-width="1.2"/><path d="M-12-48C-12-62 12-62 12-48z" fill="#f4d985" stroke="#c99a3a" stroke-width="1.2"/><rect x="-12" y="-52" width="24" height="3.4" fill="#e14e87"/></g>`;
 }
 
-/* --- cartoon guinea pigs: Pepper (white+grey) & Pixie (white/brown/black, shy) --- */
-function pigSVG(which,x,y,s,opts){
-  opts=opts||{};
-  const idp=which+Math.round(x)+"_"+Math.round(y);
-  const patch = which==="pepper"
-    ? `<ellipse cx="-26" cy="-14" rx="22" ry="20" fill="#9aa0ab"/>
-       <ellipse cx="26" cy="-14" rx="22" ry="20" fill="#9aa0ab"/>
-       <ellipse cx="-26" cy="-14" rx="13" ry="12" fill="#7d838e"/>`
-    : `<ellipse cx="-28" cy="-10" rx="20" ry="22" fill="#6b4a2f"/>
-       <ellipse cx="26" cy="-18" rx="18" ry="16" fill="#2e2a28"/>
-       <ellipse cx="8" cy="14" rx="14" ry="12" fill="#8a5a35" opacity="0.85"/>`;
-  const worry = opts.worried
-    ? `<path d="M-14 -2 q4 5 8 0" stroke="#5b2b3c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-       <circle cx="-13" cy="-12" r="4.6" fill="#fff"/><circle cx="-13" cy="-12" r="2" fill="#3a2030"/>
-       <circle cx="13" cy="-12" r="4.6" fill="#fff"/><circle cx="13" cy="-12" r="2" fill="#3a2030"/>`
-    : `<circle cx="-13" cy="-12" r="3.4" fill="#3a2030"/><circle cx="-12" cy="-13" r="1.1" fill="#fff"/>
-       <circle cx="13" cy="-12" r="3.4" fill="#3a2030"/><circle cx="14" cy="-13" r="1.1" fill="#fff"/>
-       <path d="M-7 2 q7 6 14 0" stroke="#a2546b" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
-  const nameTag = opts.name ? `<text x="0" y="56" text-anchor="middle" font-size="14" font-weight="800" fill="#7c4a5f" opacity="0.9">${opts.name}</text>` : ``;
-  const hide = opts.hidden
-    ? `<rect x="-46" y="-34" width="60" height="70" rx="12" fill="#a9744f"/>
-       <rect x="-46" y="-34" width="60" height="70" rx="12" fill="none" stroke="#7c4f30" stroke-width="3"/>
-       <rect x="-34" y="-44" width="36" height="14" rx="7" fill="#8a5a35"/>`
-    : ``;
-  return `<g transform="translate(${x} ${y}) scale(${s})" class="${opts.cls||""}" ${opts.gid?`id="${opts.gid}"`:""}>
-    ${hide}
-    <ellipse cx="0" cy="30" rx="34" ry="7" fill="#000" opacity="0.08"/>
-    <ellipse cx="0" cy="2" rx="40" ry="30" fill="${which==="pepper"?"#f7f2e4":"#fdfbf5"}"/>
-    ${patch}
-    <ellipse cx="-34" cy="-30" rx="9" ry="7" fill="${which==="pepper"?"#9aa0ab":"#6b4a2f"}" transform="rotate(-20 -34 -30)"/>
-    <ellipse cx="34" cy="-30" rx="9" ry="7" fill="${which==="pepper"?"#9aa0ab":"#2e2a28"}" transform="rotate(20 34 -30)"/>
-    <ellipse cx="-4" cy="4" rx="4" ry="3" fill="#e8a0b4"/><ellipse cx="4" cy="-2" rx="2.4" ry="1.8" fill="#c96f88"/>
-    ${worry}
-    ${nameTag}
-  </g>`;
-}
+/* ============ scene: one continuous world moved with WAAPI, transform and opacity only ============ */
+const HOME={x:168,y:212}, TRAP={x:332,y:188}, ROPE=40, HOIST=12, POP_Y=654, PIXIE0=70;
+const CAM_DOWN="translateY(-62.857%)", BG_DOWN="translateY(-36.667%)"; /* 440 of 700 world units; the sky follows at 0.35x */
+/* each piece's hidden pose: building animates from here to rest, dismantling animates back */
+const HIDDEN={pDeckBack:"translateY(-28px)",pDeckFront:"translateY(-28px)",pPost:"scaleY(0.2)",pBeam:"translateX(-30px) rotate(-8deg)",
+  pBrace:"rotate(-60deg)",rope:"scaleY(0.08)",bow:"translateY(3px)",gulp:"scale(0.85)"};
+const MOVERS=["cam","world","bg","pigPos","pigHoist","pigHop","pigSquash","pigShadow","swing","tdL","tdR","pixie","pixieHop","pixieSquash",
+  "pixieHay","hayBack","hayFront","hayBackSq","hayFrontSq"].concat(Object.keys(HIDDEN));
+const SC={stage:0,target:0,queue:[],busy:false,gen:0,speed:1,timers:new Set(),sway:null,down:false,pigHome:true,onLanded:null,moodT:0};
+const pt=(x,y)=>`translate(${x}px,${y}px)`;
+const hopT=(y,r)=>`translate(0px,${y}px) translate(0px,-26px) rotate(${r}deg) translate(0px,26px)`; /* turns about the body, not the feet */
+const moodFor=s=>s>=8?"scared":s>=2?"worried":"happy";
+const D=ms=>Math.round(ms*SC.speed);
+const pepper=()=>$("pepperArt");
 
-function sceneSVG(){
-  /* wooden gallows builds stage-by-stage with misses; pig stands on trapdoor; final miss -> hay */
-  const L=settings.lives, m=wrongCount;
-  const frac=L<=1?1:m/L;
-  const showBase=frac>0, showPost=frac>=0.25, showBeam=frac>=0.45, showRope=frac>=0.65;
-  const pigOn = m>0 && !overLost();
-  const dropped = overLost();
-  const hidePixie = Math.min(34, Math.max(0, 34 - guessed.size*6)); /* Pixie peeks out as you guess right */
-  let s="";
-  /* hay pile (always there, grows) */
-  const hayH = dropped?1:0.35+frac*0.3;
-  s+=`<g opacity="${0.55+frac*0.45}">
-    <ellipse cx="200" cy="228" rx="${86*hayH+40}" ry="${26*hayH+8}" fill="#e8c96a"/>
-    <ellipse cx="160" cy="222" rx="40" ry="14" fill="#f2d98c"/>
-    <ellipse cx="245" cy="224" rx="44" ry="15" fill="#dfba55"/>
-    ${[150,175,200,225,250].map((x,i)=>`<line x1="${x}" y1="216" x2="${x+(i%2?8:-8)}" y2="206" stroke="#c49a3f" stroke-width="3" stroke-linecap="round"/>`).join("")}
-  </g>`;
-  /* platform + trapdoor */
-  s+=`<g>
-    <rect x="120" y="196" width="160" height="12" rx="4" fill="#8a5a35"/>
-    <rect x="150" y="120" width="10" height="78" fill="#7c4f30"/>
-    <rect x="240" y="120" width="10" height="78" fill="#7c4f30"/>`;
-  if(dropped){
-    s+=`<rect x="176" y="196" width="24" height="12" rx="3" fill="#6e4426" transform="rotate(48 188 202)"/>
-        <rect x="200" y="196" width="24" height="12" rx="3" fill="#6e4426" transform="rotate(-48 212 202)"/>`;
-  } else {
-    s+=`<rect x="176" y="196" width="48" height="12" rx="3" fill="#a9744f" stroke="#6e4426" stroke-width="2"/>`;
+function freeze(el){
+  const list=el.getAnimations(); if(!list.length) return;
+  const cs=getComputedStyle(el), t=cs.transform, o=cs.opacity;
+  list.forEach(a=>a.cancel());
+  el.style.transform=t==="none"?"":t; el.style.opacity=o;
+}
+/* runs keyframes, then writes the end state to style so the next animation starts from where this one stopped */
+function anim(el,frames,opts){
+  const last=frames[frames.length-1];
+  if(frames.length===1){
+    const cs=getComputedStyle(el), from={};
+    if(last.transform!=null) from.transform=cs.transform;
+    if(last.opacity!=null) from.opacity=cs.opacity;
+    freeze(el); frames=[from,last];
+  }else if((last.transform!=null&&el._t&&el._t.playState==="running")||(last.opacity!=null&&el._o&&el._o.playState==="running")) freeze(el);
+  if(reduced()){ /* calm: positions land at once, only opacity eases */
+    if(last.transform!=null) el.style.transform=last.transform;
+    if(last.opacity==null) return null;
+    const from=frames[0].opacity!=null?frames[0].opacity:getComputedStyle(el).opacity;
+    el.style.opacity=String(last.opacity);
+    return el.animate([{opacity:from},{opacity:last.opacity}],{duration:240,easing:"ease"});
   }
-  s+=`</g>`;
-  if(showBase) s+=`<rect x="120" y="60" width="150" height="14" rx="6" fill="#8a5a35"/>`;
-  if(showPost) s+=`<rect x="126" y="70" width="16" height="130" rx="7" fill="#9c6a40"/><rect x="126" y="70" width="16" height="130" rx="7" fill="none" stroke="#7c4f30" stroke-width="2"/>`;
-  if(showBeam) s+=`<rect x="126" y="52" width="130" height="14" rx="7" fill="#9c6a40" stroke="#7c4f30" stroke-width="2"/>`;
-  if(showRope) s+=`<line x1="238" y1="66" x2="238" y2="104" stroke="#c49a3f" stroke-width="4" stroke-linecap="round"/>`;
-  /* the star: Pepper on the trapdoor (worried), or dropped into hay */
-  if(dropped){
-    s+=pigSVG("pepper",200,192,0.72,{worried:false,gid:"pigdrop",name:"Pepper"});
-    s+=`<text x="200" y="38" text-anchor="middle" font-size="15" font-weight="bold" fill="#8c2a51">wheek! that was soft 💛</text>`;
-  } else if(pigOn){
-    s+=`<g id="pigon">${pigSVG("pepper",238,164,0.6,{worried:m>=L-1,name:"Pepper"})}</g>`;
-  }
-  /* Pixie the shy friend peeks from behind her hide; warms up as you guess right */
-  s+=`<g transform="translate(${-hidePixie} 0)">${pigSVG("pixie",322,190,0.55,{hidden:hidePixie>10,name:"Pixie"})}</g>`;
-  /* Pepper cheering at the side when no misses yet */
-  if(!pigOn && !dropped) s+=`<g id="pigside">${pigSVG("pepper",72,196,0.62,{name:"Pepper"})}</g>`;
-  /* veg bowl */
-  s+=`<g><ellipse cx="358" cy="232" rx="26" ry="10" fill="#b93a6c"/><ellipse cx="358" cy="229" rx="26" ry="9" fill="#e14e87"/>
-    <text x="358" y="236" text-anchor="middle" font-size="15">${treatsThisGame>0?VEG[(treatsThisGame-1)%VEG.length]:"🥗"}</text></g>`;
-  return s;
+  const a=el.animate(frames,Object.assign({fill:"forwards"},opts));
+  if(last.transform!=null) el._t=a;
+  if(last.opacity!=null) el._o=a;
+  a.finished.then(()=>{
+    if(last.transform!=null&&el._t===a) el.style.transform=last.transform;
+    if(last.opacity!=null&&el._o===a) el.style.opacity=String(last.opacity);
+    a.cancel();
+  },()=>{});
+  return a;
 }
-function overLost(){ return over && PigLogic.isLost(wrongCount,settings.lives); }
-function overWon(){ return over && entry && PigLogic.isWon(entry,guessed); }
-
-function renderScene(){
-  const sc=$("scene"); sc.innerHTML=sceneSVG();
-  const pig=document.getElementById("pigon");
-  if(pig&&(window.__hop)){ pig.classList.add("hopping"); window.__hop=false; }
-  if(overLost()){
-    const d=document.getElementById("pigdrop");
-    if(d && !window.matchMedia("(prefers-reduced-motion: reduce)").matches){
-      d.animate([{transform:"translateY(-70px)"},{transform:"translateY(0)"}],{duration:520,easing:"cubic-bezier(0.23,1,0.32,1)"});
-    }
-    $("haynote").classList.add("show");
+function pose(id,t,o){ const el=$(id); el.getAnimations().forEach(a=>a.cancel()); if(t!=null) el.style.transform=t; if(o!=null) el.style.opacity=String(o); }
+function later(ms,fn){ const t=setTimeout(()=>{ SC.timers.delete(t); fn(); },ms); SC.timers.add(t); }
+const wait=ms=>new Promise(r=>later(reduced()?Math.min(ms,60):ms,r));
+/* a sequence interrupted by a new round or a win simply never resumes */
+function done(a){ const g=SC.gen; return (a?a.finished:Promise.resolve()).then(()=>{ if(g!==SC.gen) return new Promise(()=>{}); },()=>new Promise(()=>{})); }
+function enqueue(fn){ SC.queue.push(fn); pump(); }
+async function pump(){
+  if(SC.busy) return; SC.busy=true; const g=SC.gen;
+  while(SC.queue.length){
+    const fn=SC.queue.shift(); SC.speed=SC.queue.length?0.6:1; /* several queued misses play faster */
+    try{ await fn(); }catch(e){ console.error(e); }
+    if(g!==SC.gen) return;
+  }
+  SC.busy=false;
+}
+function cancelScene(){
+  SC.gen++; SC.queue=[]; SC.busy=false; SC.sway=null;
+  SC.timers.forEach(clearTimeout); SC.timers.clear();
+  MOVERS.forEach(id=>freeze($(id)));
+  ["strawFx","hearts","dust"].forEach(id=>{ $(id).textContent=""; });
+}
+function setMood(m){ clearTimeout(SC.moodT); pepper().dataset.mood=m; }
+function flashJoy(){
+  const art=pepper(); if(art.dataset.mood==="joy") return;
+  art.dataset.mood="joy"; clearTimeout(SC.moodT);
+  SC.moodT=setTimeout(()=>{ if(!over) art.dataset.mood=moodFor(SC.stage); },650);
+}
+function initScene(away){
+  for(const id in HIDDEN) pose(id,HIDDEN[id],0);
+  pose("tdL","rotate(0deg)"); pose("tdR","rotate(0deg)"); pose("swing","rotate(0deg)");
+  pose("pigPos",pt(away?-40:HOME.x,HOME.y),1); pose("pigHoist","translateY(0px)"); pose("pigHop",hopT(0,0)); pose("pigSquash","scale(1,1)"); pose("pigShadow","scale(1)",1);
+  pose("hayBack",null,0); pose("hayFront",null,0); pose("hayBackSq","scale(1,1)"); pose("hayFrontSq","scale(1,1)"); pose("pixieHay","translateY(0px)");
+  pose("world","translateY(0%)"); pose("bg","translateY(0%)"); pose("cam","translate(0px,0px)",1);
+  pose("pixie",`translateX(${PIXIE0}px)`); pose("pixieHop",hopT(0,0)); pose("pixieSquash","scale(1,1)");
+  const art=pepper(); Object.assign(art.dataset,{mood:"happy",harness:"",sweat:"",hat:"",hay:"",dangle:""});
+  const p=art.querySelector(".pupils"); p.getAnimations().forEach(a=>a.cancel()); p.style.transform="";
+  $("pixieArt").dataset.mood="happy";
+  $("pigShake").classList.remove("tremble");
+  ["strawFx","hearts","dust"].forEach(id=>{ $(id).textContent=""; });
+  SC.down=false; SC.pigHome=true; SC.sway=null;
+}
+function sceneTo(target){
+  while(SC.target<target){
+    const s=++SC.target;
+    enqueue(()=>{ SC.stage=s; if(s<10) setMood(moodFor(s)); return STEP[s](); });
   }
 }
 
-function renderWord(){
-  const w=$("word"); w.innerHTML="";
-  if(!entry) return;
-  const pre=PigLogic.prefilled(entry);
-  const won=overWon();
-  pre.forEach((fixed,i)=>{
-    const d=document.createElement("div");
-    if(fixed===" "){ d.className="tile space"; w.appendChild(d); return; }
-    const ch=entry.w.toUpperCase()[i];
-    const known=fixed!==null||guessed.has(ch);
-    const showAnswer=!known&&over&&!won;
-    d.className="tile"+((known||showAnswer)?" revealed":" reveal")+(won?" won":(showAnswer?" lost":""));
-    if(fixed!==null&&fixed!==" "){ d.classList.add("punct"); }
-    d.textContent=(known||showAnswer)?(fixed!==null?fixed:ch):"";
-    d.style.transitionDelay=(known?Math.min(i*28,420):0)+"ms";
-    w.appendChild(d);
+/* --- little effects inside the world --- */
+const SVGNS="http://www.w3.org/2000/svg";
+function svgEl(tag,attrs,parent){ const e=document.createElementNS(SVGNS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); parent.appendChild(e); return e; }
+function spark(el,frames,o){ const a=el.animate(frames,Object.assign({fill:"forwards"},o)); a.finished.then(()=>el.remove(),()=>{}); }
+function dust(x,y){
+  if(reduced()) return;
+  for(const dx of [-14,0,14]){
+    const c=svgEl("circle",{cx:x+dx,cy:y,r:5,fill:"#fff"},$("dust"));
+    spark(c,[{transform:"translate(0px,0px) scale(0.5)",opacity:.8},{transform:`translate(${dx*.8}px,-6px) scale(1.5)`,opacity:0}],{duration:460,easing:EASE.out});
+  }
+}
+function straws(x,y,n){
+  if(reduced()) return;
+  for(let i=0;i<n;i++){
+    const w=svgEl("g",{transform:`translate(${x+Math.random()*44-22} ${y})`},$("strawFx"));
+    const s=svgEl("path",{d:"M-5 0H5",stroke:i%3?"#e0b54c":"#c99a3a","stroke-width":2.4,"stroke-linecap":"round"},w);
+    const ang=-Math.PI/2+(Math.random()-.5)*2.4, v=36+Math.random()*52, ax=Math.cos(ang)*v, ay=Math.sin(ang)*v, r=Math.random()*400-200;
+    spark(s,[{transform:"translate(0px,0px) rotate(0deg)",opacity:1,easing:EASE.out},
+      {transform:`translate(${ax}px,${ay}px) rotate(${r/2}deg)`,opacity:1,offset:.4,easing:EASE.fall},
+      {transform:`translate(${ax*1.4}px,${ay+70}px) rotate(${r}deg)`,opacity:0}],{duration:900+Math.random()*500});
+    w.addEventListener("animationend",()=>w.remove());
+    later(1500,()=>w.remove());
+  }
+}
+function hearts(x,y){
+  if(reduced()) return;
+  [-16,2,18].forEach((dx,i)=>{
+    const h=svgEl("path",{d:"M0 3C-6-2-4-7 0-4C4-7 6-2 0 3z",fill:"#e14e87",transform:`translate(${x+dx} ${y})`},$("hearts"));
+    const k=svgEl("g",{},h.parentNode); k.appendChild(h);
+    spark(k,[{transform:"translate(0px,6px) scale(0.6)",opacity:0},{transform:`translate(${dx*.3}px,-8px) scale(1.1)`,opacity:1,offset:.3},{transform:`translate(${dx*.6}px,-34px) scale(1)`,opacity:0}],{duration:1300,delay:i*120,easing:EASE.out,fill:"both"});
   });
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    w.querySelectorAll(".tile.reveal").forEach(t=>{t.classList.remove("reveal");});
-  }));
+  const t=svgEl("text",{x:x+34,y:y-2,"font-size":12,"font-weight":800,fill:"#b93a6c","text-anchor":"middle"},$("hearts")); t.textContent="wheek!";
+  spark(t,[{transform:"translate(0px,6px)",opacity:0},{transform:"translate(0px,0px)",opacity:1,offset:.25},{transform:"translate(0px,-14px)",opacity:0}],{duration:1500,easing:EASE.out});
 }
 
-function renderKbd(){
-  const k=$("kbd"); k.innerHTML="";
+/* --- pig moves --- */
+function walk(x0,y0,x1,y1,ms,hops,ease){
+  const n=Math.max(1,Math.round(ms/(hops?180:190))), h=hops?-7:-3;
+  anim($("pigHop"),[{transform:hopT(0,0),easing:EASE.up},{transform:hopT(h,0),easing:EASE.down},{transform:hopT(0,0)}],{duration:ms/n,iterations:n});
+  return anim($("pigPos"),[{transform:pt(x0,y0)},{transform:pt(x1,y1)}],{duration:ms,easing:ease||(hops?"linear":EASE.inOut)});
+}
+async function fadeSwap(el,fn){ await done(anim(el,[{opacity:0}],{duration:160,easing:"ease"})); fn(); await done(anim(el,[{opacity:1}],{duration:220,easing:"ease"})); }
+const busy=el=>el.getAnimations().some(a=>a.playState==="running");
+/* popcorning: crouch, launch with a twist, squash on landing, settle */
+function popcorn(which){
+  const hop=$(which+"Hop"), sq=$(which+"Squash");
+  if(reduced()||busy(hop)) return null; /* a hop already in the air is not restarted */
+  const o={duration:640,easing:"linear"};
+  anim(sq,[{transform:"scale(1,1)",easing:EASE.out},{transform:"scale(1.1,0.86)",offset:.14},{transform:"scale(0.92,1.1)",offset:.3,easing:EASE.out},{transform:"scale(1,1)",offset:.55},
+    {transform:"scale(1,1)",offset:.76,easing:EASE.out},{transform:"scale(1.12,0.84)",offset:.84},{transform:"scale(0.97,1.04)",offset:.93},{transform:"scale(1,1)"}],o);
+  return anim(hop,[{transform:hopT(0,0)},{transform:hopT(0,0),offset:.14,easing:EASE.up},{transform:hopT(-24,-14),offset:.48,easing:EASE.down},{transform:hopT(0,0),offset:.8},{transform:hopT(0,0)}],o);
+}
+function wiggle(){
+  const hop=$("pigHop"); if(reduced()||busy(hop)) return;
+  anim(hop,[0,-8,7,-4,0].map(r=>({transform:hopT(0,r)})),{duration:480,easing:"ease-in-out"});
+}
+function startSway(){
+  if(reduced()) return;
+  SC.sway=$("swing").animate([{transform:"rotate(0deg)",easing:"ease-out"},{transform:"rotate(2.4deg)",offset:.25,easing:"ease-in"},
+    {transform:"rotate(0deg)",offset:.5,easing:"ease-out"},{transform:"rotate(-2.4deg)",offset:.75,easing:"ease-in"},{transform:"rotate(0deg)"}],{duration:2800,iterations:Infinity});
+}
+function stopSway(){ SC.sway=null; return anim($("swing"),[{transform:"rotate(0deg)"}],{duration:260,easing:EASE.out}); }
+async function walkHome(){
+  const pos=$("pigPos"), m=new DOMMatrixReadOnly(getComputedStyle(pos).transform);
+  let x=m.e, y=m.f;
+  if(reduced()){ await fadeSwap(pos,()=>{ pos.style.transform=pt(HOME.x,HOME.y); }); SC.pigHome=true; return; }
+  if(x>252){ await done(walk(x,y,252,188,Math.max(200,(x-252)*7))); x=252; y=188; }
+  if(x>214){ await done(walk(x,y,214,HOME.y,420,true)); x=214; y=HOME.y; }
+  await done(walk(x,y,HOME.x,HOME.y,520,false,EASE.out));
+  SC.pigHome=true;
+}
+function dismantle(){
+  let last=null;
+  ["gulp","bow","rope","pBrace","pBeam","pPost","pDeckFront","pDeckBack"].forEach((id,i)=>{
+    const el=$(id); if(getComputedStyle(el).opacity==="0") return;
+    last=anim(el,[{transform:HIDDEN[id],opacity:0}],{duration:320,delay:i*60,easing:EASE.inOut,fill:"both"});
+  });
+  return last;
+}
+function pixiePeek(n){ anim($("pixie"),[{transform:`translateX(${PIXIE0+Math.min(n,6)*6}px)`}],{duration:520,easing:EASE.out}); }
+
+/* --- the miss sequence: 1-5 build the gallows, 6-9 lead the pig up, 10 is the drop --- */
+const STEP=[null,
+  async()=>{ /* 1 deck */
+    const f=[{transform:HIDDEN.pDeckBack,opacity:0},{transform:"translateY(0px)",opacity:1}], o={duration:D(440),easing:EASE.back};
+    anim($("pDeckBack"),f,o); const a=anim($("pDeckFront"),f,o);
+    later(D(260),()=>{ Snd.knock(); dust(306,197); });
+    await done(a);
+  },
+  async()=>{ /* 2 post rises out of the deck */
+    const a=anim($("pPost"),[{transform:HIDDEN.pPost,opacity:0},{transform:"scaleY(1.05)",opacity:1,offset:.7},{transform:"scaleY(1)",opacity:1}],{duration:D(460),easing:EASE.out});
+    later(D(300),()=>{ Snd.knock(); dust(280,189); });
+    await done(a);
+  },
+  async()=>{ /* 3 beam slides on */
+    const a=anim($("pBeam"),[{transform:HIDDEN.pBeam,opacity:0},{transform:"translateX(0px) rotate(0deg)",opacity:1}],{duration:D(440),easing:EASE.back});
+    later(D(280),Snd.knock);
+    await done(a);
+  },
+  async()=>{ /* 4 brace swings in */
+    const a=anim($("pBrace"),[{transform:HIDDEN.pBrace,opacity:0},{transform:"rotate(0deg)",opacity:1}],{duration:D(420),easing:EASE.back});
+    later(D(260),Snd.knock);
+    await done(a);
+  },
+  async()=>{ /* 5 rope lowers with its pink bow */
+    const o={duration:D(620),easing:EASE.back};
+    anim($("rope"),[{transform:HIDDEN.rope,opacity:0},{transform:HIDDEN.rope,opacity:1,offset:.12},{transform:"scaleY(1)",opacity:1}],o);
+    const a=anim($("bow"),[{transform:HIDDEN.bow,opacity:0},{transform:HIDDEN.bow,opacity:1,offset:.12},{transform:`translateY(${ROPE}px)`,opacity:1}],o);
+    Snd.zip();
+    await done(a);
+  },
+  async()=>{ /* 6 the pig is led up: trots over, hesitates at the steps, hops up, edges onto the trapdoor */
+    SC.pigHome=false;
+    const pos=$("pigPos");
+    if(reduced()){ await fadeSwap(pos,()=>{ pos.style.transform=pt(TRAP.x,TRAP.y); }); return; }
+    await done(walk(HOME.x,HOME.y,214,HOME.y,D(560)));
+    anim($("pigSquash"),[{transform:"scale(1,1)"},{transform:"scale(1.05,0.94)"},{transform:"scale(1,1)"}],{duration:D(320),easing:"ease-in-out"});
+    await wait(D(420));
+    await done(walk(214,HOME.y,252,188,D(540),true));
+    await done(walk(252,188,TRAP.x,TRAP.y,D(620)));
+  },
+  async()=>{ /* 7 padded harness on; the bow clips to its ring, well clear of the neck */
+    pepper().dataset.harness="on";
+    await wait(D(240));
+    anim($("bow"),[{transform:`translateY(${ROPE}px) scale(1.3)`},{transform:`translateY(${ROPE}px) scale(1)`}],{duration:D(280),easing:EASE.back});
+    Snd.click(); $("pigShake").classList.add("tremble");
+    anim($("pigSquash"),[{transform:"scale(1,1)"},{transform:"scale(0.97,1.04)"},{transform:"scale(1,1)"}],{duration:D(260)});
+    await wait(D(300));
+  },
+  async()=>{ /* 8 hoisted a little: feet dangle, gentle pendulum sway */
+    const o={duration:D(720),easing:EASE.inOut};
+    anim($("rope"),[{transform:"scaleY(1)"},{transform:`scaleY(${(ROPE-HOIST)/ROPE})`}],o);
+    anim($("bow"),[{transform:`translateY(${ROPE}px)`},{transform:`translateY(${ROPE-HOIST}px)`}],o);
+    anim($("pigShadow"),[{transform:"scale(1)",opacity:1},{transform:"scale(0.7)",opacity:.55}],o);
+    Snd.creak(); pepper().dataset.dangle="on";
+    await done(anim($("pigHoist"),[{transform:"translateY(0px)"},{transform:`translateY(${-HOIST}px)`}],o));
+    startSway();
+  },
+  async()=>{ /* 9 gulp */
+    pepper().dataset.sweat="on"; Snd.gulp();
+    anim($("gulp"),[{transform:HIDDEN.gulp,opacity:0},{transform:"scale(1)",opacity:1}],{duration:D(260),easing:EASE.back});
+    anim($("pigSquash"),[{transform:"scale(1,1)"},{transform:"scale(1.04,0.95)",offset:.4},{transform:"scale(1,1)"}],{duration:D(360)});
+    later(1500,()=>anim($("gulp"),[{transform:"scale(0.95)",opacity:0}],{duration:220,easing:"ease"}));
+    await wait(D(520));
+  },
+  async()=>{ /* 10 the drop */
+    const v=PigLogic.landingVariant(hayCount()), art=pepper(), pos=$("pigPos"), sq=$("pigSquash"), hop=$("pigHop");
+    if(reduced()) return landQuietly(v);
+    await done(stopSway());
+    art.dataset.dangle=""; setMood("scared");
+    anim(sq,[{transform:"scale(1,1)"},{transform:"scale(1.06,0.92)"}],{duration:220,easing:EASE.out}); /* braces */
+    const jig=s=>[0,3,-1.5,2,0].map(d=>({transform:`rotate(${d*s}deg)`}));
+    anim($("tdL"),jig(1),{duration:280}); anim($("tdR"),jig(-1),{duration:280}); Snd.creak();
+    await wait(340);
+    const open=s=>[{transform:"rotate(0deg)",easing:EASE.fall},{transform:`rotate(${98*s}deg)`,offset:.6,easing:EASE.out},{transform:`rotate(${84*s}deg)`,offset:.8,easing:"ease-in-out"},{transform:`rotate(${90*s}deg)`}];
+    anim($("tdL"),open(1),{duration:560}); anim($("tdR"),open(-1),{duration:560}); later(300,Snd.clack);
+    anim(sq,[{transform:"scale(1,1)"}],{duration:240,easing:EASE.out});
+    await wait(640);
+    const eyes=art.querySelector(".pupils"); /* still hanging: looks down at the open hatch... */
+    anim(eyes,[{transform:"translateY(2.2px)"}],{duration:200,easing:EASE.out});
+    await wait(560);
+    anim(eyes,[{transform:"translateY(0px)"}],{duration:160,easing:EASE.out}); /* ...then straight at us */
+    await wait(320);
+    Snd.ping(); $("pigShake").classList.remove("tremble"); /* the bow unties and the rope springs up */
+    anim($("bow"),[{transform:`translateY(${ROPE-HOIST-8}px) scale(1.3)`,opacity:0}],{duration:280,easing:EASE.out});
+    anim($("rope"),[{transform:HIDDEN.rope}],{duration:420,easing:EASE.back});
+    await wait(180);
+    /* the camera rides the same curve as the fall, so the pig holds its place on screen */
+    pos.style.transform=pt(TRAP.x,TRAP.y-HOIST); $("pigHoist").style.transform="translateY(0px)";
+    $("hayBack").style.opacity="1"; $("hayFront").style.opacity="1"; /* still well below the window */
+    anim($("pigShadow"),[{opacity:0}],{duration:120});
+    SC.down=true; Snd.whoosh();
+    const F={duration:900,easing:EASE.fall};
+    const fall=anim(pos,[{transform:pt(TRAP.x,TRAP.y-HOIST)},{transform:pt(335,650)}],F);
+    anim(sq,[{transform:"scale(1,1)"},{transform:"scale(0.88,1.16)"}],{duration:900,easing:EASE.out});
+    anim(hop,[{transform:hopT(0,0)},{transform:hopT(0,-18)}],{duration:900,easing:"ease-in-out"});
+    anim($("world"),[{transform:"translateY(0%)"},{transform:CAM_DOWN}],F);
+    anim($("bg"),[{transform:"translateY(0%)"},{transform:BG_DOWN}],F);
+    await done(fall);
+    /* landing: squash, scattered straw, a beat of stillness, then the head pops out */
+    hayBump(); Snd.flump();
+    const bounce=v==="bounce";
+    later(bounce?720:200,()=>{ art.dataset.harness=""; }); /* the harness comes off out of sight */
+    anim(pos,bounce?[{transform:pt(335,650),easing:EASE.up},{transform:pt(335,598),offset:.42,easing:EASE.down},{transform:pt(335,714)}]:[{transform:pt(335,650)},{transform:pt(335,714)}],
+      {duration:bounce?700:170,easing:bounce?"linear":EASE.out});
+    anim(sq,[{transform:"scale(0.88,1.16)"},{transform:"scale(1,1)"}],{duration:200,easing:EASE.out});
+    anim(hop,[{transform:hopT(0,-18)},{transform:hopT(0,0)}],{duration:bounce?520:200,easing:EASE.out});
+    const squash=k=>[{transform:"scale(1,1)"},{transform:`scale(${1+.12*k},${1-.2*k})`,offset:.25},{transform:`scale(${1-.03*k},${1+.05*k})`,offset:.6},{transform:"scale(1,1)"}];
+    anim($("hayBackSq"),squash(1),{duration:620,easing:EASE.out}); anim($("hayFrontSq"),squash(1),{duration:620,easing:EASE.out});
+    straws(335,634,14); dust(335,640);
+    anim($("cam"),[0,3,-2,1,0].map(y=>({transform:`translate(0px,${y}px)`})),{duration:280});
+    if(bounce) later(680,()=>{ anim($("hayBackSq"),squash(.5),{duration:480,easing:EASE.out}); anim($("hayFrontSq"),squash(.5),{duration:480,easing:EASE.out}); straws(335,634,6); Snd.flump(); });
+    await wait(bounce?1000:780);
+    Object.assign(art.dataset,{hay:"on",sweat:"",hat:v==="hat"?"on":""}); /* changed while buried in the hay */
+    setMood("joy");
+    const pop=anim(pos,[{transform:pt(335,714)},{transform:pt(335,POP_Y)}],{duration:460,easing:EASE.back});
+    Snd.wheek(); hearts(335,POP_Y-60);
+    if(v==="pixie") later(420,()=>{ anim($("pixieHay"),[{transform:"translateY(0px)"},{transform:"translateY(-66px)"}],{duration:460,easing:EASE.back}); Snd.wheek(1.2); });
+    await done(pop);
+    landed();
+  }
+];
+function landed(cut){ if(SC.onLanded){ const f=SC.onLanded; SC.onLanded=null; f(!cut); } }
+function hayCount(){ try{ return Math.max(0,parseInt(localStorage.getItem(STORE_HAY),10)||0); }catch(e){ return 0; } }
+function hayBump(){ try{ localStorage.setItem(STORE_HAY,String(hayCount()+1)); }catch(e){} }
+/* reduced motion: fade straight to the landed pig */
+async function landQuietly(v){
+  await done(anim($("cam"),[{opacity:0}],{duration:220}));
+  for(const id of ["rope","bow","gulp"]) pose(id,HIDDEN[id],0);
+  pose("swing","rotate(0deg)"); pose("tdL","rotate(90deg)"); pose("tdR","rotate(-90deg)");
+  pose("pigPos",pt(335,POP_Y),1); pose("pigHoist","translateY(0px)"); pose("pigHop",hopT(0,0)); pose("pigSquash","scale(1,1)"); pose("pigShadow",null,0);
+  pose("hayBack",null,1); pose("hayFront",null,1); pose("world",CAM_DOWN); pose("bg",BG_DOWN);
+  if(v==="pixie") pose("pixieHay","translateY(-66px)");
+  Object.assign(pepper().dataset,{mood:"joy",hay:"on",hat:v==="hat"?"on":"",sweat:"",dangle:"",harness:""});
+  $("pigShake").classList.remove("tremble");
+  SC.down=true; hayBump();
+  await done(anim($("cam"),[{opacity:1}],{duration:320}));
+  Snd.wheek(); landed();
+}
+/* new round: dismantle, pan back up if we fell, and trot the pig back in */
+function sceneReset(instant){
+  const away=!SC.pigHome, down=SC.down;
+  cancelScene(); SC.stage=0; SC.target=0; landed(true); /* show any pending loss message now, without the landing */
+  if(instant){ initScene(false); return; }
+  enqueue(async()=>{
+    setMood("happy"); $("pigShake").classList.remove("tremble");
+    Object.assign(pepper().dataset,{sweat:"",dangle:""});
+    if(reduced()&&(down||away)){
+      await done(anim($("cam"),[{opacity:0}],{duration:200}));
+      initScene(false);
+      await done(anim($("cam"),[{opacity:1}],{duration:260}));
+      return;
+    }
+    let last=dismantle();
+    anim($("pixie"),[{transform:`translateX(${PIXIE0}px)`}],{duration:520,easing:EASE.inOut});
+    if(away){ const f=anim($("pigPos"),[{opacity:0}],{duration:200,easing:"ease"}); last=last||f; }
+    if(down){
+      anim($("bg"),[{transform:"translateY(0%)"}],{duration:760,easing:EASE.inOut});
+      last=anim($("world"),[{transform:"translateY(0%)"}],{duration:760,easing:EASE.inOut});
+    }
+    await done(last);
+    initScene(away);
+    if(away){ SC.pigHome=false; await done(walk(-40,HOME.y,HOME.x,HOME.y,820,true,EASE.out)); SC.pigHome=true; }
+  });
+}
+function sceneWin(){
+  cancelScene();
+  enqueue(async()=>{
+    const art=pepper();
+    setMood("joy"); Object.assign(art.dataset,{sweat:"",dangle:""}); $("pigShake").classList.remove("tremble");
+    if(!SC.pigHome){
+      if(art.dataset.harness==="on"){ /* unclip: the rope retracts and the pig is set down */
+        anim($("swing"),[{transform:"rotate(0deg)"}],{duration:260,easing:EASE.out});
+        anim($("pigHoist"),[{transform:"translateY(0px)"}],{duration:340,easing:EASE.out});
+        anim($("pigShadow"),[{transform:"scale(1)",opacity:1}],{duration:340});
+        anim($("bow"),[{transform:HIDDEN.bow,opacity:0}],{duration:420,easing:EASE.inOut});
+        anim($("rope"),[{transform:HIDDEN.rope,opacity:0}],{duration:420,easing:EASE.inOut});
+        art.dataset.harness=""; Snd.ping();
+        await wait(380);
+      }
+      await walkHome();
+    }
+    dismantle();
+    $("pixieArt").dataset.mood="joy";
+    anim($("pixie"),[{transform:"translateX(118px)"}],{duration:560,easing:EASE.out});
+    await wait(220);
+    for(let i=0;i<3;i++){ popcorn("pixie"); await done(popcorn("pig")); }
+  });
+}
+
+/* --- HTML effects: treats fly to the pig, confetti --- */
+function treatFly(fromEl){
+  const bump=()=>{
+    $("treatN").textContent=treatsThisGame;
+    if(!reduced()) $("treatchip").animate([{transform:"scale(1.18)"},{transform:"scale(1)"}],{duration:260,easing:EASE.out});
+  };
+  if(reduced()||!fromEl){ bump(); return; }
+  const a=fromEl.getBoundingClientRect(), b=pepper().getBoundingClientRect();
+  const sx=a.left+a.width/2-12, sy=a.top+a.height/2-12, tx=b.left+b.width/2-12, ty=b.top+b.height*.6-12, dy=ty-sy;
+  const el=document.createElement("div"); el.className="fly"; el.innerHTML="<i></i>";
+  el.firstChild.textContent=VEG[(treatsThisGame-1)%VEG.length];
+  $("fx").appendChild(el);
+  el.animate([{transform:`translate(${sx}px,${sy}px)`},{transform:`translate(${tx}px,${sy}px)`}],{duration:460,easing:"cubic-bezier(0.3,0.6,0.5,1)",fill:"forwards"});
+  const f=el.firstChild.animate([{transform:"translateY(0px) scale(1)",easing:EASE.up},{transform:`translateY(${Math.min(0,dy)-70}px) scale(1.15)`,offset:.45,easing:EASE.down},
+    {transform:`translateY(${dy}px) scale(0.7)`,opacity:1,offset:.9},{transform:`translateY(${dy}px) scale(0.5)`,opacity:0}],{duration:460,fill:"forwards"});
+  f.finished.then(()=>{
+    el.remove(); bump(); Snd.crunch();
+    if(over&&!PigLogic.isWon(entry,guessed)) return;
+    if(SC.stage>=8&&SC.stage<10) wiggle(); else popcorn("pig");
+  },()=>el.remove());
+}
+function confetti(){
+  if(reduced()) return;
+  const r=$("stage").getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height*.35;
+  const cols=["#e14e87","#f9a8c9","#e8a93d","#5da271","#ffffff","#b93a6c"];
+  for(let i=0;i<28;i++){
+    const d=document.createElement("div"); d.className="confetti"; d.style.background=cols[i%cols.length];
+    $("fx").appendChild(d);
+    const ang=Math.PI+Math.random()*Math.PI, v=90+Math.random()*120, x1=Math.cos(ang)*v, y1=Math.sin(ang)*v*.9-20, rot=Math.random()*720-360;
+    d.animate([{transform:`translate(${cx}px,${cy}px) rotate(0deg) scale(0.9)`,opacity:1,easing:EASE.out},
+      {transform:`translate(${cx+x1}px,${cy+y1}px) rotate(${rot/2}deg) scale(1)`,opacity:1,offset:.35,easing:EASE.fall},
+      {transform:`translate(${cx+x1*1.35}px,${cy+y1+220+Math.random()*120}px) rotate(${rot}deg) scale(1)`,opacity:0}],
+      {duration:1300+Math.random()*500,delay:i*12,fill:"backwards"}).finished.then(()=>d.remove(),()=>d.remove());
+  }
+}
+
+/* --- word tiles and keyboard: built once per round, then updated in place --- */
+function buildWord(){
+  const w=$("word"); w.textContent="";
+  if(!entry){ w.setAttribute("aria-label","Word"); return; }
+  const up=entry.w.toUpperCase(), pre=PigLogic.prefilled(entry);
+  const longest=Math.max(...up.split(" ").map(s=>s.length)), gap=longest>9?3:5;
+  const room=Math.min(w.clientWidth||360,452);
+  w.style.setProperty("--gap",gap+"px");
+  w.style.setProperty("--tile",PigLogic.tileSize(up.split(" ").map(s=>s.length),room,gap,112)+"px");
+  let grp=null, n=0;
+  pre.forEach((fixed,i)=>{
+    if(fixed===" "){ grp=null; return; }
+    if(!grp){ grp=document.createElement("div"); grp.className="wgrp"; w.appendChild(grp); }
+    const t=document.createElement("div"); t.className="tile"+(fixed!==null?" punct":""); t.dataset.ch=up[i];
+    const s=document.createElement("span"); s.className="ch"; s.textContent=fixed!==null?fixed:""; t.appendChild(s); grp.appendChild(t);
+    if(!reduced()) t.animate([{opacity:0,transform:"translateY(6px)"},{opacity:1,transform:"translateY(0px)"}],{duration:260,delay:Math.min(n*30,360),easing:EASE.out,fill:"backwards"});
+    n++;
+  });
+  labelWord();
+}
+function labelWord(){
+  const tiles=[...$("word").querySelectorAll(".tile")];
+  $("word").setAttribute("aria-label","Word: "+tiles.map(t=>t.firstChild.textContent||"blank").join(" "));
+}
+function revealLetter(L){
+  let n=0;
+  $("word").querySelectorAll(`.tile[data-ch="${L}"]`).forEach(t=>{
+    t.firstChild.textContent=L;
+    if(reduced()){ t.firstChild.animate([{opacity:0},{opacity:1}],{duration:200}); return; }
+    const d=n++*50; /* a small dip before the pop */
+    t.animate([{transform:"scale(1)"},{transform:"scale(0.9)",offset:.3},{transform:"scale(1.06)",offset:.7},{transform:"scale(1)"}],{duration:340,delay:d,easing:"ease-out"});
+    t.firstChild.animate([{opacity:0,transform:"translateY(10px)"},{opacity:1,transform:"translateY(0px)"}],{duration:280,delay:d+60,easing:EASE.back,fill:"backwards"});
+  });
+  labelWord();
+}
+function revealAnswer(){
+  let n=0;
+  $("word").querySelectorAll(".tile:not(.punct)").forEach(t=>{
+    if(t.firstChild.textContent) return;
+    t.classList.add("miss"); t.firstChild.textContent=t.dataset.ch;
+    t.firstChild.animate([{opacity:0},{opacity:1}],{duration:260,delay:reduced()?0:n++*40,fill:"backwards"});
+  });
+  labelWord();
+}
+function celebrateTiles(){
+  $("word").querySelectorAll(".tile").forEach((t,i)=>{
+    t.style.setProperty("--d",i*40+"ms"); t.classList.add("won");
+    if(!reduced()) t.animate([{transform:"translateY(0px)"},{transform:"translateY(-10px)",offset:.4},{transform:"translateY(0px)"}],{duration:440,delay:i*40,easing:"ease-in-out"});
+  });
+}
+function buildKbd(){
+  const k=$("kbd");
   for(let c=65;c<=90;c++){
-    const L=String.fromCharCode(c);
-    const b=document.createElement("button");
-    b.className="key"; b.textContent=L; b.setAttribute("aria-label","Guess "+L);
-    b.disabled=over||!entry||guessed.has(L)||wrongSet.has(L);
-    if(guessed.has(L)) b.classList.add("right");
-    if(wrongSet.has(L)) b.classList.add("wrong");
-    b.addEventListener("click",()=>{ Snd.unlock(); guess(L); });
+    const L=String.fromCharCode(c), b=document.createElement("button"), s=document.createElement("span");
+    b.className="key"; b.dataset.l=L; b.setAttribute("aria-label","Guess "+L);
+    s.textContent=L; b.appendChild(s);
+    b.addEventListener("click",()=>guess(L));
     k.appendChild(b);
   }
 }
-
+const keyEl=L=>$("kbd").querySelector(`[data-l="${L}"]`);
+function syncKeys(){
+  for(const b of $("kbd").children){
+    const L=b.dataset.l;
+    b.classList.toggle("right",guessed.has(L)); b.classList.toggle("wrong",wrongSet.has(L));
+    b.disabled=over||!entry||guessed.has(L)||wrongSet.has(L);
+  }
+}
+function keyFeedback(L,ok){
+  if(reduced()) return;
+  const s=keyEl(L).firstChild;
+  if(ok) s.animate([{transform:"translateY(3px) scale(1.12)"},{transform:"translateY(0px) scale(1)"}],{duration:260,easing:EASE.back});
+  else s.animate([0,-3,3,-2,0].map(x=>({transform:`translate(${x}px,3px)`})),{duration:280,easing:"ease-in-out"});
+}
+function renderPips(){
+  const p=$("pips"), L=settings.lives;
+  if(p.children.length!==L){ p.textContent=""; for(let i=0;i<L;i++){ const d=document.createElement("i"); d.className="pip"; p.appendChild(d); } }
+  [...p.children].forEach((d,i)=>d.classList.toggle("used",i>=L-wrongCount));
+  p.setAttribute("aria-label",(L-wrongCount)+" of "+L+" chances left");
+}
 function renderMeta(){
+  $("treatN").textContent=treatsThisGame;
+  $("dailySub").textContent = stats.dailyLast===todayStr() ? "done ✓ · streak "+stats.dailyStreak : "one a day";
+  $("freeSub").textContent="streak "+stats.streak;
   if(!entry){ $("catpill").textContent="—"; $("diffpill").textContent="—"; return; }
   const cat=CATS.find(c=>c.id===entry.cat);
   $("catpill").textContent=mode==="daily"?"📅 daily · "+(cat?cat.name:entry.cat):(cat?cat.name:entry.cat);
   $("diffpill").textContent=entry.d;
   const st=mode==="daily"?stats.dailyStreak:stats.streak;
   $("streakpill").textContent="🔥 streak "+st;
-  $("dailySub").textContent = stats.dailyLast===todayStr() ? "done ✓ · streak "+stats.dailyStreak : "one a day";
-  $("freeSub").textContent="streak "+stats.streak;
-}
-
-function renderTreats(){
-  const r=$("treatrow"); r.querySelectorAll(".treat").forEach(n=>n.remove());
-  const n=Math.min(treatsThisGame,12);
-  for(let i=0;i<n;i++){
-    const s=document.createElement("span"); s.className="treat"; s.textContent=VEG[i%VEG.length];
-    r.appendChild(s);
-    requestAnimationFrame(()=>requestAnimationFrame(()=>s.classList.add("earned")));
-  }
 }
 
 function renderAlbum(){
@@ -844,32 +1133,24 @@ function renderAlbum(){
   }
 }
 
-function renderAll(newGame){
-  renderScene(); renderWord(); renderKbd(); renderMeta(); renderTreats(); syncSoundBtn();
-  if(newGame){
-    const hop=document.getElementById("pigside");
-    if(hop&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){ hop.classList.add("hopping"); }
-  }
-}
-
 /* ============ guessing ============ */
 function guess(L){
   if(over||!entry||guessed.has(L)||wrongSet.has(L)) return;
   Snd.unlock();
   if(entry.w.toUpperCase().includes(L)){
-    guessed.add(L); Snd.right(); Snd.pop();
+    guessed.add(L); Snd.right();
     treatsThisGame++; stats.treats=(stats.treats||0)+1;
-    window.__hop=true;
-    const pig=document.getElementById("pigon")||document.getElementById("pigside");
-    if(pig&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){ pig.classList.remove("hopping"); void pig.getBoundingClientRect(); pig.classList.add("hopping"); }
+    syncKeys(); keyFeedback(L,true); revealLetter(L);
+    treatFly(keyEl(L)); pixiePeek(guessed.size); flashJoy();
+    say(L+" is in the word.");
     if(treatsThisGame>=10) awardBadge("veg10");
     if(PigLogic.isWon(entry,guessed)) finish(true);
-    else { renderAll(); }
   } else {
     wrongSet.add(L); wrongCount++; Snd.wrong();
-    const sc=$("scene"); sc.classList.remove("wiggle"); void sc.getBoundingClientRect(); sc.classList.add("wiggle");
+    syncKeys(); keyFeedback(L,false); renderPips();
+    sceneTo(PigLogic.stageFor(wrongCount,settings.lives));
+    say("No "+L+". "+(settings.lives-wrongCount)+" chances left.");
     if(PigLogic.isLost(wrongCount,settings.lives)) finish(false);
-    else renderAll();
   }
   saveStats();
 }
@@ -901,14 +1182,19 @@ function finish(won){
     if(hintUsed) awardBadge("hintwin");
     if(Object.keys(stats.winsPerCat).length>=4) awardBadge("explorer");
     toast("🎉 "+entry.w+" — the piggies popcorn with joy!");
+    say("Solved: "+entry.w+".");
+    celebrateTiles(); confetti(); sceneWin();
   } else {
-    Snd.lose();
     if(mode==="daily"){ /* daily streak survives a loss, free streak resets */ }
     else { stats.streak=0; }
-    toast("The word was "+entry.w+" — Pepper is fine, just a bit hay-covered 🐹");
+    const w=entry.w;
+    SC.onLanded=soft=>toast("The word was "+w+(soft?" — Pepper landed softly and is very pleased 🐹":""));
+    say("Out of chances. The word was "+w+".");
+    revealAnswer();
   }
-  saveStats(); renderAll();
+  saveStats(); syncKeys(); renderMeta();
 }
+
 function yesterdayStr(){ const d=new Date(); d.setDate(d.getDate()-1); return todayStr(d); }
 
 /* ============ settings UI ============ */
@@ -935,8 +1221,19 @@ function syncSettingsUI(){
   $("phrases").checked=settings.phrases;
   renderCats();
 }
-function openSheet(id){ $(id).classList.add("open"); $(id).setAttribute("aria-hidden","false"); }
-function closeSheet(id){ $(id).classList.remove("open"); $(id).setAttribute("aria-hidden","true"); }
+let sheetOpener=null;
+function openSheet(id){
+  const s=$(id); sheetOpener=document.activeElement;
+  s.inert=false; s.setAttribute("aria-hidden","false"); s.classList.add("open");
+  $("app").inert=true;
+  s.querySelector(".card").focus({preventScroll:true});
+}
+function closeSheet(id){
+  const s=$(id); s.classList.remove("open"); s.setAttribute("aria-hidden","true"); s.inert=true;
+  $("app").inert=false;
+  if(sheetOpener&&sheetOpener.focus) sheetOpener.focus({preventScroll:true});
+  sheetOpener=null;
+}
 
 /* ============ stats sheet ============ */
 function renderStatsSheet(){
@@ -955,25 +1252,32 @@ function renderStatsSheet(){
   renderAlbum();
 }
 
+
 /* ============ events ============ */
+const sheetOpen=()=>$("setSheet").classList.contains("open")||$("statSheet").classList.contains("open");
 function bind(){
   document.addEventListener("pointerdown",()=>Snd.unlock(),{once:true});
   document.addEventListener("keydown",e=>{
+    if(e.key==="Escape"){
+      if($("setSheet").classList.contains("open")){ closeSheet("setSheet"); newRound(); }
+      else if($("statSheet").classList.contains("open")) closeSheet("statSheet");
+      return;
+    }
+    if(e.ctrlKey||e.metaKey||e.altKey||sheetOpen()) return;
     if(e.key&&e.key.length===1){
       const L=e.key.toUpperCase();
-      if(L>="A"&&L<="Z"&&!$("setSheet").classList.contains("open")&&!$("statSheet").classList.contains("open")) guess(L);
+      if(L>="A"&&L<="Z") guess(L);
     }
   });
   $("tabFree").addEventListener("click",()=>{ if(mode!=="free"){mode="free";Snd.press();syncTabs();newRound();} });
   $("tabDaily").addEventListener("click",()=>{ if(mode!=="daily"){mode="daily";Snd.press();syncTabs();newRound();} });
   $("hintbtn").addEventListener("click",()=>{
     if(!entry) return; Snd.unlock(); Snd.press(); hintUsed=true; saveStats();
-    const h=$("hinttext"); h.textContent="💡 "+entry.h; h.classList.add("show");
+    const h=$("hinttext"); h.textContent="💡 "+entry.h; h.classList.add("show"); say("Hint: "+entry.h);
   });
   $("newBtn").addEventListener("click",()=>{ Snd.unlock(); Snd.press(); if(mode==="daily"){toast("Daily puzzle is one word a day — try Free play for more!");return;} newRound(); });
   $("setBtn").addEventListener("click",()=>{ Snd.press(); syncSettingsUI(); openSheet("setSheet"); });
   $("setDone").addEventListener("click",()=>{ Snd.press(); closeSheet("setSheet"); newRound(); });
-  $("statsBtn").addEventListener("click",()=>{ Snd.press(); renderStatsSheet(); openSheet("statSheet"); });
   $("statDone").addEventListener("click",()=>{ Snd.press(); closeSheet("statSheet"); });
   $("albumBtn").addEventListener("click",()=>{ Snd.press(); renderStatsSheet(); openSheet("statSheet"); });
   $("soundBtn").addEventListener("click",()=>{ settings.muted=!settings.muted; saveSettings(); syncSoundBtn(); if(!settings.muted){Snd.unlock();Snd.press();} });
@@ -988,7 +1292,9 @@ function bind(){
 function syncTabs(){
   $("tabFree").setAttribute("aria-selected",String(mode==="free"));
   $("tabDaily").setAttribute("aria-selected",String(mode==="daily"));
+  $("seg").dataset.mode=mode;
 }
+
 
 /* ============ self-test (?selftest) ============ */
 function runSelfTest(){
@@ -1011,6 +1317,31 @@ function runSelfTest(){
   eq("win incomplete",PigLogic.isWon({w:"OTTER"},new Set(["O","T"])),false);
   eq("loss at lives",PigLogic.isLost(6,6),true);
   eq("no loss below lives",PigLogic.isLost(5,6),false);
+  /* thunk form so a missing helper fails its own case instead of aborting the run */
+  const ev=(n,f,b)=>{ try{ eq(n,f(),b); }catch(e){ t.push([n,false,String(e),b]); } };
+  const sample={version:1,categories:[
+    {id:"x",name:"X",words:[{answer:"AB CD",hint:"two words",difficulty:"easy"},{answer:"",hint:"blank",difficulty:"easy"}]},
+    {id:"e",name:"Empty",words:[]},
+    {id:"m",name:"Missing words"}]};
+  ev("entriesFromData maps schema",()=>PigLogic.entriesFromData(sample),[{w:"AB CD",h:"two words",d:"easy",cat:"x"}]);
+  ev("entriesFromData tolerates junk",()=>PigLogic.entriesFromData(null),[]);
+  ev("categoriesFromData skips empty",()=>PigLogic.categoriesFromData(sample),[{id:"x",name:"X"}]);
+  ev("sanitizeCats drops unknown ids",()=>PigLogic.sanitizeCats(["myth","animals"],["animals","plants"]),["animals"]);
+  ev("sanitizeCats falls back to all",()=>PigLogic.sanitizeCats(["myth"],["animals","plants"]),["animals","plants"]);
+  ev("sanitizeCats handles non-array",()=>PigLogic.sanitizeCats(null,["animals"]),["animals"]);
+  ev("stage 4 lives",()=>[0,1,2,3,4].map(m=>PigLogic.stageFor(m,4)),[0,3,6,9,10]);
+  ev("stage 6 lives",()=>[0,1,2,3,4,5,6].map(m=>PigLogic.stageFor(m,6)),[0,2,4,5,7,9,10]);
+  ev("stage 10 lives",()=>[0,1,2,3,4,5,6,7,8,9,10].map(m=>PigLogic.stageFor(m,10)),[0,1,2,3,4,5,6,7,8,9,10]);
+  ev("stage rises every miss, all lives",()=>{ for(let L=4;L<=10;L++) for(let m=1;m<=L;m++) if(PigLogic.stageFor(m,L)<=PigLogic.stageFor(m-1,L)) return L+":"+m; return "ok"; },"ok");
+  ev("stage past lives stays dropped",()=>PigLogic.stageFor(9,6),10);
+  ev("first landing is the classic",()=>PigLogic.landingVariant(0,()=>0.5),"first");
+  ev("later landings vary",()=>[0,0.4,0.99].map(r=>PigLogic.landingVariant(3,()=>r)),["bounce","hat","pixie"]);
+  ev("tile size: short word is full size",()=>PigLogic.tileSize([6],374,5,112),42);
+  ev("tile size: long word fits the row",()=>{ const t=PigLogic.tileSize([12],374,3,112); return 12*t+11*3<=374; },true);
+  ev("tile size: long phrase stays within height",()=>{ const t=PigLogic.tileSize([2,4,3,3,2,8],374,5,112); return t<42&&t>=20; },true);
+  ev("one words block on the page",()=>document.querySelectorAll("#hangman-words").length,1);
+  ev("hay hidden before any loss",()=>[$("hayBack").style.opacity,$("hayFront").style.opacity],["0","0"]);
+  ev("settings chips come from data",()=>{ renderCats(); return $("cats").children.length; },CATS.length);
   /* storage round-trip with corrupt data */
   try{localStorage.setItem("hangman-b:__t","{oops");}catch(e){}
   const v=loadJSON("hangman-b:__t",{a:1}); eq("corrupt storage resets",v,{a:1});
@@ -1021,9 +1352,11 @@ function runSelfTest(){
   return pass===t.length;
 }
 
+
 /* ============ boot ============ */
-bind(); syncTabs(); syncSoundBtn(); renderAlbum();
-newRound();
+$("pepperArt").innerHTML=pigArt("pepper"); $("pixieArt").innerHTML=pigArt("pixie"); $("pixieHayArt").innerHTML=pigArt("pixie");
+buildKbd(); bind(); syncTabs(); syncSoundBtn(); renderAlbum();
+newRound(true);
 if(new URLSearchParams(location.search).has("selftest")) runSelfTest();
 </script>
 </body>
