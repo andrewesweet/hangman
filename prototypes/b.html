@@ -1335,7 +1335,14 @@ function runSelfTest(){
   ev("stage rises every miss, all lives",()=>{ for(let L=4;L<=10;L++) for(let m=1;m<=L;m++) if(PigLogic.stageFor(m,L)<=PigLogic.stageFor(m-1,L)) return L+":"+m; return "ok"; },"ok");
   ev("stage past lives stays dropped",()=>PigLogic.stageFor(9,6),10);
   ev("first landing is the classic",()=>PigLogic.landingVariant(0,()=>0.5),"first");
-  ev("later landings vary",()=>[0,0.4,0.99].map(r=>PigLogic.landingVariant(3,()=>r)),["bounce","hat","pixie"]);
+  const rs=Array.from({length:50},(_,i)=>i/50);
+  ev("at least eight later landings",()=>new Set(rs.map(r=>PigLogic.landingVariant(3,"",()=>r))).size>=8,true);
+  ev("later landings never repeat the last",()=>["bounce","hat","friend","sneeze"].every(last=>rs.every(r=>{ const v=PigLogic.landingVariant(3,last,()=>r); return v&&v!==last&&v!=="first"; })),true);
+  ev("every later landing still reachable after one",()=>new Set(rs.map(r=>PigLogic.landingVariant(3,"hat",()=>r))).size,new Set(rs.map(r=>PigLogic.landingVariant(3,"",()=>r))).size-1);
+  ev("cast: Pepper reachable",()=>PigLogic.castFor(()=>0),{hero:"pepper",buddy:"pixie"});
+  ev("cast: Pixie reachable",()=>PigLogic.castFor(()=>0.99),{hero:"pixie",buddy:"pepper"});
+  ev("onlooker on screen is the other pig",()=>["pepper","pixie"].map(k=>{ applyCast({hero:k,buddy:k==="pepper"?"pixie":"pepper"}); return $("heroArt").dataset.kind+"/"+$("buddyArt").dataset.kind+"/"+$("hayBuddyArt").dataset.kind; }).concat(applyCast(cast)||[]),["pepper/pixie/pixie","pixie/pepper/pepper"]);
+  ev("game fits one screen without scrolling",()=>document.scrollingElement.scrollHeight<=innerHeight&&$("newBtn").getBoundingClientRect().bottom<=innerHeight,true);
   ev("tile size: short word is full size",()=>PigLogic.tileSize([6],374,5,112),42);
   ev("tile size: long word fits the row",()=>{ const t=PigLogic.tileSize([12],374,3,112); return 12*t+11*3<=374; },true);
   ev("tile size: long phrase stays within height",()=>{ const t=PigLogic.tileSize([2,4,3,3,2,8],374,5,112); return t<42&&t>=20; },true);
