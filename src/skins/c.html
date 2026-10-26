@@ -1,0 +1,96 @@
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1><span>ARCADE</span> RUN</h1>
+      <p><b>Man City</b> v <i>Arsenal</i></p>
+    </div>
+    <div class="icon-btns">
+      <button class="icon-btn" id="soundBtn" aria-pressed="false" aria-label="Toggle sound" title="Sound"></button>
+      <button class="icon-btn" id="statsBtn" aria-label="Open stats" title="Stats"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6"/></svg></button>
+      <button class="icon-btn" id="settingsBtn" data-hm-open-settings aria-label="Open settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/></svg></button>
+    </div>
+  </header>
+
+  <div class="stagebox"><section class="stadium" aria-label="Stadium: correct letters push Arsenal forward, misses push Man City forward">
+    <svg id="pitchBg" viewBox="0 0 400 266" aria-hidden="true"></svg>
+    <svg id="pitchFg" viewBox="0 0 400 266" role="img" aria-label="Man City in a 4-3-3 against Arsenal's 4-4-2"></svg>
+    <div class="hud" aria-label="Run score">
+      <div class="stat"><div class="k">SCORE</div><div class="v" id="scoreVal">0</div></div>
+      <div class="stat"><div class="k">COMBO</div><div class="v" id="comboVal">×0</div></div>
+      <div class="stat"><div class="k">BEST</div><div class="v" id="bestVal">0</div></div>
+      <div class="stat"><div class="k">STREAK</div><div class="v" id="streakVal">0</div></div>
+    </div>
+    <div class="edge" id="edge"></div>
+    <div class="flash" id="flash"></div>
+    <div class="banner" id="banner" role="status"><b id="bannerMain"></b><small id="bannerSub"></small></div>
+  </section></div>
+
+  <section class="panel" aria-label="Current word">
+    <div class="catline">
+      <span class="cat" id="catTag">—</span>
+      <div class="life">
+        <div class="dots" id="dots" aria-hidden="true"></div>
+        <span class="lives" id="livesLine"><strong>6</strong> left</span>
+      </div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div class="clue-row" id="clueRow">
+      <button class="btn ghost small" id="clueBtn">Show clue</button>
+      <p class="fine" id="hintCost">Using the clue voids the flawless bonus for this word.</p>
+      <div class="clue-text" id="clueText"></div>
+    </div>
+    <div class="empty" id="emptyState" hidden>
+      <p>No words match these filters. Try widening the word length or enabling more categories.</p>
+      <button class="btn" id="widenBtn">Reset filters</button>
+    </div>
+  </section>
+
+  <section aria-label="Letter keyboard">
+    <div class="keys" id="keys"></div>
+  </section>
+
+  <div class="controls">
+    <button class="btn primary" id="nextBtn">Next word →</button>
+    <button class="btn ghost" id="runBtn">↻ New run</button>
+  </div>
+</div>
+
+<!-- settings sheet -->
+<div class="sheet" id="settingsSheet" hidden role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="scrim" data-close></div>
+  <div class="sheet-card">
+    <div class="grabber" aria-hidden="true"></div>
+    <h2 id="setTitle">Settings</h2>
+    <p>Saved on this phone only.</p>
+    <div data-hm-settings></div>
+    <div class="sheet-btns">
+      <button class="btn primary" id="setDone">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- stats sheet -->
+<div class="sheet" id="statsSheet" hidden role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+  <div class="scrim" data-close></div>
+  <div class="sheet-card">
+    <div class="grabber" aria-hidden="true"></div>
+    <h2 id="statsTitle">Club honours</h2>
+    <p>Stored on this phone only. No backups, no accounts.</p>
+    <div class="statgrid">
+      <div class="cell">Best run<b id="stBest">0</b></div>
+      <div class="cell">Best streak<b id="stBestStreak">0</b></div>
+      <div class="cell">Words played<b id="stPlayed">0</b></div>
+      <div class="cell">Current streak<b id="stStreak">0</b></div>
+    </div>
+    <div class="frow"><span class="flabel">Wins per category</span><div class="statgrid" id="winsGrid"></div></div>
+    <div class="frow"><span class="flabel">Badges</span><div class="badges" id="badgeGrid"></div></div>
+    <div class="sheet-btns">
+      <button class="btn primary" id="statsDone">Done</button>
+      <button class="btn ghost" id="statsWipe">Erase stats</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
