@@ -269,7 +269,11 @@
   .controls{ display:flex; gap:8px; }
   .controls .btn{ flex:1; }
   /* ---------- keyboard ---------- */
-  .keys{ display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; }
+  .keys{ display:grid; grid-template-columns:repeat(20, minmax(0, 1fr)); gap:6px 5px; }
+  /* QWERTY rows: each key spans two of 20 columns, so rows two and three sit half a key and a key and a half in */
+  .keys .key{ grid-column:span 2; }
+  .keys .key:nth-child(11){ grid-column:2 / span 2; }
+  .keys .key:nth-child(20){ grid-column:4 / span 2; }
   .key{
     height:clamp(40px, 6.2dvh, 54px);
     font-size:1.2rem; font-weight:800;
@@ -1667,8 +1671,7 @@ function revealMissed(){
 /* keys are built once and reset per word, so a new word costs no DOM churn */
 function renderKeys(){
   keysEl.hidden = false;
-  for (let c = 65; c <= 90; c++){
-    const ch = String.fromCharCode(c);
+  for (const ch of "QWERTYUIOPASDFGHJKLZXCVBNM"){
     let b = keyEls[ch];
     if (!b){
       b = document.createElement("button");
@@ -2213,6 +2216,10 @@ function runSelfTests(){
   t("tile size: long word shrinks to fit the row", tileSize([12], 321, 86), 22);   /* 12*22 + 11*5 = 319 */
   t("tile size: long phrase shrinks into two rows", tileSize([3, 5, 2, 4, 6], 321, 86), 25);   /* row one 10t + 67 <= 321 */
   t("tile size: falls back to the smallest tile", tileSize([14, 14, 14], 200, 40), 20);
+  /* layout: keys sit in three QWERTY rows */
+  const keyRows = new Map();
+  Array.prototype.forEach.call(keysEl.children, function(b){ const y = Math.round(b.getBoundingClientRect().top); keyRows.set(y, (keyRows.get(y) || "") + b.textContent); });
+  t("keyboard rows read QWERTY", Array.from(keyRows.values()), ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]);
   /* layout: the game screen fits the viewport with no page scroll */
   t("game fits one screen without scrolling", document.scrollingElement.scrollHeight <= innerHeight && $("nextBtn").getBoundingClientRect().bottom <= innerHeight, true);
   if (failures.length){

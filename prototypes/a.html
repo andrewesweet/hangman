@@ -177,7 +177,11 @@
   .cluetext.show{animation:clue 380ms var(--ease-out)}
   @keyframes clue{from{opacity:0;transform:translateY(6px);filter:blur(2px)}}
   /* ---------- keyboard: circled when right, crossed out when wrong ---------- */
-  .keys{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-top:6px}
+  .keys{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:7px 5px;margin-top:6px}
+  /* QWERTY rows: each key spans two of 20 columns, so rows two and three sit half a key and a key and a half in */
+  .key{grid-column:span 2}
+  .key:nth-child(11){grid-column:2 / span 2}
+  .key:nth-child(20){grid-column:4 / span 2}
   .key{
     position:relative;border:0;cursor:pointer;
     font-family:var(--hand);font-weight:700;font-size:22px;line-height:1;color:var(--ink);
@@ -571,6 +575,11 @@ function selftest(){
     for (let m = 1; m <= L; m++) if (stagesShown(m, L) <= stagesShown(m - 1, L)) return false;
     return stagesShown(L, L) === 11 && stagesShown(L - 1, L) < 11;
   }));
+  ok("keyboard rows read QWERTY", () => {
+    const rows = new Map();
+    for (const b of keysEl.children) { const y = Math.round(b.getBoundingClientRect().top); rows.set(y, (rows.get(y) || "") + b.dataset.ch); }
+    return [...rows.values()].join() === "QWERTYUIOP,ASDFGHJKL,ZXCVBNM";
+  });
   ok("every stage has pen strokes", () => STAGE_IDS.every(id => STROKES[id] && STROKES[id].length > 0));
   ok("embedded word data matches the shared schema", () => {
     const d = readWordData();
@@ -840,8 +849,7 @@ function writeLetters(tiles, cls){
 }
 
 function buildKeys(){
-  for (let c = 65; c <= 90; c++) {
-    const ch = String.fromCharCode(c);
+  for (const ch of "QWERTYUIOPASDFGHJKLZXCVBNM") {
     const b = document.createElement("button");
     b.className = "key"; b.textContent = ch; b.dataset.ch = ch;
     b.setAttribute("aria-label", "Guess " + ch);
