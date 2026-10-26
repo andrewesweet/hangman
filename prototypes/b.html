@@ -1445,6 +1445,12 @@ function runSelfTest(){
   ev("tile size: short word is full size",()=>PigLogic.tileSize([6],374,5,112),42);
   ev("tile size: long word fits the row",()=>{ const t=PigLogic.tileSize([12],374,3,112); return 12*t+11*3<=374; },true);
   ev("tile size: long phrase stays within height",()=>{ const t=PigLogic.tileSize([2,4,3,3,2,8],374,5,112); return t<42&&t>=20; },true);
+  /* the topmost visible shape at a world point with the onlooker posed at x; hidden props still take hits, so skip see-through ones */
+  const shown=el=>{ for(;el&&el.nodeType===1;el=el.parentNode) if(getComputedStyle(el).opacity==="0") return false; return true; };
+  const atLog=(x,wx,wy)=>{ const prev=$("buddy").style.transform; pose("buddy",`translateX(${x}px)`); const pt=new DOMPoint(wx,wy).matrixTransform($("world").getScreenCTM()); const hit=document.elementsFromPoint(pt.x,pt.y).find(shown); pose("buddy",prev); return hit; };
+  ev("log mouth is open: hollow shows across the whole opening",()=>[74,80,86].map(x=>atLog(BUDDY.hide,x,190)===$("logHollow")),[true,true,true]);
+  ev("peeking onlooker shows through the mouth, not cut off at its middle",()=>$("buddy").contains(atLog(BUDDY.peek,76,192)),true);
+  ev("ducked onlooker is out of sight in the mouth",()=>{ for(let x=69;x<=91;x++) for(let y=168;y<=212;y+=2) if($("buddy").contains(atLog(BUDDY.hide,x,y))) return x+","+y; return "hidden"; },"hidden");
   ev("log rim not drawn over the peeking onlooker",()=>{ const prev=$("buddy").style.transform; pose("buddy",`translateX(${BUDDY.peek}px)`); const pt=new DOMPoint(87.5,190).matrixTransform($("world").getScreenCTM()); const hit=document.elementFromPoint(pt.x,pt.y); pose("buddy",prev); return !!hit&&$("buddy").contains(hit); },true);
   ev("keyboard rows read QWERTY",()=>{ const rows=new Map(); for(const b of $("kbd").children){ const y=Math.round(b.getBoundingClientRect().top); rows.set(y,(rows.get(y)||"")+b.dataset.l); } return [...rows.values()]; },["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"]);
   ev("one words block on the page",()=>document.querySelectorAll("#hangman-words").length,1);
