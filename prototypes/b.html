@@ -99,8 +99,11 @@ header.top{display:flex;align-items:center;gap:6px;min-height:44px}
 #empty{padding:14px 10px 0;text-align:center;color:var(--ink-soft);font-weight:700}
 /* ---------- keyboard: raised keys, the face presses into its base ---------- */
 .bottom{margin-top:auto;padding-top:8px}
-#kbd{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-#kbd .key:nth-child(22){grid-column-start:2}
+#kbd{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:6px 5px}
+/* QWERTY rows: each key spans two of 20 columns, so rows two and three sit half a key and a key and a half in */
+#kbd .key{grid-column:span 2}
+#kbd .key:nth-child(11){grid-column:2 / span 2}
+#kbd .key:nth-child(20){grid-column:4 / span 2}
 .key{position:relative;height:clamp(40px,6.2dvh,52px);border:0;padding:0;border-radius:12px;background:var(--pink-300);cursor:pointer}
 .key span{
   position:absolute;inset:0 0 4px;display:grid;place-items:center;border-radius:12px;background:var(--card);
@@ -1178,8 +1181,8 @@ function celebrateTiles(){
 }
 function buildKbd(){
   const k=$("kbd");
-  for(let c=65;c<=90;c++){
-    const L=String.fromCharCode(c), b=document.createElement("button"), s=document.createElement("span");
+  for(const L of "QWERTYUIOPASDFGHJKLZXCVBNM"){
+    const b=document.createElement("button"), s=document.createElement("span");
     b.className="key"; b.dataset.l=L; b.setAttribute("aria-label","Guess "+L);
     s.textContent=L; b.appendChild(s);
     b.addEventListener("click",()=>guess(L));
@@ -1443,6 +1446,7 @@ function runSelfTest(){
   ev("tile size: long word fits the row",()=>{ const t=PigLogic.tileSize([12],374,3,112); return 12*t+11*3<=374; },true);
   ev("tile size: long phrase stays within height",()=>{ const t=PigLogic.tileSize([2,4,3,3,2,8],374,5,112); return t<42&&t>=20; },true);
   ev("log rim not drawn over the peeking onlooker",()=>{ const prev=$("buddy").style.transform; pose("buddy",`translateX(${BUDDY.peek}px)`); const pt=new DOMPoint(87.5,190).matrixTransform($("world").getScreenCTM()); const hit=document.elementFromPoint(pt.x,pt.y); pose("buddy",prev); return !!hit&&$("buddy").contains(hit); },true);
+  ev("keyboard rows read QWERTY",()=>{ const rows=new Map(); for(const b of $("kbd").children){ const y=Math.round(b.getBoundingClientRect().top); rows.set(y,(rows.get(y)||"")+b.dataset.l); } return [...rows.values()]; },["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"]);
   ev("one words block on the page",()=>document.querySelectorAll("#hangman-words").length,1);
   ev("hay hidden before any loss",()=>[$("hayBack").style.opacity,$("hayFront").style.opacity],["0","0"]);
   ev("settings chips come from data",()=>{ renderCats(); return $("cats").children.length; },CATS.length);
