@@ -264,10 +264,12 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
         <g fill="#ff9fc3"><circle cx="160" cy="652" r="3"/><circle cx="214" cy="660" r="2.6"/></g>
         <!-- the onlooker's log hide -->
         <ellipse cx="80" cy="190" rx="7" ry="20" fill="#4f3220"/>
+        <!-- outer half of the rim sits behind whoever peeks out, so it never crosses her face -->
+        <path d="M80 169A7.5 21 0 0 1 80 211" fill="none" stroke="#cf9f70" stroke-width="3"/>
         <g transform="translate(0 212)"><g id="buddy" style="transform:translateX(56px)"><g id="buddyHop"><g id="buddySquash"><g id="buddyArt" class="pig" data-mood="happy" transform="scale(0.78)"></g></g></g></g></g>
         <path d="M10 168H80V212H10A9 22 0 0 1 10 168z" fill="#b57f55"/>
         <path d="M16 179H70M22 191H62M16 202H72" stroke="#93613d" stroke-width="2" stroke-linecap="round" opacity=".6"/>
-        <ellipse cx="80" cy="190" rx="7.5" ry="21" fill="none" stroke="#cf9f70" stroke-width="3"/>
+        <path d="M80 211A7.5 21 0 0 1 80 169" fill="none" stroke="#cf9f70" stroke-width="3"/>
         <path d="M28 169c4-8 15-8 19 0z" fill="#7cc47f"/><circle cx="52" cy="166" r="3" fill="#ff9fc3"/>
         <!-- hay pile: hidden until the first landing -->
         <g id="hayBack" style="opacity:0">
