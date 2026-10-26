@@ -1440,6 +1440,7 @@ function runSelfTest(){
   ev("tile size: short word is full size",()=>PigLogic.tileSize([6],374,5,112),42);
   ev("tile size: long word fits the row",()=>{ const t=PigLogic.tileSize([12],374,3,112); return 12*t+11*3<=374; },true);
   ev("tile size: long phrase stays within height",()=>{ const t=PigLogic.tileSize([2,4,3,3,2,8],374,5,112); return t<42&&t>=20; },true);
+  ev("log rim not drawn over the peeking onlooker",()=>{ const prev=$("buddy").style.transform; pose("buddy",`translateX(${BUDDY.peek}px)`); const pt=new DOMPoint(87.5,190).matrixTransform($("world").getScreenCTM()); const hit=document.elementFromPoint(pt.x,pt.y); pose("buddy",prev); return !!hit&&$("buddy").contains(hit); },true);
   ev("one words block on the page",()=>document.querySelectorAll("#hangman-words").length,1);
   ev("hay hidden before any loss",()=>[$("hayBack").style.opacity,$("hayFront").style.opacity],["0","0"]);
   ev("settings chips come from data",()=>{ renderCats(); return $("cats").children.length; },CATS.length);
