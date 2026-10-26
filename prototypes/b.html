@@ -253,6 +253,8 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
           <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6a46c"/><stop offset="1" stop-color="#b47e4a"/></linearGradient>
           <linearGradient id="hayG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d77a"/><stop offset="1" stop-color="#e2b54e"/></linearGradient>
           <clipPath id="pigClip"><ellipse cx="0" cy="-25" rx="29" ry="25"/></clipPath>
+          <!-- whoever is still inside the log shows only through its mouth -->
+          <clipPath id="logMouth"><ellipse cx="80" cy="190" rx="11" ry="22"/><rect x="80" width="320" height="700"/></clipPath>
         </defs>
         <!-- clifftop meadow, cliff face and the yard far below -->
         <path d="M0 214H300C309 228 296 262 302 300C308 342 292 384 298 432C304 482 290 524 298 572C302 602 296 626 300 650H0z" fill="url(#rock)"/>
@@ -266,13 +268,14 @@ input[type=range]{accent-color:var(--pink-500);width:130px;height:44px}
         <g stroke="#b88355" stroke-linecap="round" fill="none"><path d="M28 616V644M76 614V644M124 616V644" stroke-width="5"/><path d="M24 624H130M24 636H130" stroke-width="4"/></g>
         <g fill="#ff9fc3"><circle cx="160" cy="652" r="3"/><circle cx="214" cy="660" r="2.6"/></g>
         <!-- the onlooker's log hide -->
-        <ellipse cx="80" cy="190" rx="7" ry="20" fill="#4f3220"/>
+        <ellipse id="logHollow" cx="80" cy="190" rx="9.5" ry="20.5" fill="#4f3220"/>
         <!-- outer half of the rim sits behind whoever peeks out, so it never crosses her face -->
-        <path d="M80 169A7.5 21 0 0 1 80 211" fill="none" stroke="#cf9f70" stroke-width="3"/>
-        <g transform="translate(0 212)"><g id="buddy" style="transform:translateX(56px)"><g id="buddyHop"><g id="buddySquash"><g id="buddyArt" class="pig" data-mood="happy" transform="scale(0.78)"></g></g></g></g></g>
-        <path d="M10 168H80V212H10A9 22 0 0 1 10 168z" fill="#b57f55"/>
-        <path d="M16 179H70M22 191H62M16 202H72" stroke="#93613d" stroke-width="2" stroke-linecap="round" opacity=".6"/>
-        <path d="M80 211A7.5 21 0 0 1 80 169" fill="none" stroke="#cf9f70" stroke-width="3"/>
+        <path d="M80 168A11 22 0 0 1 80 212" fill="none" stroke="#cf9f70" stroke-width="3"/>
+        <g clip-path="url(#logMouth)"><g transform="translate(0 212)"><g id="buddy" style="transform:translateX(44px)"><g id="buddyHop"><g id="buddySquash"><g id="buddyArt" class="pig" data-mood="happy" transform="scale(0.78)"></g></g></g></g></g></g>
+        <!-- the bark ends at the mouth's inner half, so whoever is inside shows through the opening -->
+        <path d="M10 168H80A11 22 0 0 0 80 212H10A9 22 0 0 1 10 168z" fill="#b57f55"/>
+        <path d="M16 179H66M22 191H60M16 202H66" stroke="#93613d" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+        <path d="M80 212A11 22 0 0 1 80 168" fill="none" stroke="#cf9f70" stroke-width="3"/>
         <path d="M28 169c4-8 15-8 19 0z" fill="#7cc47f"/><circle cx="52" cy="166" r="3" fill="#ff9fc3"/>
         <!-- hay pile: hidden until the first landing -->
         <g id="hayBack" style="opacity:0">
@@ -659,7 +662,7 @@ function pigArt(kind){
 
 /* ============ scene: one continuous world moved with WAAPI, transform and opacity only ============ */
 const HOME={x:168,y:212}, TRAP={x:332,y:188}, ROPE=40, HOIST=12, POP_Y=654;
-const BUDDY={hide:56,peek:94,out:112}; /* translateX into, at and beyond the log mouth */
+const BUDDY={hide:44,peek:86,out:112}; /* translateX into, at and beyond the log mouth */
 const CAM_DOWN="translateY(-62.857%)", BG_DOWN="translateY(-36.667%)"; /* 440 of 700 world units; the sky follows at 0.35x */
 /* each piece's hidden pose: building animates from here to rest, dismantling animates back */
 const HIDDEN={pDeckBack:"translateY(-28px)",pDeckFront:"translateY(-28px)",pPost:"scaleY(0.2)",pBeam:"translateX(-30px) rotate(-8deg)",
@@ -1445,7 +1448,13 @@ function runSelfTest(){
   ev("tile size: short word is full size",()=>PigLogic.tileSize([6],374,5,112),42);
   ev("tile size: long word fits the row",()=>{ const t=PigLogic.tileSize([12],374,3,112); return 12*t+11*3<=374; },true);
   ev("tile size: long phrase stays within height",()=>{ const t=PigLogic.tileSize([2,4,3,3,2,8],374,5,112); return t<42&&t>=20; },true);
-  ev("log rim not drawn over the peeking onlooker",()=>{ const prev=$("buddy").style.transform; pose("buddy",`translateX(${BUDDY.peek}px)`); const pt=new DOMPoint(87.5,190).matrixTransform($("world").getScreenCTM()); const hit=document.elementFromPoint(pt.x,pt.y); pose("buddy",prev); return !!hit&&$("buddy").contains(hit); },true);
+  /* the topmost visible shape at a world point with the onlooker posed at x; hidden props still take hits, so skip see-through ones */
+  const shown=el=>{ for(;el&&el.nodeType===1;el=el.parentNode) if(getComputedStyle(el).opacity==="0") return false; return true; };
+  const atLog=(x,wx,wy)=>{ const prev=$("buddy").style.transform; pose("buddy",`translateX(${x}px)`); const pt=new DOMPoint(wx,wy).matrixTransform($("world").getScreenCTM()); const hit=document.elementsFromPoint(pt.x,pt.y).find(shown); pose("buddy",prev); return hit; };
+  ev("log mouth is open: hollow shows across the whole opening",()=>[74,80,86].map(x=>atLog(BUDDY.hide,x,190)===$("logHollow")),[true,true,true]);
+  ev("peeking onlooker shows through the mouth, not cut off at its middle",()=>$("buddy").contains(atLog(BUDDY.peek,76,192)),true);
+  ev("ducked onlooker is out of sight in the mouth",()=>{ for(let x=69;x<=91;x++) for(let y=168;y<=212;y+=2) { const h=atLog(BUDDY.hide,x,y); if(!h||$("buddy").contains(h)) return x+","+y; } return "hidden"; },"hidden");
+  ev("log rim not drawn over the peeking onlooker",()=>$("buddy").contains(atLog(BUDDY.peek,91,190)),true);
   ev("keyboard rows read QWERTY",()=>{ const rows=new Map(); for(const b of $("kbd").children){ const y=Math.round(b.getBoundingClientRect().top); rows.set(y,(rows.get(y)||"")+b.dataset.l); } return [...rows.values()]; },["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"]);
   ev("one words block on the page",()=>document.querySelectorAll("#hangman-words").length,1);
   ev("hay hidden before any loss",()=>[$("hayBack").style.opacity,$("hayFront").style.opacity],["0","0"]);
