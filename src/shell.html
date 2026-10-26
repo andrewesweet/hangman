@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#fde3ee">
 <link rel="icon" href="data:,">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hangman">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Hangman</title>
 <style>
 /* The skin's own markup lays out as if it sat straight in <body>. */
@@ -22,5 +28,9 @@
 <!-- words:begin --><!-- words:end -->
 <!-- build:skins -->
 <script>Hangman.boot();</script>
+<script>
+/* Offline install; where registration fails (file://, an old browser) the game simply runs uncached. */
+try { navigator.serviceWorker.register("sw.js").catch(function(){}); } catch (e) {}
+</script>
 </body>
 </html>
