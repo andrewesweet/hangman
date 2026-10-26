@@ -39,10 +39,10 @@ A page holds the data in exactly one block:
 <!-- words:begin --><script id="hangman-words" type="application/json">...</script><!-- words:end -->
 ```
 
-and reads it only with `JSON.parse(document.getElementById('hangman-words').textContent)`. To refresh one or more pages after editing `words.json`, run:
+and reads it only with `JSON.parse(document.getElementById('hangman-words').textContent)`. The game, `play.html`, gets its block from `python3 tools/build.py`, which reuses the inliner's validation (see the [README](../README.md#building)). To refresh any other page after editing `words.json`, run:
 
 ```sh
-python3 tools/inline-words.py prototypes/a.html prototypes/b.html
+python3 tools/inline-words.py path/to/page.html
 ```
 
 The inliner validates `words.json` first. It refuses every page if any page has no marker pair or more than one, and in that case it writes nothing. `python3 tools/inline-words.py --selftest` runs its own tests.

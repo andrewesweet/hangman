@@ -1,0 +1,146 @@
+<div id="app">
+  <header class="top">
+    <div class="logo">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="9" cy="11" rx="5" ry="4" fill="#6c7380"/><ellipse cx="31" cy="11" rx="5" ry="4" fill="#9aa0aa"/><circle cx="20" cy="22" r="16" fill="#f1ebe0" stroke="#e7d9cc"/><path d="M5 19C5 10 13 6 19 6.5C20 11 19 15 18 19C15 23 8 23 5 19Z" fill="#646b78"/><ellipse cx="20" cy="15" rx="2.2" ry="7.5" fill="#fff"/><circle cx="13.5" cy="20" r="2.2" fill="#2a1520"/><circle cx="26.5" cy="20" r="2.2" fill="#2a1520"/><ellipse cx="20" cy="25" rx="2.3" ry="1.7" fill="#f08aa6"/></svg>
+      <div>Piggy Paradise<small>hangman</small></div>
+    </div>
+    <button class="iconbtn" id="albumBtn" aria-label="Stats and sticker album"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+    <button class="iconbtn" id="soundBtn" aria-label="Sound" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path class="on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="off" d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <button class="iconbtn" id="setBtn" data-hm-open-settings aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9.5M18.5 7H20M4 17h3.5M12.5 17H20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+  </header>
+
+  <div class="seg" id="seg" role="tablist" aria-label="Game mode" data-mode="free">
+    <span class="pill" aria-hidden="true"></span>
+    <button class="tab" id="tabFree" role="tab" aria-selected="true">Free play<span class="sub" id="freeSub">pick a word</span></button>
+    <button class="tab" id="tabDaily" role="tab" aria-selected="false">Daily puzzle<span class="sub" id="dailySub">one a day</span></button>
+  </div>
+
+  <div id="stagebox"><section id="stage" aria-label="Guinea pig scene">
+    <div id="cam">
+      <svg id="bg" viewBox="0 0 400 420" aria-hidden="true">
+        <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd2e3"/><stop offset=".5" stop-color="#ffe9f0"/><stop offset="1" stop-color="#e4f1fb"/></linearGradient></defs>
+        <rect width="400" height="420" fill="url(#sky)"/>
+        <circle cx="336" cy="44" r="36" fill="#fff4d6" opacity=".6"/><circle cx="336" cy="44" r="19" fill="#ffefb8"/>
+        <g class="cloud"><path d="M52 64a13 13 0 0 1 24-7a11 11 0 0 1 19 6a9 9 0 0 1-1 18H54a9 9 0 0 1-2-17z" fill="#fff"/></g>
+        <g class="cloud" style="animation-duration:80s"><path d="M196 34a10 10 0 0 1 18-5a9 9 0 0 1 15 5a7 7 0 0 1-1 14h-31a7 7 0 0 1-1-14z" fill="#fff" opacity=".85"/></g>
+        <g class="cloud" style="animation-duration:70s;animation-direction:alternate-reverse"><path d="M318 136a10 10 0 0 1 18-5a9 9 0 0 1 15 5a7 7 0 0 1-1 14h-31a7 7 0 0 1-1-14z" fill="#fff" opacity=".8"/></g>
+        <path d="M0 236C70 214 130 232 200 222S330 214 400 224V420H0z" fill="#e2efe2"/>
+        <path d="M0 290C90 268 170 292 260 278S360 270 400 280V420H0z" fill="#cbe6d0"/>
+        <g fill="#a9d6b4"><circle cx="320" cy="272" r="7"/><circle cx="332" cy="267" r="9"/><circle cx="346" cy="272" r="6"/><circle cx="374" cy="264" r="7"/></g>
+        <path d="M0 352C100 336 220 356 400 340V420H0z" fill="#b5ddbf"/>
+      </svg>
+      <svg id="world" viewBox="0 0 400 700" aria-hidden="true">
+        <defs>
+          <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0c4ae"/><stop offset="1" stop-color="#d99d8a"/></linearGradient>
+          <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6a46c"/><stop offset="1" stop-color="#b47e4a"/></linearGradient>
+          <linearGradient id="hayG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d77a"/><stop offset="1" stop-color="#e2b54e"/></linearGradient>
+          <clipPath id="pigClip"><ellipse cx="0" cy="-25" rx="29" ry="25"/></clipPath>
+          <!-- whoever is still inside the log shows only through its mouth -->
+          <clipPath id="logMouth"><ellipse cx="80" cy="190" rx="11" ry="22"/><rect x="80" width="320" height="700"/></clipPath>
+        </defs>
+        <!-- clifftop meadow, cliff face and the yard far below -->
+        <path d="M0 214H300C309 228 296 262 302 300C308 342 292 384 298 432C304 482 290 524 298 572C302 602 296 626 300 650H0z" fill="url(#rock)"/>
+        <path d="M0 318C90 308 190 324 298 314M0 446C80 436 200 452 296 444M0 560C100 552 200 566 298 558" stroke="#cf8f7b" stroke-width="3" fill="none" stroke-linecap="round" opacity=".45"/>
+        <g fill="#e3a995" opacity=".7"><ellipse cx="60" cy="270" rx="16" ry="8"/><ellipse cx="200" cy="380" rx="22" ry="9"/><ellipse cx="110" cy="500" rx="18" ry="8"/><ellipse cx="240" cy="610" rx="16" ry="7"/></g>
+        <path d="M-4 207C70 201 150 211 222 206S292 206 305 211C311 215 306 223 296 223H-4z" fill="#8fd08f"/>
+        <path d="M-4 220C80 226 200 227 296 223" stroke="#5da271" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <g fill="#ff9fc3"><circle cx="112" cy="206" r="3"/><circle cx="196" cy="205" r="2.6"/><circle cx="236" cy="207" r="2.4"/></g>
+        <g fill="#fff"><circle cx="126" cy="208" r="2.4"/><circle cx="208" cy="206" r="2.2"/></g>
+        <path d="M0 642C90 634 210 648 400 636V700H0z" fill="#93d495"/>
+        <g stroke="#b88355" stroke-linecap="round" fill="none"><path d="M28 616V644M76 614V644M124 616V644" stroke-width="5"/><path d="M24 624H130M24 636H130" stroke-width="4"/></g>
+        <g fill="#ff9fc3"><circle cx="160" cy="652" r="3"/><circle cx="214" cy="660" r="2.6"/></g>
+        <!-- the onlooker's log hide -->
+        <ellipse id="logHollow" cx="80" cy="190" rx="9.5" ry="20.5" fill="#4f3220"/>
+        <!-- outer half of the rim sits behind whoever peeks out, so it never crosses her face -->
+        <path d="M80 168A11 22 0 0 1 80 212" fill="none" stroke="#cf9f70" stroke-width="3"/>
+        <g clip-path="url(#logMouth)"><g transform="translate(0 212)"><g id="buddy" style="transform:translateX(44px)"><g id="buddyHop"><g id="buddySquash"><g id="buddyArt" class="pig" data-mood="happy" transform="scale(0.78)"></g></g></g></g></g></g>
+        <!-- the bark ends at the mouth's inner half, so whoever is inside shows through the opening -->
+        <path d="M10 168H80A11 22 0 0 0 80 212H10A9 22 0 0 1 10 168z" fill="#b57f55"/>
+        <path d="M16 179H66M22 191H60M16 202H66" stroke="#93613d" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+        <path d="M80 212A11 22 0 0 1 80 168" fill="none" stroke="#cf9f70" stroke-width="3"/>
+        <path d="M28 169c4-8 15-8 19 0z" fill="#7cc47f"/><circle cx="52" cy="166" r="3" fill="#ff9fc3"/>
+        <!-- hay pile: hidden until the first landing -->
+        <g id="hayBack" style="opacity:0">
+          <g transform="translate(335 700)"><g id="hayBackSq"><path d="M-72 2C-68-62-40-90 0-98S68-60 70 2z" fill="#e7bd57"/><path d="M-40-70l-8-10M-10-88l-2-12M22-84l8-10M48-60l10-6" stroke="#c99a3a" stroke-width="2.4" stroke-linecap="round"/></g></g>
+          <g transform="translate(282 740)"><g id="hayBuddy"><g class="pig" data-mood="joy" id="hayBuddyArt" transform="scale(0.72)"></g></g></g>
+        </g>
+        <!-- gallows, built piece by piece -->
+        <g id="pDeckBack" style="opacity:0">
+          <path d="M264 196V214M296 196V212M300 258L352 197" stroke="#9a6a3f" stroke-width="6" stroke-linecap="round"/>
+          <g fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"><rect x="228" y="204" width="12" height="9" rx="2"/><rect x="238" y="196" width="12" height="17" rx="2"/><rect x="248" y="188" width="10" height="25" rx="2"/></g>
+        </g>
+        <g transform="translate(280 189)"><g id="pPost" style="opacity:0"><rect x="-6" y="-122" width="12" height="122" rx="3" fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"/><path d="M-1-110V-20" stroke="#a87444" stroke-width="1.5" opacity=".6"/></g></g>
+        <g transform="translate(270 66)"><g id="pBeam" style="opacity:0"><rect width="92" height="11" rx="3" fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"/><circle cx="10" cy="5.5" r="1.6" fill="#8a5a35"/><circle cx="62" cy="5.5" r="1.6" fill="#8a5a35"/></g></g>
+        <g transform="translate(280 112)"><g id="pBrace" style="opacity:0"><rect y="-3.5" width="50" height="7" rx="3" transform="rotate(-44)" fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"/></g></g>
+        <!-- rope and pig swing together about the beam -->
+        <g transform="translate(332 77)"><g id="swing"><g transform="translate(-332 -77)">
+          <g transform="translate(332 77)">
+            <g id="rope" style="opacity:0"><path d="M0 0V40" stroke="#c9a067" stroke-width="3.4" stroke-linecap="round"/><path d="M0 1V39" stroke="#9f7741" stroke-width="3.4" stroke-dasharray="2 3"/></g>
+            <g id="bow" style="opacity:0"><path d="M0 2v4q0 3 3 3" stroke="#8c6a4a" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M0 0C-6-6-13-5-12 0S-6 6 0 0zM0 0C6-6 13-5 12 0S6 6 0 0z" fill="#f27ba8" stroke="#b93a6c" stroke-width="1.2"/><circle r="2.6" fill="#e14e87"/></g>
+          </g>
+          <g id="pigPos" style="transform:translate(168px,212px)">
+            <ellipse id="pigShadow" rx="24" ry="4" fill="#4a2436" fill-opacity=".14"/>
+            <g id="pigHoist"><g id="pigHop"><g id="pigSquash"><g id="pigShake"><g id="heroArt" class="pig" data-mood="happy"></g></g></g></g></g>
+          </g>
+        </g></g></g>
+        <g id="pDeckFront" style="opacity:0">
+          <rect x="252" y="188" width="54" height="8" rx="2" fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"/>
+          <rect x="358" y="188" width="8" height="8" rx="2" fill="url(#wood)" stroke="#8a5a35" stroke-width="1.5"/>
+          <g transform="translate(306 188)"><g id="tdL"><rect width="26" height="8" rx="1.5" fill="#c38c57" stroke="#8a5a35" stroke-width="1.5"/></g></g>
+          <g transform="translate(358 188)"><g id="tdR"><rect x="-26" width="26" height="8" rx="1.5" fill="#c38c57" stroke="#8a5a35" stroke-width="1.5"/></g></g>
+        </g>
+        <g id="hayFront" style="opacity:0"><g transform="translate(335 700)"><g id="hayFrontSq"><path d="M-76 2C-66-44-38-62 0-66S66-44 72 2z" fill="url(#hayG)"/><path d="M-50-30l-10-8M-24-52l-6-10M4-60l2-12M30-52l8-9M54-32l10-6M-36-14l-8-4M20-20l9-5" stroke="#c99a3a" stroke-width="2.4" stroke-linecap="round"/></g></g></g>
+        <g id="strawFx"></g><g id="dust"></g><g id="hearts"></g>
+        <g transform="translate(374 102)"><g id="gulp" style="opacity:0"><path d="M-12 7l-7 9 12-6z" fill="#fff" stroke="#e14e87" stroke-width="1.5" stroke-linejoin="round"/><rect x="-21" y="-11" width="42" height="20" rx="10" fill="#fff" stroke="#e14e87" stroke-width="1.5"/><text y="3.6" text-anchor="middle" font-size="10.5" font-weight="800" fill="#8c2a51">gulp!</text></g></g>
+      </svg>
+    </div>
+    <div class="hud">
+      <div id="pips" role="img" aria-label="chances left"></div>
+      <div id="treatchip" aria-label="Treats this game"><span aria-hidden="true">🥕</span><b id="treatN">0</b></div>
+    </div>
+    <div id="hinttext"></div>
+  </section></div>
+
+  <div id="meta">
+    <span class="chip" id="catpill">animals</span><span class="chip" id="diffpill">easy</span>
+    <span id="streakpill">streak 0</span>
+  </div>
+  <div id="word" role="img" aria-label="Word"></div>
+  <div id="empty" hidden></div>
+
+  <div class="bottom">
+    <div id="kbd" role="group" aria-label="Letter keyboard"></div>
+    <div class="actions">
+      <button class="btn ghost" id="hintbtn">💡 Hint</button>
+      <button class="btn primary" id="newBtn">New word</button>
+    </div>
+  </div>
+</div>
+
+<!-- settings sheet -->
+<div class="sheet" id="setSheet" aria-hidden="true" inert><div class="card" role="dialog" aria-modal="true" aria-label="Settings" tabindex="-1">
+  <div class="grab" aria-hidden="true"></div>
+  <h2>Settings</h2><p class="sub">Everything saves on this phone only.</p>
+  <div data-hm-settings></div>
+  <button class="btn primary" id="setDone" style="margin-top:10px;width:100%">Done — start munching 🥕</button>
+</div></div>
+
+<!-- stats + album sheet -->
+<div class="sheet" id="statSheet" aria-hidden="true" inert><div class="card" role="dialog" aria-modal="true" aria-label="Statistics and sticker album" tabindex="-1">
+  <div class="grab" aria-hidden="true"></div>
+  <h2>Stats &amp; sticker album</h2><p class="sub" id="statSub"></p>
+  <div class="statgrid">
+    <div class="stat"><b id="sStreak">0</b><span>current streak</span></div>
+    <div class="stat"><b id="sBest">0</b><span>best streak</span></div>
+    <div class="stat"><b id="sGames">0</b><span>games played</span></div>
+    <div class="stat"><b id="sWins">0</b><span>games won</span></div>
+  </div>
+  <h2>🏅 Sticker album</h2><p class="sub">Earn stickers by playing. They live on this phone only.</p>
+  <div class="album" id="album"></div>
+  <div id="catwins" style="margin-top:12px"></div>
+  <button class="btn primary" id="statDone" style="margin-top:14px;width:100%">Back to the piggies 🐹</button>
+</div></div>
+
+<div id="fx" aria-hidden="true"></div>
+<div id="toast" role="status"></div>
+<div id="sr" class="sr" aria-live="polite"></div>

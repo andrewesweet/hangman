@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fde3ee">
+<link rel="icon" href="data:,">
+<title>Hangman</title>
+<style>
+/* The skin's own markup lays out as if it sat straight in <body>. */
+#hm-root{display:contents}
+/* Layout of the shared settings form; each skin styles the look. */
+.hm-opts,.hm-cats{display:flex;flex-wrap:wrap;gap:8px}
+.hm-opt{position:relative;display:inline-flex}
+.hm-opt input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.hm-opt input:focus-visible + span{outline:2px solid currentColor;outline-offset:2px}
+.hm-switchrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+</style>
+</head>
+<body>
+<div id="hm-root"></div>
+<!-- words:begin --><!-- words:end -->
+<!-- build:skins -->
+<script>Hangman.boot();</script>
+</body>
+</html>
