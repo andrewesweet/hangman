@@ -4,13 +4,17 @@
    stats and storage, the on-screen and physical keyboards, the
    settings form and the skin host. Skins only draw and play sounds.
 
-   A skin registers with Hangman.skin(id, meta, factory). The factory
-   gets (ctx, root) and returns:
+   A skin registers with Hangman.skin(id, meta, factory), where meta is
+   {name, title, theme, fit?} (fit: id of the element that must stay on
+   screen). Its template marks where the settings form goes with
+   [data-hm-settings] and the button that opens it with
+   [data-hm-open-settings]. The factory gets (ctx, root) and returns:
      start(game, {resumed})  draw a fresh or resumed game
      guessed(result)         react to one guess
      finished(outcome)       react to the win or loss
-     sync()                  redraw settings-driven bits (lives, sound, streak)
      toast(text)             show a short message
+     badgeIds                the ids in this skin's badge album
+     sync()                  optional: redraw settings-driven bits (sound, streak)
      modalOpen(), closeModal(), enter()   optional, for the physical keyboard
      selftest(t)             optional scene checks for ?selftest
    ============================================================ */
@@ -411,15 +415,13 @@ const Hangman = (() => {
   /* ---------------- skin host ---------------- */
   /* Timers a skin starts are tracked so unmounting stops every loop and pending beat. */
   function makeTimers(){
-    const t = new Set(), iv = new Set(), raf = new Set();
+    const t = new Set(), raf = new Set();
     return {
       setTimeout(fn, ms){ const id = setTimeout(() => { t.delete(id); fn(); }, ms); t.add(id); return id; },
       clearTimeout(id){ t.delete(id); clearTimeout(id); },
-      setInterval(fn, ms){ const id = setInterval(fn, ms); iv.add(id); return id; },
-      clearInterval(id){ iv.delete(id); clearInterval(id); },
       requestAnimationFrame(fn){ const id = requestAnimationFrame(ts => { raf.delete(id); fn(ts); }); raf.add(id); return id; },
       cancelAnimationFrame(id){ raf.delete(id); cancelAnimationFrame(id); },
-      clearAll(){ t.forEach(clearTimeout); iv.forEach(clearInterval); raf.forEach(cancelAnimationFrame); t.clear(); iv.clear(); raf.clear(); }
+      clearAll(){ t.forEach(clearTimeout); raf.forEach(cancelAnimationFrame); t.clear(); raf.clear(); }
     };
   }
   let actx = null;
@@ -434,10 +436,9 @@ const Hangman = (() => {
   }
   function context(lifeRef){
     return {
-      get game(){ return game; }, get settings(){ return settings; }, get stats(){ return stats; },
-      get run(){ return run; }, get mode(){ return mode; },
-      cats: words.cats, letterCount, isLetter, todayStr, dailyDone: () => stats.dailyLast === todayStr(),
-      guess, hint, newGame, setMode, keyboard, editSettings, doneSettings, resetSettings, toggleSound, resetStats, audio,
+      get settings(){ return settings; }, get stats(){ return stats; }, get run(){ return run; }, get mode(){ return mode; },
+      cats: words.cats, isLetter, dailyDone: () => stats.dailyLast === todayStr(),
+      hint, newGame, setMode, keyboard, editSettings, doneSettings, resetSettings, toggleSound, resetStats, audio,
       timers: lifeRef.timers,
       on(target, type, fn, opts){ target.addEventListener(type, fn, opts); lifeRef.offs.push(() => target.removeEventListener(type, fn, opts)); },
       store: {get: k => store.get(k), set: (k, v) => store.set(k, v)}

@@ -1171,8 +1171,19 @@ Hangman.skin("c", {name: "Arcade run", title: "Arcade Run — Hangman", theme: "
   });
   $("statsBtn").addEventListener("click", function(){ SFX.click(); renderStats(); openSheet($("statsSheet")); });
   $("statsDone").addEventListener("click", function(){ SFX.click(); closeSheet($("statsSheet")); });
+  /* stats are shared by every look, so erasing takes a second tap */
+  let wipeArmed = 0;
   $("statsWipe").addEventListener("click", function(){
-    ctx.resetStats(); renderStats(); renderScore(false); SFX.click(); toast("Stats erased");
+    SFX.click();
+    if (!wipeArmed){
+      $("statsWipe").textContent = "Tap again to erase";
+      toast("This erases stats and badges in all three looks");
+      wipeArmed = setTimeout(function(){ wipeArmed = 0; $("statsWipe").textContent = "Erase stats"; }, 3000);
+      return;
+    }
+    clearTimeout(wipeArmed); wipeArmed = 0;
+    $("statsWipe").textContent = "Erase stats";
+    ctx.resetStats(); renderStats(); renderScore(false); toast("Stats erased");
   });
   $("nextBtn").addEventListener("click", function(){ SFX.click(); ctx.newGame(); });
   $("runBtn").addEventListener("click", function(){

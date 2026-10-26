@@ -22,5 +22,5 @@ The source is split as follows:
 
 - `src/shell.html` is the page around the game. It holds the `<!-- words:begin -->`/`<!-- words:end -->` pair that the build fills with the word list, as described in [`words/README.md`](words/README.md).
 - `src/engine.js` owns everything the looks share: picking words, the rules, hints, scoring, badges, daily mode, settings, stats and their storage, and the on-screen and physical keyboards.
-- `src/skins/<look>.html`, `.css` and `.js` hold each look's scene, animations, sounds and copy. A look draws what the engine tells it and never keeps its own rules or storage.
+- `src/skins/<look>.html`, `.css` and `.js` hold each look's scene, animations, sounds and copy. A look draws what the engine tells it and never keeps its own rules, settings or stats; the only thing a look stores itself is scene detail such as how many hay landings Piggy Paradise has already shown.
 - `src/selftest.js` holds the checks behind `play.html?selftest`. They test the engine rules once and then play each look through a right guess, a wrong guess, a win, a loss and a switch to the next look. They run on throwaway storage and print `SELFTEST PASS (n/n)` to the console.

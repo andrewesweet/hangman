@@ -858,9 +858,8 @@ Hangman.skin("b", {name: "Piggy Paradise", title: "Piggy Paradise Hangman", them
     modalOpen: sheetOpen,
     closeModal: closeSheets,
     /* scene checks from the prototype; the word in play is redrawn first so the world is at rest */
-    selftest(t){
+    selftest(ev){
       start(game,{resumed:true});
-      const ev=t;
       ev("stage 4 lives",()=>[0,1,2,3,4].map(m=>PigLogic.stageFor(m,4)),[0,3,6,9,10]);
       ev("stage 6 lives",()=>[0,1,2,3,4,5,6].map(m=>PigLogic.stageFor(m,6)),[0,2,4,5,7,9,10]);
       ev("stage 10 lives",()=>[0,1,2,3,4,5,6,7,8,9,10].map(m=>PigLogic.stageFor(m,10)),[0,1,2,3,4,5,6,7,8,9,10]);

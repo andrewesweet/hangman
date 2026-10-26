@@ -19,8 +19,8 @@ SKINS_MARK = "<!-- build:skins -->"
 sys.dont_write_bytecode = True  # keep tools/ free of __pycache__
 _spec = importlib.util.spec_from_file_location("inline_words", os.path.join(ROOT, "tools", "inline-words.py"))
 assert _spec and _spec.loader
-words = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(words)
+inline_words = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(inline_words)
 
 
 def read(*parts):
@@ -36,13 +36,13 @@ def guarded(name, text, closer):
 
 
 def build():
-    with open(words.WORDS_PATH, encoding="utf-8") as f:
+    with open(inline_words.WORDS_PATH, encoding="utf-8") as f:
         data = json.load(f)
-    errors = words.validate(data)
+    errors = inline_words.validate(data)
     if errors:
         raise SystemExit("words/words.json is invalid:\n" + "\n".join(errors))
     shell = read("shell.html")
-    if shell.count(words.BEGIN) != 1 or shell.count(words.END) != 1 or shell.count(SKINS_MARK) != 1:
+    if shell.count(inline_words.BEGIN) != 1 or shell.count(inline_words.END) != 1 or shell.count(SKINS_MARK) != 1:
         raise SystemExit(f"src/shell.html needs exactly one words block and one {SKINS_MARK}")
     scripts = ["engine.js", "selftest.js"] + [os.path.join("skins", s + ".js") for s in SKINS]
     js = {name: guarded(name, read(name), "</script") for name in scripts}
@@ -52,8 +52,8 @@ def build():
         html = guarded(f"skins/{s}.html", read("skins", s + ".html"), "</template")
         parts.append(f'<template id="skin-{s}"><style>\n{css}</style>\n{html}</template>\n'
                      f"<script>\n{js[os.path.join('skins', s + '.js')]}</script>")
-    head, rest = shell.split(words.BEGIN)
-    page = head + words.block(data) + rest.split(words.END)[1]
+    head, rest = shell.split(inline_words.BEGIN)
+    page = head + inline_words.block(data) + rest.split(inline_words.END)[1]
     return page.replace(SKINS_MARK, "\n".join(parts))
 
 

@@ -41,6 +41,7 @@
   }
   a.card:nth-child(2){animation-delay:.08s}
   a.card:nth-child(3){animation-delay:.16s}
+  a.card:nth-child(4){animation-delay:.24s}
   @keyframes rise{to{opacity:1;transform:translateY(0)}}
   a.card:active{transform:scale(.97)}
   .card .k{font-size:12px;font-weight:800;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase}
@@ -57,8 +58,14 @@
 <div class="page">
   <h1>Hangman <span class="thin">· three looks</span></h1>
   <svg class="squiggle" viewBox="0 0 170 8" aria-hidden="true"><path pathLength="1" d="M2 5 C 35 1, 70 7, 105 4 S 150 3, 168 5"/></svg>
-  <p class="lede">One offline hangman game with three looks. Pick a look to start in; you can switch any time in Settings, and your settings, streaks and stats come with you.</p>
+  <p class="lede">One offline hangman game with three looks. Start in the look you used last or pick one; you can switch any time in Settings, and your settings, streaks and stats come with you.</p>
   <div class="cards">
+    <a class="card" href="play.html">
+      <span class="k">Play</span>
+      <h2>Carry on where you left off</h2>
+      <p>Opens the game in the look you used last.</p>
+      <span class="go">Play →</span>
+    </a>
     <a class="card" href="play.html?skin=a">
       <span class="k">Look A</span>
       <h2>Pen &amp; paper</h2>
